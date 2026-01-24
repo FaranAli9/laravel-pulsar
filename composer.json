@@ -7,6 +7,11 @@
 			"Faran\\Pulse\\": "src/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"Tests\\": "tests/"
+		}
+	},
 	"authors": [
 		{
 			"name": "Faran Ali",
@@ -18,7 +23,19 @@
 		"php": "^8.2",
 		"symfony/console": "^7.0"
 	},
+	"require-dev": {
+		"pestphp/pest": "^4.3"
+	},
 	"bin": [
 		"bin/pulse"
-	]
+	],
+	"scripts": {
+		"test": "pest",
+		"test:coverage": "pest --coverage --min=85"
+	},
+	"config": {
+		"allow-plugins": {
+			"pestphp/pest-plugin": true
+		}
+	}
 }
