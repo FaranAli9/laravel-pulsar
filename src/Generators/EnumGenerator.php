@@ -83,7 +83,7 @@ class EnumGenerator extends Generator
     protected function getEnumContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Enums";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'enum.stub';
+        $stubPath = $this->getStubPath('enum');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
@@ -92,11 +92,4 @@ class EnumGenerator extends Generator
         ]);
     }
 
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
-    }
 }

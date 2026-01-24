@@ -83,7 +83,7 @@ class QueryGenerator extends Generator
     protected function getQueryContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Queries";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'query.stub';
+        $stubPath = $this->getStubPath('query');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
@@ -92,11 +92,4 @@ class QueryGenerator extends Generator
         ]);
     }
 
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
-    }
 }

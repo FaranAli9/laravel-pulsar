@@ -83,7 +83,7 @@ class ModelGenerator extends Generator
     protected function getModelContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Models";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'model.stub';
+        $stubPath = $this->getStubPath('model');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
@@ -92,11 +92,4 @@ class ModelGenerator extends Generator
         ]);
     }
 
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
-    }
 }

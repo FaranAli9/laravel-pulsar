@@ -83,21 +83,13 @@ class PolicyGenerator extends Generator
     protected function getPolicyContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Policies";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'policy.stub';
+        $stubPath = $this->getStubPath('policy');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
             'namespace' => $namespace,
             'name' => $this->name,
         ]);
-    }
-
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
     }
 
     /**

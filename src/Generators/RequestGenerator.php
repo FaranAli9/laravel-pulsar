@@ -106,7 +106,7 @@ class RequestGenerator extends Generator
      */
     protected function getRequestContent(): string
     {
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'request.stub';
+        $stubPath = $this->getStubPath('request');
 
         if ($this->fileExists($stubPath)) {
             $stub = $this->loadStub($stubPath);
@@ -143,14 +143,5 @@ class RequestGenerator extends Generator
         }
 
         return $name;
-    }
-
-    /**
-     * Get the relative path from the Laravel root.
-     */
-    protected function getRelativePath(string $fullPath): string
-    {
-        $laravelRoot = $this->findLaravelRoot();
-        return str_replace($laravelRoot . DIRECTORY_SEPARATOR, '', $fullPath);
     }
 }

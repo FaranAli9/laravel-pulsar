@@ -83,7 +83,7 @@ class EventGenerator extends Generator
     protected function getEventContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Events";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'event.stub';
+        $stubPath = $this->getStubPath('event');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
@@ -92,11 +92,4 @@ class EventGenerator extends Generator
         ]);
     }
 
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
-    }
 }

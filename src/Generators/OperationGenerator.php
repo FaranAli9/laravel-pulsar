@@ -104,21 +104,13 @@ class OperationGenerator extends Generator
     protected function getOperationContent(): string
     {
         $namespace = $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\Operations";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'operation.stub';
+        $stubPath = $this->getStubPath('operation');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
             'namespace' => $namespace,
             'name' => $this->name,
         ]);
-    }
-
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
     }
 
     /**

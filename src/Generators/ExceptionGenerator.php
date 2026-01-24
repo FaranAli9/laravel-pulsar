@@ -83,7 +83,7 @@ class ExceptionGenerator extends Generator
     protected function getExceptionContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Exceptions";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'exception.stub';
+        $stubPath = $this->getStubPath('exception');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
@@ -92,11 +92,4 @@ class ExceptionGenerator extends Generator
         ]);
     }
 
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
-    }
 }

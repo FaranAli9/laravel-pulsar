@@ -106,7 +106,7 @@ class UseCaseGenerator extends Generator
      */
     protected function getUseCaseContent(): string
     {
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'use-case.stub';
+        $stubPath = $this->getStubPath('use-case');
 
         if ($this->fileExists($stubPath)) {
             $stub = $this->loadStub($stubPath);
@@ -131,14 +131,5 @@ class UseCaseGenerator extends Generator
     {
         $rootNamespace = $this->findRootNamespace();
         return "{$rootNamespace}\\Services\\{$this->service}\\Modules\\{$this->module}\\UseCases";
-    }
-
-    /**
-     * Get the relative path from the Laravel root.
-     */
-    protected function getRelativePath(string $fullPath): string
-    {
-        $laravelRoot = $this->findLaravelRoot();
-        return str_replace($laravelRoot . DIRECTORY_SEPARATOR, '', $fullPath);
     }
 }

@@ -111,8 +111,8 @@ class ControllerGenerator extends Generator
      */
     protected function getControllerContent(): string
     {
-        $stubName = $this->resource ? 'controller-resource.stub' : 'controller-plain.stub';
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . $stubName;
+        $stubName = $this->resource ? 'controller-resource' : 'controller-plain';
+        $stubPath = $this->getStubPath($stubName);
 
         if ($this->fileExists($stubPath)) {
             $stub = $this->loadStub($stubPath);
@@ -149,14 +149,5 @@ class ControllerGenerator extends Generator
         }
 
         return $name;
-    }
-
-    /**
-     * Get the relative path from the Laravel root.
-     */
-    protected function getRelativePath(string $fullPath): string
-    {
-        $laravelRoot = $this->findLaravelRoot();
-        return str_replace($laravelRoot . DIRECTORY_SEPARATOR, '', $fullPath);
     }
 }

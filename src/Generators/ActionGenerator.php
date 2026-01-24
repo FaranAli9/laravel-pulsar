@@ -83,21 +83,13 @@ class ActionGenerator extends Generator
     protected function getActionContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain) . "\\Actions";
-        $stubPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'action.stub';
+        $stubPath = $this->getStubPath('action');
         $stub = $this->loadStub($stubPath);
 
         return $this->replaceStubPlaceholders($stub, [
             'namespace' => $namespace,
             'name' => $this->name,
         ]);
-    }
-
-    /**
-     * Get the relative path for display.
-     */
-    protected function getRelativePath(string $filePath): string
-    {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
     }
 
     /**
