@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Faran\Pulse\Commands\MakeControllerCommand;
+use Faran\Pulse\Commands\MakeRequestCommand;
+use Faran\Pulse\Commands\MakeServiceCommand;
+use Faran\Pulse\Commands\MakeUseCaseCommand;
+use Symfony\Component\Console\Application;
+use Faran\Pulse\Commands\PingCommand;
+
+$app = new Application('Pulse', '1.0.0');
+
+$app->addCommand(new PingCommand());
+$app->addCommand(new MakeServiceCommand());
+$app->addCommand(new MakeControllerCommand());
+$app->addCommand(new MakeRequestCommand());
+$app->addCommand(new MakeUseCaseCommand());
+
+$app->run();
