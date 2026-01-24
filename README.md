@@ -2,6 +2,24 @@
 
 > A modern Laravel code generation tool for building service-oriented applications with vertical slice architecture.
 
+## Table of Contents
+
+- [Philosophy](#philosophy)
+- [Architecture](#architecture)
+- [Installation & Usage](#installation--usage)
+- [File Types](#file-types)
+  - [Service Providers](#service-providers)
+  - [Controllers](#controllers)
+  - [Requests (Form Requests)](#requests-form-requests)
+  - [UseCases](#usecases)
+  - [Operations](#operations)
+  - [Routes](#routes)
+- [Complete Example](#complete-example)
+- [Commands Reference](#commands-reference)
+- [Design Decisions](#design-decisions)
+- [Best Practices](#best-practices)
+- [Contributing](#contributing)
+
 ## Philosophy
 
 Pulse embraces **vertical slice architecture** over traditional layered architecture. Instead of organizing code by technical concerns (Controllers, Models, Services), Pulse organizes by **business capabilities** (Services → Modules → Features).
@@ -60,96 +78,379 @@ app/Services/Sales/Modules/Order/
 
 → Everything for the Order module lives together.
 
-## Installation
+## Installation & Usage
 
 ```bash
 composer require faran/pulse --dev
 ```
 
-## Usage
-
-### Create a Service
+### Generate Your First Service
 
 ```bash
 pulse make:service Authentication
 ```
 
-Creates:
+Then follow the sections below to generate individual file types.
 
+---
+
+## File Types
+
+This section explains the purpose and usage of each file type that Pulse generates.
+
+### Service Providers
+
+**File Type:** `ServiceProvider.php` and `RouteServiceProvider.php`
+
+**Purpose:**
+Service providers are auto-generated during `pulse make:service` and handle bootstrapping your service. They register routes, service container bindings, and event listeners specific to your service.
+
+**What It Does:**
+- Registers routes from the `Routes/api.php` file
+- Auto-discovers and loads routes with the `/api/{service-slug}` prefix
+- Provides a clear entry point for service-wide configuration
+
+**Location:**
 ```
-app/Services/Authentication/
-├── Providers/
-│   ├── AuthenticationServiceProvider.php
-│   └── RouteServiceProvider.php
-├── Routes/
-│   └── api.php
-└── Modules/
-    └── .gitkeep
+app/Services/{Service}/Providers/
+├── {Service}ServiceProvider.php
+└── RouteServiceProvider.php
 ```
 
-**Register the service** in `config/app.php` or `bootstrap/providers.php`:
+**Usage:**
+After generating a service with `pulse make:service`, register it in `config/app.php` or `bootstrap/providers.php`:
 
 ```php
 App\Services\Authentication\Providers\AuthenticationServiceProvider::class
 ```
 
-Your routes will be available at `/api/authentication/*`
+**Don't Modify:** The structure is managed by Pulse. Add service-specific bindings or registrations in the `ServiceProvider.php` file as needed.
+
+**Example:**
+```
+app/Services/Authentication/Providers/
+├── AuthenticationServiceProvider.php
+└── RouteServiceProvider.php
+```
 
 ---
 
-### Create a Controller
+### Controllers
 
+**File Type:** `{Name}Controller.php`
+
+**Purpose:**
+Controllers handle HTTP requests and orchestrate the interaction between incoming requests and your business logic. Controllers receive validated data from Requests and delegate work to UseCases.
+
+**What It Does:**
+- Receives HTTP requests and extracts data
+- Calls appropriate Requests for validation
+- Instantiates and calls UseCases to handle business logic
+- Returns HTTP responses
+
+**Location:**
+```
+app/Services/{Service}/Modules/{Module}/Controllers/
+└── {Name}Controller.php
+```
+
+**Create With:**
 ```bash
 # Empty controller
 pulse make:controller AuthController Login Authentication
 
-# Resourceful controller with CRUD methods
+# Resource controller with CRUD methods
 pulse make:controller UserController User Authentication --resource
 ```
 
 **Arguments:** `{name} {module} {service}`
 
-Creates: `app/Services/Authentication/Modules/Login/Controllers/AuthController.php`
+**Auto-Suffixing:** `Auth` → `AuthController` (suffix added automatically if omitted)
 
-**Auto-suffixing:** `Auth` → `AuthController`
+**Generation Modes:**
+- **Plain (default):** Empty class, you define methods
+- **Resource (`--resource` or `-r`):** Includes standard CRUD methods (index, show, store, update, delete)
 
-**Note:** Controllers are empty by default. Use `--resource` or `-r` for RESTful methods.
+**Example (Plain):**
+```php
+class AuthController extends Controller
+{
+    public function login(LoginRequest $request)
+    {
+        $token = (new AuthenticateUser)->execute($request->validated());
+        return response()->json(['token' => $token]);
+    }
+}
+```
+
+**Best Practice:** Keep controllers thin—delegate complex logic to UseCases.
 
 ---
 
-### Create a Request
+### Requests (Form Requests)
 
+**File Type:** `{Name}Request.php`
+
+**Purpose:**
+Form requests encapsulate validation logic and authorization checks. They validate incoming data before it reaches your controller or use case.
+
+**What It Does:**
+- Validates request input against defined rules
+- Provides custom error messages
+- Handles authorization (can user perform this action?)
+- Returns validated data as an array to the controller
+
+**Location:**
+```
+app/Services/{Service}/Modules/{Module}/Requests/
+└── {Name}Request.php
+```
+
+**Create With:**
 ```bash
 pulse make:request LoginRequest Login Authentication
 ```
 
 **Arguments:** `{name} {module} {service}`
 
-Creates: `app/Services/Authentication/Modules/Login/Requests/LoginRequest.php`
+**Auto-Suffixing:** `Login` → `LoginRequest` (suffix added automatically if omitted)
 
-**Auto-suffixing:** `Login` → `LoginRequest`
+**Default Generated Structure:**
+```php
+class LoginRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return false; // Override to true when ready
+    }
 
-Includes:
+    public function rules(): array
+    {
+        return [
+            // Define your validation rules
+        ];
+    }
 
-- `authorize()` method (returns `false` by default)
-- `rules()` method for validation
-- `messages()` method for custom error messages
+    public function messages(): array
+    {
+        return [
+            // Define custom error messages
+        ];
+    }
+}
+```
+
+**Usage in Controllers:**
+```php
+class AuthController extends Controller
+{
+    public function login(LoginRequest $request)
+    {
+        // Request is already validated and authorized
+        $data = $request->validated();
+        // ... pass to use case
+    }
+}
+```
+
+**Best Practice:** Let the framework validate before your code runs—fail fast with clear error messages.
 
 ---
 
-### Create a UseCase
+### UseCases
 
+**File Type:** `{Name}.php` (no suffix)
+
+**Purpose:**
+UseCases encapsulate business logic that is independent of HTTP delivery mechanisms. They contain the core application logic that could be called from controllers, commands, jobs, or events.
+
+**What It Does:**
+- Executes a specific business operation
+- Coordinates with Models, Services, and Events
+- Returns domain objects or data
+- Remains testable without HTTP context
+
+**Location:**
+```
+app/Services/{Service}/Modules/{Module}/UseCases/
+└── {Name}.php
+```
+
+**Create With:**
 ```bash
 pulse make:use-case AuthenticateUser Login Authentication
 ```
 
 **Arguments:** `{name} {module} {service}`
 
-Creates: `app/Services/Authentication/Modules/Login/UseCases/AuthenticateUser.php`
+**No Auto-Suffixing:** The class name is exactly as you provide it (no suffix added).
 
-**No auto-suffixing** — you control the exact class name.
+**Default Generated Structure:**
+```php
+class AuthenticateUser
+{
+    public function execute(array $data)
+    {
+        // Your business logic here
+    }
+}
+```
 
-Simple class with an `execute()` method where you implement business logic.
+**Full Example:**
+```php
+class CreateUser
+{
+    public function execute(array $data)
+    {
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
+
+        event(new UserRegistered($user));
+        
+        return $user;
+    }
+}
+```
+
+**Usage in Controllers:**
+```php
+class UserController extends Controller
+{
+    public function store(CreateUserRequest $request)
+    {
+        $user = (new CreateUser)->execute($request->validated());
+        return response()->json($user, 201);
+    }
+}
+```
+
+**Reusability:**
+Call the same UseCase from multiple contexts:
+```php
+// From a controller
+$user = (new CreateUser)->execute($data);
+
+// From a command
+$this->info('Creating users...');
+$user = (new CreateUser)->execute($data);
+
+// From an event listener
+event(new SomeEvent());
+// Listener calls: (new CreateUser)->execute($data);
+```
+
+**Best Practice:** Keep UseCases focused on one business operation. Don't mix multiple concerns in a single UseCase.
+
+---
+
+### Operations
+
+**File Type:** `{Name}Operation.php`
+
+**Purpose:**
+Operations are similar to UseCases but are for cross-service or infrastructure-level operations. They perform lower-level tasks like database operations, external API calls, or utility functions that might be shared across multiple services.
+
+**When to Use:**
+- Complex, reusable logic that multiple services need
+- Infrastructure or utility operations
+- Operations that don't map directly to a user action
+
+**Location:**
+```
+app/Services/{Service}/Modules/{Module}/Operations/
+└── {Name}Operation.php
+```
+
+**Create With:**
+```bash
+pulse make:operation SendEmail User Authentication
+```
+
+**Arguments:** `{name} {module} {service}`
+
+**Auto-Suffixing:** `Send` → `SendOperation` (suffix added automatically if omitted)
+
+**Example:**
+```php
+class SendWelcomeEmailOperation
+{
+    public function execute(User $user)
+    {
+        Mail::to($user->email)->send(new WelcomeEmail($user));
+    }
+}
+```
+
+**Difference from UseCases:**
+| UseCases | Operations |
+|----------|-----------|
+| User-centric business logic | Infrastructure/utility tasks |
+| Called from controllers/commands | Called from UseCases/Events |
+| Domain operations | Cross-cutting concerns |
+| "Create User", "Process Payment" | "Send Email", "Log Activity" |
+
+---
+
+### Routes
+
+**File Type:** `api.php` (in `Routes/` directory)
+
+**Purpose:**
+Routes define the HTTP endpoints for your service. Each service has its own route file, making routes modular and service-specific.
+
+**Location:**
+```
+app/Services/{Service}/Routes/
+└── api.php
+```
+
+**Generated Automatically:** Created when you run `pulse make:service`
+
+**Default Generated Structure:**
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+// Define routes for your service here
+// Routes are automatically prefixed with /api/{service-slug}
+```
+
+**Auto-Routing with Slug:**
+All routes in this file are automatically prefixed with `/api/{service-slug}`:
+
+Service name `Authentication` → Routes prefixed with `/api/authentication`
+Service name `UserManagement` → Routes prefixed with `/api/user-management`
+
+**Defining Routes:**
+```php
+use App\Services\Authentication\Modules\Login\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
+Route::post('/refresh', [AuthController::class, 'refresh']);
+```
+
+**Resulting Endpoints:**
+- `POST /api/authentication/login`
+- `POST /api/authentication/logout`
+- `POST /api/authentication/refresh`
+
+**Benefits:**
+- Routes are organized by service
+- Clear service boundaries
+- Easy to find endpoint definitions
+- Services can be versioned independently
+
+**Best Practice:** Keep routes simple and close to controllers. Complex route logic should be in controllers or middleware.
+
+---
+
+## Installation
 
 ---
 
@@ -365,25 +666,6 @@ Don't create a generic "User" module with everything. Split it:
 - `Modules/Registration` — Sign up
 - `Modules/Profile` — Edit profile
 - `Modules/Account` — Account settings
-
----
-
-## FAQ
-
-**Q: Should I use Services for small apps?**
-A: No. Services add overhead. Use default Laravel structure for simple CRUD apps.
-
-**Q: How many Services should I have?**
-A: Start with 1-3. Add more as domains emerge. Don't over-engineer.
-
-**Q: Can I mix with traditional Laravel structure?**
-A: Yes! Services are just organized folders. Use them where complexity demands it.
-
-**Q: Do I need UseCases for everything?**
-A: No. Simple CRUD? Put logic in the controller. Complex workflows? Extract to UseCases.
-
-**Q: What about Models?**
-A: Models stay in `app/Models`. They're shared across services. Pulse doesn't dictate data layer organization.
 
 ---
 
