@@ -65,7 +65,7 @@ class {Name}Generator extends Generator
 
     public function __construct(string $name, string $module, string $service)
     {
-        $this->name = $this->ensure{Name}Suffix($name);
+        $this->name = $name;
         $this->module = $module;
         $this->service = $service;
     }
@@ -87,10 +87,6 @@ class {Name}Generator extends Generator
         return $this->getRelativePath($filePath);
     }
 
-    private function ensure{Name}Suffix(string $name): string
-    {
-        return str_ends_with($name, '{Name}') ? $name : $name . '{Name}';
-    }
 }
 ```
 
@@ -165,8 +161,6 @@ class Make{Name}Command extends PulseCommand
 ❌ $path = $dir . '/' . $file;
 ```
 
-**Suffix Enforcement**: Auto-append class suffixes if missing (e.g., `Operation`, `Controller`, `Request`)
-
 ## Testing & Validation
 
 Test these scenarios before considering work complete:
@@ -183,10 +177,6 @@ pulse make:{name} Test{Name} TestModule TestService  # run twice
 # 3. Non-existent service
 pulse make:{name} Test{Name} TestModule FakeService
 # → Should error: "Service [FakeService] does not exist!"
-
-# 4. Suffix handling
-pulse make:{name} Test TestModule TestService
-# → Should create Test{Name}.php (suffix auto-added)
 ```
 
 **Verify generated file**:

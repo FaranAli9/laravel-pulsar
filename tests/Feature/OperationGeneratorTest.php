@@ -33,7 +33,7 @@ describe('Operation Generator', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $relativePath = $generator->generate();
             
-            expect($relativePath)->toEndWith('CreateOrderOperation.php');
+            expect($relativePath)->toEndWith('CreateOrder.php');
         });
         
         it('content is valid PHP', function () {
@@ -57,7 +57,7 @@ describe('Operation Generator', function () {
             $relativePath = $generator->generate();
             
             $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
-            expect($content)->toHaveClass('CreateOrderOperation');
+            expect($content)->toHaveClass('CreateOrder');
         });
         
         it('returns relative path', function () {
@@ -81,16 +81,16 @@ describe('Operation Generator', function () {
         });
     });
     
-    describe('Suffix Enforcement', function () {
+    describe('User Control Over Naming', function () {
         
-        it('adds Operation suffix if missing', function () {
+        it('uses exact name provided by user', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $relativePath = $generator->generate();
             
-            expect($relativePath)->toContain('CreateOrderOperation.php');
+            expect($relativePath)->toContain('CreateOrder.php');
         });
         
-        it('does not duplicate suffix', function () {
+        it('preserves suffix if user provides it', function () {
             $generator = new OperationGenerator('CreateOrderOperation', 'Checkout', 'TestService');
             $relativePath = $generator->generate();
             
@@ -98,22 +98,21 @@ describe('Operation Generator', function () {
             expect($relativePath)->not->toContain('CreateOrderOperationOperation.php');
         });
         
-        it('suffix is case sensitive', function () {
+        it('preserves exact casing from user', function () {
             $generator = new OperationGenerator('CreateOrderoperation', 'Checkout', 'TestService');
             $relativePath = $generator->generate();
             
-            // Should add suffix because 'operation' (lowercase) is not recognized
-            expect($relativePath)->toContain('CreateOrderoperationOperation.php');
+            expect($relativePath)->toContain('CreateOrderoperation.php');
         });
         
-        it('suffix in file name matches class name', function () {
+        it('file name matches class name exactly', function () {
             $generator = new OperationGenerator('ProcessPayment', 'Payment', 'TestService');
             $relativePath = $generator->generate();
             
             $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
             
-            expect($relativePath)->toEndWith('ProcessPaymentOperation.php');
-            expect($content)->toHaveClass('ProcessPaymentOperation');
+            expect($relativePath)->toEndWith('ProcessPayment.php');
+            expect($content)->toHaveClass('ProcessPayment');
         });
     });
     
@@ -145,7 +144,7 @@ describe('Operation Generator', function () {
                 $generator2->generate();
                 $this->fail('Should have thrown exception');
             } catch (Exception $e) {
-                expect($e->getMessage())->toContain('CreateOrderOperation');
+                expect($e->getMessage())->toContain('CreateOrder');
             }
         });
         
@@ -259,7 +258,7 @@ describe('Operation Generator', function () {
             
             $operationPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
                           DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
-                          DIRECTORY_SEPARATOR . 'Checkout' . DIRECTORY_SEPARATOR . 'Operations' . DIRECTORY_SEPARATOR . 'CreateOrderOperation.php';
+                          DIRECTORY_SEPARATOR . 'Checkout' . DIRECTORY_SEPARATOR . 'Operations' . DIRECTORY_SEPARATOR . 'CreateOrder.php';
             
             expect(file_exists($operationPath))->toBeTrue();
         });

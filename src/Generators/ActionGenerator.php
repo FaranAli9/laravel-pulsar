@@ -24,7 +24,7 @@ class ActionGenerator extends Generator
      */
     public function __construct(string $name, string $domain)
     {
-        $this->name = $this->ensureActionSuffix($name);
+        $this->name = $name;
         $this->domain = $domain;
     }
 
@@ -92,11 +92,5 @@ class ActionGenerator extends Generator
         ]);
     }
 
-    /**
-     * Ensure action suffix.
-     */
-    private function ensureActionSuffix(string $name): string
-    {
-        return str_ends_with($name, 'Action') ? $name : $name . 'Action';
-    }
 }
+

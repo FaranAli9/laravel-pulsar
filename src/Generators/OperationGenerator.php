@@ -31,7 +31,7 @@ class OperationGenerator extends Generator
      */
     public function __construct(string $name, string $module, string $service)
     {
-        $this->name = $this->ensureOperationSuffix($name);
+        $this->name = $name;
         $this->module = $module;
         $this->service = $service;
     }
@@ -113,11 +113,5 @@ class OperationGenerator extends Generator
         ]);
     }
 
-    /**
-     * Ensure operation suffix.
-     */
-    private function ensureOperationSuffix(string $name): string
-    {
-        return str_ends_with($name, 'Operation') ? $name : $name . 'Operation';
-    }
 }
+

@@ -37,9 +37,11 @@ class ControllerGenerator extends Generator
      */
     public function __construct(string $name, string $service, string $module, bool $resource = false)
     {
-        $this->name = $this->ensureControllerSuffix($name);
+        $this->name = $name;
         $this->service = $service;
-        $this->module = $module;        $this->resource = $resource;    }
+        $this->module = $module;
+        $this->resource = $resource;
+    }
 
     /**
      * Generate the controller file.
@@ -137,17 +139,5 @@ class ControllerGenerator extends Generator
     {
         $rootNamespace = $this->findRootNamespace();
         return "{$rootNamespace}\\Services\\{$this->service}\\Modules\\{$this->module}\\Controllers";
-    }
-
-    /**
-     * Ensure the controller name has the "Controller" suffix.
-     */
-    protected function ensureControllerSuffix(string $name): string
-    {
-        if (!str_ends_with($name, 'Controller')) {
-            return $name . 'Controller';
-        }
-
-        return $name;
     }
 }

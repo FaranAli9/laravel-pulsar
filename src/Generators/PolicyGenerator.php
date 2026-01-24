@@ -24,7 +24,7 @@ class PolicyGenerator extends Generator
      */
     public function __construct(string $name, string $domain)
     {
-        $this->name = $this->ensurePolicySuffix($name);
+        $this->name = $name;
         $this->domain = $domain;
     }
 
@@ -92,11 +92,5 @@ class PolicyGenerator extends Generator
         ]);
     }
 
-    /**
-     * Ensure policy suffix.
-     */
-    private function ensurePolicySuffix(string $name): string
-    {
-        return str_ends_with($name, 'Policy') ? $name : $name . 'Policy';
-    }
 }
+

@@ -31,7 +31,7 @@ class RequestGenerator extends Generator
      */
     public function __construct(string $name, string $module, string $service)
     {
-        $this->name = $this->ensureRequestSuffix($name);
+        $this->name = $name;
         $this->module = $module;
         $this->service = $service;
     }
@@ -133,15 +133,5 @@ class RequestGenerator extends Generator
         return "{$rootNamespace}\\Services\\{$this->service}\\Modules\\{$this->module}\\Requests";
     }
 
-    /**
-     * Ensure the request name has the "Request" suffix.
-     */
-    protected function ensureRequestSuffix(string $name): string
-    {
-        if (!str_ends_with($name, 'Request')) {
-            return $name . 'Request';
-        }
-
-        return $name;
-    }
 }
+

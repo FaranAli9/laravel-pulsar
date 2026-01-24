@@ -24,7 +24,7 @@ class DtoGenerator extends Generator
      */
     public function __construct(string $name, string $domain)
     {
-        $this->name = $this->ensureDataSuffix($name);
+        $this->name = $name;
         $this->domain = $domain;
     }
 
@@ -92,11 +92,5 @@ class DtoGenerator extends Generator
         ]);
     }
 
-    /**
-     * Ensure Data suffix.
-     */
-    private function ensureDataSuffix(string $name): string
-    {
-        return str_ends_with($name, 'Data') ? $name : $name . 'Data';
-    }
 }
+
