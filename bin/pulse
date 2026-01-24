@@ -4,6 +4,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Faran\Pulse\Commands\MakeControllerCommand;
+use Faran\Pulse\Commands\MakeOperationCommand;
 use Faran\Pulse\Commands\MakeRequestCommand;
 use Faran\Pulse\Commands\MakeServiceCommand;
 use Faran\Pulse\Commands\MakeUseCaseCommand;
@@ -17,5 +18,6 @@ $app->addCommand(new MakeServiceCommand());
 $app->addCommand(new MakeControllerCommand());
 $app->addCommand(new MakeRequestCommand());
 $app->addCommand(new MakeUseCaseCommand());
+$app->addCommand(new MakeOperationCommand());
 
 $app->run();

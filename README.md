@@ -40,20 +40,24 @@ app/Services/{Service}/
 ### Why This Structure?
 
 **Traditional Laravel:**
+
 ```
 app/Http/Controllers/OrderController.php
 app/Http/Requests/CreateOrderRequest.php
 app/Services/OrderService.php
 ```
+
 → Code for one feature scattered across multiple directories.
 
 **Pulse Approach:**
+
 ```
 app/Services/Sales/Modules/Order/
 ├── Controllers/OrderController.php
 ├── Requests/CreateOrderRequest.php
 └── UseCases/CreateOrder.php
 ```
+
 → Everything for the Order module lives together.
 
 ## Installation
@@ -71,6 +75,7 @@ pulse make:service Authentication
 ```
 
 Creates:
+
 ```
 app/Services/Authentication/
 ├── Providers/
@@ -83,6 +88,7 @@ app/Services/Authentication/
 ```
 
 **Register the service** in `config/app.php` or `bootstrap/providers.php`:
+
 ```php
 App\Services\Authentication\Providers\AuthenticationServiceProvider::class
 ```
@@ -124,6 +130,7 @@ Creates: `app/Services/Authentication/Modules/Login/Requests/LoginRequest.php`
 **Auto-suffixing:** `Login` → `LoginRequest`
 
 Includes:
+
 - `authorize()` method (returns `false` by default)
 - `rules()` method for validation
 - `messages()` method for custom error messages
@@ -171,6 +178,7 @@ pulse make:use-case ResetPassword Password Authentication
 ```
 
 **Resulting structure:**
+
 ```
 app/Services/Authentication/
 ├── Providers/
@@ -192,6 +200,7 @@ app/Services/Authentication/
 ```
 
 **Define routes** in `app/Services/Authentication/Routes/api.php`:
+
 ```php
 use App\Services\Authentication\Modules\Login\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -206,12 +215,12 @@ Routes accessible at: `/api/authentication/login`, `/api/authentication/logout`
 
 ## Commands Reference
 
-| Command | Arguments | Options | Description |
-|---------|-----------|---------|-------------|
-| `make:service` | `{name}` | - | Create a new service |
-| `make:controller` | `{name} {module} {service}` | `--resource, -r` | Create a controller |
-| `make:request` | `{name} {module} {service}` | - | Create a form request |
-| `make:use-case` | `{name} {module} {service}` | - | Create a use case |
+| Command           | Arguments                   | Options          | Description           |
+| ----------------- | --------------------------- | ---------------- | --------------------- |
+| `make:service`    | `{name}`                    | -                | Create a new service  |
+| `make:controller` | `{name} {module} {service}` | `--resource, -r` | Create a controller   |
+| `make:request`    | `{name} {module} {service}` | -                | Create a form request |
+| `make:use-case`   | `{name} {module} {service}` | -                | Create a use case     |
 
 ---
 
@@ -220,6 +229,7 @@ Routes accessible at: `/api/authentication/login`, `/api/authentication/logout`
 ### Why Services?
 
 Large applications naturally divide into business domains:
+
 - **E-commerce:** `Catalog`, `Cart`, `Checkout`, `Shipping`
 - **SaaS:** `Billing`, `Users`, `Analytics`, `Notifications`
 - **Marketplace:** `Sellers`, `Buyers`, `Products`, `Reviews`
@@ -231,6 +241,7 @@ Services provide clear boundaries and prevent monolithic controllers.
 Modules are feature-oriented slices within a service. Instead of grouping by layer (all controllers, all models), group by feature (everything for User management).
 
 **Benefits:**
+
 - Easy to locate related code
 - Simple to onboard new developers
 - Clear ownership boundaries
@@ -239,6 +250,7 @@ Modules are feature-oriented slices within a service. Instead of grouping by lay
 ### Why UseCases?
 
 Controllers should be thin. UseCases encapsulate business logic, making it:
+
 - **Testable** — Test business logic independently of HTTP
 - **Reusable** — Call from controllers, commands, jobs, events
 - **Maintainable** — Business rules in one place
@@ -246,6 +258,7 @@ Controllers should be thin. UseCases encapsulate business logic, making it:
 ### Why Minimal Output?
 
 Less noise = better focus. You get what you need:
+
 ```
 ✓ Controller created successfully!
 Location: app/Services/Auth/Modules/Login/Controllers/AuthController.php
@@ -266,6 +279,7 @@ No tutorials, no next steps, no fluff. Just confirmation and location.
 ### Slug Generation
 
 Service names are converted to URL-friendly slugs:
+
 - `UserManagement` → `/api/user-management`
 - `ContentModeration` → `/api/content-moderation`
 
@@ -275,13 +289,13 @@ Service names are converted to URL-friendly slugs:
 
 Pulse is inspired by [Lucid Architecture](https://github.com/lucid-architecture/laravel) but diverges in key ways:
 
-| Aspect | Lucid | Pulse |
-|--------|-------|-------|
-| **Structure** | Features, Jobs, Operations, Domains | Services, Modules, UseCases |
-| **Layers** | 4 levels (Controller → Feature → Operation → Job) | 3 levels (Controller → UseCase) |
-| **Complexity** | Higher learning curve | Simpler, flatter |
-| **Use Cases** | Jobs in Domains folder | UseCases in Modules |
-| **Philosophy** | Service-oriented with Jobs | Service-oriented with vertical slices |
+| Aspect         | Lucid                                             | Pulse                                 |
+| -------------- | ------------------------------------------------- | ------------------------------------- |
+| **Structure**  | Features, Jobs, Operations, Domains               | Services, Modules, UseCases           |
+| **Layers**     | 4 levels (Controller → Feature → Operation → Job) | 3 levels (Controller → UseCase)       |
+| **Complexity** | Higher learning curve                             | Simpler, flatter                      |
+| **Use Cases**  | Jobs in Domains folder                            | UseCases in Modules                   |
+| **Philosophy** | Service-oriented with Jobs                        | Service-oriented with vertical slices |
 
 **Pulse is lighter and more opinionated** — fewer abstractions, clearer boundaries.
 
@@ -297,7 +311,7 @@ class UserController extends Controller
     public function store(CreateUserRequest $request)
     {
         $user = (new CreateUser)->execute($request->validated());
-        
+
         return response()->json($user, 201);
     }
 }
@@ -315,9 +329,9 @@ class CreateUser
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
-        
+
         event(new UserRegistered($user));
-        
+
         return $user;
     }
 }
@@ -347,6 +361,7 @@ class CreateUserRequest extends FormRequest
 ### 4. One Module = One Feature
 
 Don't create a generic "User" module with everything. Split it:
+
 - `Modules/Registration` — Sign up
 - `Modules/Profile` — Edit profile
 - `Modules/Account` — Account settings
@@ -389,6 +404,7 @@ MIT License - see LICENSE file for details.
 Built with ❤️ by Faran Ali
 
 Inspired by:
+
 - [Lucid Architecture](https://github.com/lucid-architecture/laravel)
 - Vertical Slice Architecture principles
 - Domain-Driven Design concepts
