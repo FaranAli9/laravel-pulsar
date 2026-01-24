@@ -8,12 +8,12 @@
 - [Architecture](#architecture)
 - [Installation & Usage](#installation--usage)
 - [File Types](#file-types)
-  - [Service Providers](#service-providers)
-  - [Controllers](#controllers)
-  - [Requests (Form Requests)](#requests-form-requests)
-  - [UseCases](#usecases)
-  - [Operations](#operations)
-  - [Routes](#routes)
+    - [Service Providers](#service-providers)
+    - [Controllers](#controllers)
+    - [Requests (Form Requests)](#requests-form-requests)
+    - [UseCases](#usecases)
+    - [Operations](#operations)
+    - [Routes](#routes)
 - [Complete Example](#complete-example)
 - [Commands Reference](#commands-reference)
 - [Design Decisions](#design-decisions)
@@ -106,11 +106,13 @@ This section explains the purpose and usage of each file type that Pulse generat
 Service providers are auto-generated during `pulse make:service` and handle bootstrapping your service. They register routes, service container bindings, and event listeners specific to your service.
 
 **What It Does:**
+
 - Registers routes from the `Routes/api.php` file
 - Auto-discovers and loads routes with the `/api/{service-slug}` prefix
 - Provides a clear entry point for service-wide configuration
 
 **Location:**
+
 ```
 app/Services/{Service}/Providers/
 ├── {Service}ServiceProvider.php
@@ -127,6 +129,7 @@ App\Services\Authentication\Providers\AuthenticationServiceProvider::class
 **Don't Modify:** The structure is managed by Pulse. Add service-specific bindings or registrations in the `ServiceProvider.php` file as needed.
 
 **Example:**
+
 ```
 app/Services/Authentication/Providers/
 ├── AuthenticationServiceProvider.php
@@ -143,18 +146,21 @@ app/Services/Authentication/Providers/
 Controllers handle HTTP requests and orchestrate the interaction between incoming requests and your business logic. Controllers receive validated data from Requests and delegate work to UseCases.
 
 **What It Does:**
+
 - Receives HTTP requests and extracts data
 - Calls appropriate Requests for validation
 - Instantiates and calls UseCases to handle business logic
 - Returns HTTP responses
 
 **Location:**
+
 ```
 app/Services/{Service}/Modules/{Module}/Controllers/
 └── {Name}Controller.php
 ```
 
 **Create With:**
+
 ```bash
 # Empty controller
 pulse make:controller AuthController Login Authentication
@@ -168,10 +174,12 @@ pulse make:controller UserController User Authentication --resource
 **Auto-Suffixing:** `Auth` → `AuthController` (suffix added automatically if omitted)
 
 **Generation Modes:**
+
 - **Plain (default):** Empty class, you define methods
 - **Resource (`--resource` or `-r`):** Includes standard CRUD methods (index, show, store, update, delete)
 
 **Example (Plain):**
+
 ```php
 class AuthController extends Controller
 {
@@ -195,18 +203,21 @@ class AuthController extends Controller
 Form requests encapsulate validation logic and authorization checks. They validate incoming data before it reaches your controller or use case.
 
 **What It Does:**
+
 - Validates request input against defined rules
 - Provides custom error messages
 - Handles authorization (can user perform this action?)
 - Returns validated data as an array to the controller
 
 **Location:**
+
 ```
 app/Services/{Service}/Modules/{Module}/Requests/
 └── {Name}Request.php
 ```
 
 **Create With:**
+
 ```bash
 pulse make:request LoginRequest Login Authentication
 ```
@@ -216,6 +227,7 @@ pulse make:request LoginRequest Login Authentication
 **Auto-Suffixing:** `Login` → `LoginRequest` (suffix added automatically if omitted)
 
 **Default Generated Structure:**
+
 ```php
 class LoginRequest extends FormRequest
 {
@@ -241,6 +253,7 @@ class LoginRequest extends FormRequest
 ```
 
 **Usage in Controllers:**
+
 ```php
 class AuthController extends Controller
 {
@@ -265,18 +278,21 @@ class AuthController extends Controller
 UseCases encapsulate business logic that is independent of HTTP delivery mechanisms. They contain the core application logic that could be called from controllers, commands, jobs, or events.
 
 **What It Does:**
+
 - Executes a specific business operation
 - Coordinates with Models, Services, and Events
 - Returns domain objects or data
 - Remains testable without HTTP context
 
 **Location:**
+
 ```
 app/Services/{Service}/Modules/{Module}/UseCases/
 └── {Name}.php
 ```
 
 **Create With:**
+
 ```bash
 pulse make:use-case AuthenticateUser Login Authentication
 ```
@@ -286,6 +302,7 @@ pulse make:use-case AuthenticateUser Login Authentication
 **No Auto-Suffixing:** The class name is exactly as you provide it (no suffix added).
 
 **Default Generated Structure:**
+
 ```php
 class AuthenticateUser
 {
@@ -297,6 +314,7 @@ class AuthenticateUser
 ```
 
 **Full Example:**
+
 ```php
 class CreateUser
 {
@@ -309,13 +327,14 @@ class CreateUser
         ]);
 
         event(new UserRegistered($user));
-        
+
         return $user;
     }
 }
 ```
 
 **Usage in Controllers:**
+
 ```php
 class UserController extends Controller
 {
@@ -329,6 +348,7 @@ class UserController extends Controller
 
 **Reusability:**
 Call the same UseCase from multiple contexts:
+
 ```php
 // From a controller
 $user = (new CreateUser)->execute($data);
@@ -354,17 +374,20 @@ event(new SomeEvent());
 Operations are similar to UseCases but are for cross-service or infrastructure-level operations. They perform lower-level tasks like database operations, external API calls, or utility functions that might be shared across multiple services.
 
 **When to Use:**
+
 - Complex, reusable logic that multiple services need
 - Infrastructure or utility operations
 - Operations that don't map directly to a user action
 
 **Location:**
+
 ```
 app/Services/{Service}/Modules/{Module}/Operations/
 └── {Name}Operation.php
 ```
 
 **Create With:**
+
 ```bash
 pulse make:operation SendEmail User Authentication
 ```
@@ -374,6 +397,7 @@ pulse make:operation SendEmail User Authentication
 **Auto-Suffixing:** `Send` → `SendOperation` (suffix added automatically if omitted)
 
 **Example:**
+
 ```php
 class SendWelcomeEmailOperation
 {
@@ -402,6 +426,7 @@ class SendWelcomeEmailOperation
 Routes define the HTTP endpoints for your service. Each service has its own route file, making routes modular and service-specific.
 
 **Location:**
+
 ```
 app/Services/{Service}/Routes/
 └── api.php
@@ -410,6 +435,7 @@ app/Services/{Service}/Routes/
 **Generated Automatically:** Created when you run `pulse make:service`
 
 **Default Generated Structure:**
+
 ```php
 <?php
 
@@ -426,6 +452,7 @@ Service name `Authentication` → Routes prefixed with `/api/authentication`
 Service name `UserManagement` → Routes prefixed with `/api/user-management`
 
 **Defining Routes:**
+
 ```php
 use App\Services\Authentication\Modules\Login\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -436,11 +463,13 @@ Route::post('/refresh', [AuthController::class, 'refresh']);
 ```
 
 **Resulting Endpoints:**
+
 - `POST /api/authentication/login`
 - `POST /api/authentication/logout`
 - `POST /api/authentication/refresh`
 
 **Benefits:**
+
 - Routes are organized by service
 - Clear service boundaries
 - Easy to find endpoint definitions
