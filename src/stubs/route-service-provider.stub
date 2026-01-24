@@ -1,0 +1,27 @@
+<?php
+
+namespace {{namespace}}\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * {{name}} Route Service Provider
+ *
+ * Registers API routes with automatic prefix: /api/{{slug}}
+ */
+class RouteServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register(): void
+    {
+        Route::prefix('api/{{slug}}')
+            ->as('{{slug}}.')
+            ->middleware('api')
+            ->group(__DIR__ . '/../Routes/api.php');
+    }
+}

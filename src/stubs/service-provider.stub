@@ -1,0 +1,33 @@
+<?php
+
+namespace {{namespace}}\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+/**
+ * {{name}} Service Provider
+ *
+ * Responsible for registering and bootstrapping the {{name}} service.
+ */
+class {{name}}ServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register(): void
+    {
+        $this->app->register(RouteServiceProvider::class);
+    }
+
+    /**
+     * Bootstrap services.
+     *
+     * @return void
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
