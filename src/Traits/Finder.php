@@ -54,6 +54,14 @@ trait Finder
     }
 
     /**
+     * Find the root path of all the domains.
+     */
+    public function findDomainRootPath(): string
+    {
+        return $this->findSourceRoot() . DIRECTORY_SEPARATOR . 'Domain';
+    }
+
+    /**
      * Find the namespace from composer.json.
      *
      * @throws Exception
@@ -93,6 +101,18 @@ trait Finder
         $root = $this->findRootNamespace();
 
         return "$root\\Services\\$service";
+    }
+
+    /**
+     * Find the domain namespace.
+     *
+     * @throws Exception
+     */
+    public function findDomainNamespace(string $domain): string
+    {
+        $root = $this->findRootNamespace();
+
+        return "$root\\Domain\\$domain";
     }
 
     /**
