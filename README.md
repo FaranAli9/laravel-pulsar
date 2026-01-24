@@ -16,6 +16,7 @@
     - [Routes](#routes)
 - [Complete Example](#complete-example)
 - [Commands Reference](#commands-reference)
+- [Domain Layer Example](#domain-layer-example)
 - [Design Decisions](#design-decisions)
 - [Best Practices](#best-practices)
 - [Contributing](#contributing)
@@ -545,12 +546,98 @@ Routes accessible at: `/api/authentication/login`, `/api/authentication/logout`
 
 ## Commands Reference
 
-| Command           | Arguments                   | Options          | Description           |
-| ----------------- | --------------------------- | ---------------- | --------------------- |
-| `make:service`    | `{name}`                    | -                | Create a new service  |
-| `make:controller` | `{name} {module} {service}` | `--resource, -r` | Create a controller   |
-| `make:request`    | `{name} {module} {service}` | -                | Create a form request |
-| `make:use-case`   | `{name} {module} {service}` | -                | Create a use case     |
+### Service Layer Commands
+
+| Command           | Arguments                   | Options          | Description                      |
+| ----------------- | --------------------------- | ---------------- | -------------------------------- |
+| `make:service`    | `{name}`                    | -                | Create a new service             |
+| `make:controller` | `{name} {module} {service}` | `--resource, -r` | Create a controller              |
+| `make:request`    | `{name} {module} {service}` | -                | Create a form request            |
+| `make:use-case`   | `{name} {module} {service}` | -                | Create a use case                |
+| `make:operation`  | `{name} {module} {service}` | -                | Create an operation              |
+
+### Domain Layer Commands
+
+| Command           | Arguments          | Options | Description                      |
+| ----------------- | ------------------ | ------- | -------------------------------- |
+| `make:model`      | `{name} {domain}`  | -       | Create a domain model (Eloquent) |
+| `make:action`     | `{name} {domain}`  | -       | Create a domain action           |
+| `make:dto`        | `{name} {domain}`  | -       | Create a DTO (Data Transfer Object) |
+| `make:policy`     | `{name} {domain}`  | -       | Create a domain policy           |
+| `make:event`      | `{name} {domain}`  | -       | Create a domain event            |
+| `make:enum`       | `{name} {domain}`  | -       | Create a domain enum             |
+| `make:exception`  | `{name} {domain}`  | -       | Create a domain exception        |
+| `make:query`      | `{name} {domain}`  | -       | Create a domain query            |
+
+---
+
+## Domain Layer Example
+
+Building a booking system with domain-driven design:
+
+```bash
+# 1. Create domain models
+pulse make:model Guest User
+pulse make:model Reservation Booking
+
+# 2. Create actions for business operations
+pulse make:action ChargeGuest Payment
+pulse make:action CreateReservation Booking
+
+# 3. Create DTOs for data transfer
+pulse make:dto Reservation Booking
+pulse make:dto Payment Payment
+
+# 4. Create policies for authorization
+pulse make:policy Reservation Booking
+
+# 5. Create domain events
+pulse make:event ReservationCreated Booking
+pulse make:event GuestCheckedIn Booking
+
+# 6. Create enums for states
+pulse make:enum ReservationStatus Booking
+pulse make:enum PaymentStatus Payment
+
+# 7. Create domain exceptions
+pulse make:exception RoomAlreadyBooked Booking
+pulse make:exception InsufficientFunds Payment
+
+# 8. Create queries for complex reads
+pulse make:query GetGuestReservations Booking
+```
+
+**Resulting structure:**
+
+```
+app/Domain/
+├── User/
+│   └── Models/Guest.php
+├── Booking/
+│   ├── Models/Reservation.php
+│   ├── Actions/CreateReservationAction.php
+│   ├── DTOs/ReservationData.php
+│   ├── Policies/ReservationPolicy.php
+│   ├── Events/
+│   │   ├── ReservationCreated.php
+│   │   └── GuestCheckedIn.php
+│   ├── Enums/ReservationStatus.php
+│   ├── Exceptions/RoomAlreadyBooked.php
+│   └── Queries/GetGuestReservations.php
+└── Payment/
+    ├── Actions/ChargeGuestAction.php
+    ├── DTOs/PaymentData.php
+    ├── Enums/PaymentStatus.php
+    └── Exceptions/InsufficientFunds.php
+```
+
+**Auto-Suffixing:**
+- Actions: `ChargeGuest` → `ChargeGuestAction`
+- DTOs: `Reservation` → `ReservationData`
+- Policies: `Reservation` → `ReservationPolicy`
+
+**No Suffixing:**
+- Models, Events, Enums, Exceptions, Queries use exact names provided
 
 ---
 
