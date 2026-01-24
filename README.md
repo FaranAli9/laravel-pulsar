@@ -618,8 +618,6 @@ app/Domain/
 | `make:exception` | `{name} {domain}` | -       | Create a domain exception           |
 | `make:query`     | `{name} {domain}` | -       | Create a domain query               |
 
-
-
 ---
 
 ## Best Practices
@@ -678,9 +676,9 @@ class PlaceOrderRequest extends FormRequest
 Split modules by business capability:
 
 - **Checkout Service**:
-  - `Modules/Cart` — Cart management
-  - `Modules/Payment` — Payment processing
-  - `Modules/Order` — Order placement
+    - `Modules/Cart` — Cart management
+    - `Modules/Payment` — Payment processing
+    - `Modules/Order` — Order placement
 
 ---
 
@@ -705,4 +703,3 @@ Inspired by:
 - [Lucid Architecture](https://github.com/lucid-architecture/laravel)
 - Vertical Slice Architecture principles
 - Domain-Driven Design concepts
-
