@@ -1,0 +1,15 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Routing\Controller;
+
+/**
+ * {{name}} Controller
+ *
+ * Handles {{module}} module operations for the {{service}} service.
+ */
+class {{name}} extends Controller
+{
+    //
+}
