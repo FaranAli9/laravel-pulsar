@@ -1,0 +1,17 @@
+<?php
+
+namespace {{namespace}};
+
+/**
+ * {{name}} UseCase
+ *
+ * Handles {{module}} module business logic in the {{service}} service.
+ */
+class {{name}}
+{
+    
+    public function execute()
+    {
+        //
+    }
+}
