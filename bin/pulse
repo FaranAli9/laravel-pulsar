@@ -3,21 +3,42 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Faran\Pulse\Commands\MakeActionCommand;
 use Faran\Pulse\Commands\MakeControllerCommand;
+use Faran\Pulse\Commands\MakeDtoCommand;
+use Faran\Pulse\Commands\MakeEnumCommand;
+use Faran\Pulse\Commands\MakeEventCommand;
+use Faran\Pulse\Commands\MakeExceptionCommand;
+use Faran\Pulse\Commands\MakeModelCommand;
 use Faran\Pulse\Commands\MakeOperationCommand;
+use Faran\Pulse\Commands\MakePolicyCommand;
+use Faran\Pulse\Commands\MakeQueryCommand;
 use Faran\Pulse\Commands\MakeRequestCommand;
 use Faran\Pulse\Commands\MakeServiceCommand;
 use Faran\Pulse\Commands\MakeUseCaseCommand;
-use Symfony\Component\Console\Application;
 use Faran\Pulse\Commands\PingCommand;
+use Symfony\Component\Console\Application;
 
 $app = new Application('Pulse', '1.0.0');
 
+// Utility commands
 $app->addCommand(new PingCommand());
+
+// Service layer commands
 $app->addCommand(new MakeServiceCommand());
 $app->addCommand(new MakeControllerCommand());
 $app->addCommand(new MakeRequestCommand());
 $app->addCommand(new MakeUseCaseCommand());
 $app->addCommand(new MakeOperationCommand());
+
+// Domain layer commands
+$app->addCommand(new MakeModelCommand());
+$app->addCommand(new MakeActionCommand());
+$app->addCommand(new MakeDtoCommand());
+$app->addCommand(new MakePolicyCommand());
+$app->addCommand(new MakeEventCommand());
+$app->addCommand(new MakeEnumCommand());
+$app->addCommand(new MakeExceptionCommand());
+$app->addCommand(new MakeQueryCommand());
 
 $app->run();
