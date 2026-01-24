@@ -4,82 +4,100 @@
 
 ## Table of Contents
 
-- [Philosophy](#philosophy)
+- [Installation](#installation)
 - [Architecture](#architecture)
-- [Installation & Usage](#installation--usage)
+    - [Service Layer](#service-layer)
+    - [Domain Layer](#domain-layer)
 - [File Types](#file-types)
-    - [Service Providers](#service-providers)
-    - [Controllers](#controllers)
-    - [Requests (Form Requests)](#requests-form-requests)
-    - [UseCases](#usecases)
-    - [Operations](#operations)
-    - [Routes](#routes)
-- [Complete Example](#complete-example)
+    - [Service Layer Files](#service-layer-files)
+    - [Domain Layer Files](#domain-layer-files)
 - [Commands Reference](#commands-reference)
-- [Domain Layer Example](#domain-layer-example)
-- [Design Decisions](#design-decisions)
+- [Complete Examples](#complete-examples)
+    - [Service Layer Example](#service-layer-example)
+    - [Domain Layer Example](#domain-layer-example)
 - [Best Practices](#best-practices)
 - [Contributing](#contributing)
 
-## Philosophy
+## Installation
 
-Pulse embraces **vertical slice architecture** over traditional layered architecture. Instead of organizing code by technical concerns (Controllers, Models, Services), Pulse organizes by **business capabilities** (Services → Modules → Features).
-
-### Core Principles
-
-**1. Service-Oriented Structure**
-Services represent major business domains or bounded contexts. Each service is autonomous and can evolve independently.
-
-**2. Vertical Slicing**
-Everything related to a feature lives together. A module contains its controllers, requests, use cases—not scattered across folders.
-
-**3. Minimal Boilerplate**
-Generated code is clean and minimal. No unnecessary abstractions. Empty classes by default; opt-in for scaffolding.
-
-**4. Developer Experience**
-Simple, memorable commands. Consistent patterns. Instant feedback. No guesswork.
+```bash
+composer require faran/pulse --dev
+```
 
 ## Architecture
 
-Pulse generates a three-tier hierarchy:
+Pulse organizes code into two complementary layers:
+
+### Service Layer
+
+The Service Layer handles HTTP delivery and application orchestration using **vertical slice architecture**. Code is organized by business capability (Service → Module → Features), not by technical layer.
+
+**Structure:**
 
 ```
 app/Services/{Service}/
 ├── Providers/
-│   ├── {Service}ServiceProvider.php    # Auto-registers routes
-│   └── RouteServiceProvider.php        # Slug-based routing
+│   ├── {Service}ServiceProvider.php    # Bootstraps the service
+│   └── RouteServiceProvider.php        # Registers routes
 ├── Routes/
-│   └── api.php                         # API routes with /api/{slug} prefix
+│   └── api.php                         # API routes (/api/{service-slug}/*)
 └── Modules/{Module}/
-    ├── Controllers/                    # HTTP layer
-    ├── Requests/                       # Validation
-    └── UseCases/                       # Business logic
+    ├── Controllers/                    # HTTP request handlers
+    ├── Requests/                       # Input validation
+    ├── UseCases/                       # Application logic
+    └── Operations/                     # Cross-cutting operations
 ```
 
-### Why This Structure?
-
-**Traditional Laravel:**
+**Example:** E-commerce Checkout Service
 
 ```
-app/Http/Controllers/OrderController.php
-app/Http/Requests/CreateOrderRequest.php
-app/Services/OrderService.php
+app/Services/Checkout/
+├── Providers/
+├── Routes/api.php
+└── Modules/
+    ├── Cart/
+    │   ├── Controllers/CartController.php
+    │   ├── Requests/AddToCartRequest.php
+    │   └── UseCases/AddItemToCart.php
+    └── Payment/
+        ├── Controllers/PaymentController.php
+        ├── Requests/ProcessPaymentRequest.php
+        └── UseCases/ProcessPayment.php
 ```
 
-→ Code for one feature scattered across multiple directories.
+Routes: `/api/checkout/cart`, `/api/checkout/payment`
 
-**Pulse Approach:**
+### Domain Layer
+
+The Domain Layer contains pure business logic independent of HTTP, frameworks, or infrastructure. Organized by business domain.
+
+**Structure:**
 
 ```
-app/Services/Sales/Modules/Order/
-├── Controllers/OrderController.php
-├── Requests/CreateOrderRequest.php
-└── UseCases/CreateOrder.php
+app/Domain/{Domain}/
+├── Models/                             # Eloquent models
+├── Actions/                            # Business operations
+├── DTOs/                               # Data transfer objects
+├── Policies/                           # Authorization rules
+├── Events/                             # Domain events
+├── Enums/                              # Domain states
+├── Exceptions/                         # Business rule violations
+└── Queries/                            # Complex read operations
 ```
 
-→ Everything for the Order module lives together.
+**Example:** E-commerce Product Domain
 
-## Installation & Usage
+```
+app/Domain/Product/
+├── Models/Product.php
+├── Actions/UpdateStockAction.php
+├── DTOs/ProductData.php
+├── Policies/ProductPolicy.php
+├── Events/ProductOutOfStock.php
+├── Enums/ProductStatus.php
+├── Exceptions/InsufficientStockException.php
+└── Queries/GetProductsByCategory.php
+```
 
 ```bash
 composer require faran/pulse --dev
@@ -97,450 +115,481 @@ Then follow the sections below to generate individual file types.
 
 ## File Types
 
-This section explains the purpose and usage of each file type that Pulse generates.
+### Service Layer Files
 
-### Service Providers
+#### Controllers
 
-**File Type:** `ServiceProvider.php` and `RouteServiceProvider.php`
+**Purpose:** Handle HTTP requests and orchestrate application flow.
 
-**Purpose:**
-Service providers are auto-generated during `pulse make:service` and handle bootstrapping your service. They register routes, service container bindings, and event listeners specific to your service.
+**Command:**
 
-**What It Does:**
-
-- Registers routes from the `Routes/api.php` file
-- Auto-discovers and loads routes with the `/api/{service-slug}` prefix
-- Provides a clear entry point for service-wide configuration
-
-**Location:**
-
-```
-app/Services/{Service}/Providers/
-├── {Service}ServiceProvider.php
-└── RouteServiceProvider.php
+```bash
+pulse make:controller ProductController Product Catalog
 ```
 
-**Usage:**
-After generating a service with `pulse make:service`, register it in `config/app.php` or `bootstrap/providers.php`:
-
-```php
-App\Services\Authentication\Providers\AuthenticationServiceProvider::class
-```
-
-**Don't Modify:** The structure is managed by Pulse. Add service-specific bindings or registrations in the `ServiceProvider.php` file as needed.
+**Location:** `app/Services/{Service}/Modules/{Module}/Controllers/`
 
 **Example:**
 
-```
-app/Services/Authentication/Providers/
-├── AuthenticationServiceProvider.php
-└── RouteServiceProvider.php
-```
-
----
-
-### Controllers
-
-**File Type:** `{Name}Controller.php`
-
-**Purpose:**
-Controllers handle HTTP requests and orchestrate the interaction between incoming requests and your business logic. Controllers receive validated data from Requests and delegate work to UseCases.
-
-**What It Does:**
-
-- Receives HTTP requests and extracts data
-- Calls appropriate Requests for validation
-- Instantiates and calls UseCases to handle business logic
-- Returns HTTP responses
-
-**Location:**
-
-```
-app/Services/{Service}/Modules/{Module}/Controllers/
-└── {Name}Controller.php
-```
-
-**Create With:**
-
-```bash
-# Empty controller
-pulse make:controller AuthController Login Authentication
-
-# Resource controller with CRUD methods
-pulse make:controller UserController User Authentication --resource
-```
-
-**Arguments:** `{name} {module} {service}`
-
-**Auto-Suffixing:** `Auth` → `AuthController` (suffix added automatically if omitted)
-
-**Generation Modes:**
-
-- **Plain (default):** Empty class, you define methods
-- **Resource (`--resource` or `-r`):** Includes standard CRUD methods (index, show, store, update, delete)
-
-**Example (Plain):**
-
 ```php
-class AuthController extends Controller
+class ProductController extends Controller
 {
-    public function login(LoginRequest $request)
+    public function index(ListProductsRequest $request)
     {
-        $token = (new AuthenticateUser)->execute($request->validated());
-        return response()->json(['token' => $token]);
+        $products = (new ListProducts)->execute($request->validated());
+        return response()->json($products);
     }
 }
 ```
 
-**Best Practice:** Keep controllers thin—delegate complex logic to UseCases.
-
 ---
 
-### Requests (Form Requests)
+#### Requests
 
-**File Type:** `{Name}Request.php`
+**Purpose:** Validate input and authorize requests.
 
-**Purpose:**
-Form requests encapsulate validation logic and authorization checks. They validate incoming data before it reaches your controller or use case.
-
-**What It Does:**
-
-- Validates request input against defined rules
-- Provides custom error messages
-- Handles authorization (can user perform this action?)
-- Returns validated data as an array to the controller
-
-**Location:**
-
-```
-app/Services/{Service}/Modules/{Module}/Requests/
-└── {Name}Request.php
-```
-
-**Create With:**
+**Command:**
 
 ```bash
-pulse make:request LoginRequest Login Authentication
+pulse make:request AddToCartRequest Cart Checkout
 ```
 
-**Arguments:** `{name} {module} {service}`
+**Location:** `app/Services/{Service}/Modules/{Module}/Requests/`
 
-**Auto-Suffixing:** `Login` → `LoginRequest` (suffix added automatically if omitted)
-
-**Default Generated Structure:**
+**Example:**
 
 ```php
-class LoginRequest extends FormRequest
+class AddToCartRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return false; // Override to true when ready
-    }
-
     public function rules(): array
     {
         return [
-            // Define your validation rules
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            // Define custom error messages
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
         ];
     }
 }
 ```
 
-**Usage in Controllers:**
-
-```php
-class AuthController extends Controller
-{
-    public function login(LoginRequest $request)
-    {
-        // Request is already validated and authorized
-        $data = $request->validated();
-        // ... pass to use case
-    }
-}
-```
-
-**Best Practice:** Let the framework validate before your code runs—fail fast with clear error messages.
-
 ---
 
-### UseCases
+#### UseCases
 
-**File Type:** `{Name}.php` (no suffix)
+**Purpose:** Application-specific business logic coordinating domain operations.
 
-**Purpose:**
-UseCases encapsulate business logic that is independent of HTTP delivery mechanisms. They contain the core application logic that could be called from controllers, commands, jobs, or events.
-
-**What It Does:**
-
-- Executes a specific business operation
-- Coordinates with Models, Services, and Events
-- Returns domain objects or data
-- Remains testable without HTTP context
-
-**Location:**
-
-```
-app/Services/{Service}/Modules/{Module}/UseCases/
-└── {Name}.php
-```
-
-**Create With:**
+**Command:**
 
 ```bash
-pulse make:use-case AuthenticateUser Login Authentication
+pulse make:use-case PlaceOrder Order Checkout
 ```
 
-**Arguments:** `{name} {module} {service}`
-
-**No Auto-Suffixing:** The class name is exactly as you provide it (no suffix added).
-
-**Default Generated Structure:**
-
-```php
-class AuthenticateUser
-{
-    public function execute(array $data)
-    {
-        // Your business logic here
-    }
-}
-```
-
-**Full Example:**
-
-```php
-class CreateUser
-{
-    public function execute(array $data)
-    {
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
-
-        event(new UserRegistered($user));
-
-        return $user;
-    }
-}
-```
-
-**Usage in Controllers:**
-
-```php
-class UserController extends Controller
-{
-    public function store(CreateUserRequest $request)
-    {
-        $user = (new CreateUser)->execute($request->validated());
-        return response()->json($user, 201);
-    }
-}
-```
-
-**Reusability:**
-Call the same UseCase from multiple contexts:
-
-```php
-// From a controller
-$user = (new CreateUser)->execute($data);
-
-// From a command
-$this->info('Creating users...');
-$user = (new CreateUser)->execute($data);
-
-// From an event listener
-event(new SomeEvent());
-// Listener calls: (new CreateUser)->execute($data);
-```
-
-**Best Practice:** Keep UseCases focused on one business operation. Don't mix multiple concerns in a single UseCase.
-
----
-
-### Operations
-
-**File Type:** `{Name}Operation.php`
-
-**Purpose:**
-Operations are similar to UseCases but are for cross-service or infrastructure-level operations. They perform lower-level tasks like database operations, external API calls, or utility functions that might be shared across multiple services.
-
-**When to Use:**
-
-- Complex, reusable logic that multiple services need
-- Infrastructure or utility operations
-- Operations that don't map directly to a user action
-
-**Location:**
-
-```
-app/Services/{Service}/Modules/{Module}/Operations/
-└── {Name}Operation.php
-```
-
-**Create With:**
-
-```bash
-pulse make:operation SendEmail User Authentication
-```
-
-**Arguments:** `{name} {module} {service}`
-
-**Auto-Suffixing:** `Send` → `SendOperation` (suffix added automatically if omitted)
+**Location:** `app/Services/{Service}/Modules/{Module}/UseCases/`
 
 **Example:**
 
 ```php
-class SendWelcomeEmailOperation
+class PlaceOrder
 {
-    public function execute(User $user)
+    public function execute(OrderData $data)
     {
-        Mail::to($user->email)->send(new WelcomeEmail($user));
+        $order = (new CreateOrderAction)->execute($data);
+        event(new OrderPlaced($order));
+        return $order;
     }
 }
 ```
 
-**Difference from UseCases:**
-| UseCases | Operations |
-|----------|-----------|
-| User-centric business logic | Infrastructure/utility tasks |
-| Called from controllers/commands | Called from UseCases/Events |
-| Domain operations | Cross-cutting concerns |
-| "Create User", "Process Payment" | "Send Email", "Log Activity" |
-
 ---
 
-### Routes
+#### Operations
 
-**File Type:** `api.php` (in `Routes/` directory)
+**Purpose:** Reusable infrastructure or cross-service operations.
 
-**Purpose:**
-Routes define the HTTP endpoints for your service. Each service has its own route file, making routes modular and service-specific.
+**Command:**
 
-**Location:**
-
-```
-app/Services/{Service}/Routes/
-└── api.php
+```bash
+pulse make:operation SendOrderConfirmationEmail Order Checkout
 ```
 
-**Generated Automatically:** Created when you run `pulse make:service`
+**Location:** `app/Services/{Service}/Modules/{Module}/Operations/`
 
-**Default Generated Structure:**
+**Example:**
 
 ```php
-<?php
-
-use Illuminate\Support\Facades\Route;
-
-// Define routes for your service here
-// Routes are automatically prefixed with /api/{service-slug}
+class SendOrderConfirmationEmail
+{
+    public function execute(Order $order)
+    {
+        Mail::to($order->customer->email)->send(new OrderConfirmation($order));
+    }
+}
 ```
 
-**Auto-Routing with Slug:**
-All routes in this file are automatically prefixed with `/api/{service-slug}`:
+---
 
-Service name `Authentication` → Routes prefixed with `/api/authentication`
-Service name `UserManagement` → Routes prefixed with `/api/user-management`
+### Domain Layer Files
 
-**Defining Routes:**
+#### Models
+
+**Purpose:** Eloquent models representing domain entities.
+
+**Command:**
+
+```bash
+pulse make:model Product Catalog
+```
+
+**Location:** `app/Domain/{Domain}/Models/`
+
+**Example:**
 
 ```php
-use App\Services\Authentication\Modules\Login\Controllers\AuthController;
-use Illuminate\Support\Facades\Route;
+class Product extends Model
+{
+    protected $fillable = ['name', 'price', 'stock'];
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
-Route::post('/refresh', [AuthController::class, 'refresh']);
+    public function isInStock(): bool
+    {
+        return $this->stock > 0;
+    }
+}
 ```
 
-**Resulting Endpoints:**
+---
 
-- `POST /api/authentication/login`
-- `POST /api/authentication/logout`
-- `POST /api/authentication/refresh`
+#### Actions
 
-**Benefits:**
+**Purpose:** Atomic business operations encapsulating domain logic.
 
-- Routes are organized by service
-- Clear service boundaries
-- Easy to find endpoint definitions
-- Services can be versioned independently
+**Command:**
 
-**Best Practice:** Keep routes simple and close to controllers. Complex route logic should be in controllers or middleware.
+```bash
+pulse make:action UpdateProductStock Catalog
+```
+
+**Location:** `app/Domain/{Domain}/Actions/`
+
+**Example:**
+
+```php
+class UpdateProductStock
+{
+    public function execute(Product $product, int $quantity)
+    {
+        if ($product->stock + $quantity < 0) {
+            throw new InsufficientStockException();
+        }
+
+        $product->update(['stock' => $product->stock + $quantity]);
+
+        if ($product->stock === 0) {
+            event(new ProductOutOfStock($product));
+        }
+    }
+}
+```
 
 ---
 
-## Installation
+#### DTOs
+
+**Purpose:** Immutable data carriers for transferring data between layers.
+
+**Command:**
+
+```bash
+pulse make:dto OrderData Order
+```
+
+**Location:** `app/Domain/{Domain}/DTOs/`
+
+**Example:**
+
+```php
+readonly class OrderData
+{
+    public function __construct(
+        public int $customerId,
+        public array $items,
+        public string $shippingAddress,
+    ) {}
+
+    public static function from(array $data): self
+    {
+        return new self(
+            customerId: $data['customer_id'],
+            items: $data['items'],
+            shippingAddress: $data['shipping_address'],
+        );
+    }
+}
+```
 
 ---
 
-## Complete Example
+#### Policies
 
-Building an authentication system:
+**Purpose:** Business authorization rules for domain entities.
+
+**Command:**
+
+```bash
+pulse make:policy OrderPolicy Order
+```
+
+**Location:** `app/Domain/{Domain}/Policies/`
+
+**Example:**
+
+```php
+class OrderPolicy
+{
+    public function canCancel(User $user, Order $order): bool
+    {
+        return $order->status === OrderStatus::PENDING
+            && $order->customer_id === $user->id;
+    }
+}
+```
+
+---
+
+#### Events
+
+**Purpose:** Domain events signaling significant business occurrences.
+
+**Command:**
+
+```bash
+pulse make:event OrderPlaced Order
+```
+
+**Location:** `app/Domain/{Domain}/Events/`
+
+**Example:**
+
+```php
+class OrderPlaced
+{
+    public function __construct(
+        public readonly Order $order,
+        public readonly DateTimeImmutable $occurredAt = new DateTimeImmutable(),
+    ) {}
+}
+```
+
+---
+
+#### Enums
+
+**Purpose:** Fixed sets of domain values and states.
+
+**Command:**
+
+```bash
+pulse make:enum OrderStatus Order
+```
+
+**Location:** `app/Domain/{Domain}/Enums/`
+
+**Example:**
+
+```php
+enum OrderStatus: string
+{
+    case PENDING = 'pending';
+    case PROCESSING = 'processing';
+    case SHIPPED = 'shipped';
+    case DELIVERED = 'delivered';
+    case CANCELLED = 'cancelled';
+}
+```
+
+---
+
+#### Exceptions
+
+**Purpose:** Domain-specific business rule violations.
+
+**Command:**
+
+```bash
+pulse make:exception InsufficientStockException Catalog
+```
+
+**Location:** `app/Domain/{Domain}/Exceptions/`
+
+**Example:**
+
+```php
+class InsufficientStockException extends Exception
+{
+    public function __construct(Product $product)
+    {
+        parent::__construct("Product {$product->name} has insufficient stock");
+    }
+}
+```
+
+---
+
+#### Queries
+
+**Purpose:** Complex read-only domain queries.
+
+**Command:**
+
+```bash
+pulse make:query GetCustomerOrders Order
+```
+
+**Location:** `app/Domain/{Domain}/Queries/`
+
+**Example:**
+
+```php
+class GetCustomerOrders
+{
+    public function execute(int $customerId): Collection
+    {
+        return Order::where('customer_id', $customerId)
+            ->with('items.product')
+            ->latest()
+            ->get();
+    }
+}
+```
+
+---
+
+---
+
+## Complete Examples
+
+### Service Layer Example
+
+Building a checkout system:
 
 ```bash
 # 1. Create the service
-pulse make:service Authentication
+pulse make:service Checkout
 
-# 2. Create login module components
-pulse make:controller AuthController Login Authentication
-pulse make:request LoginRequest Login Authentication
-pulse make:use-case AuthenticateUser Login Authentication
+# 2. Create cart module
+pulse make:controller CartController Cart Checkout
+pulse make:request AddToCartRequest Cart Checkout
+pulse make:use-case AddItemToCart Cart Checkout
 
-# 3. Create registration module components
-pulse make:controller RegisterController Registration Authentication -r
-pulse make:request RegisterRequest Registration Authentication
-pulse make:use-case CreateUser Registration Authentication
+# 3. Create payment module
+pulse make:controller PaymentController Payment Checkout -r
+pulse make:request ProcessPaymentRequest Payment Checkout
+pulse make:use-case ProcessPayment Payment Checkout
 
-# 4. Create password reset module
-pulse make:controller PasswordController Password Authentication
-pulse make:request ResetPasswordRequest Password Authentication
-pulse make:use-case ResetPassword Password Authentication
+# 4. Create order module
+pulse make:controller OrderController Order Checkout
+pulse make:request PlaceOrderRequest Order Checkout
+pulse make:use-case PlaceOrder Order Checkout
+pulse make:operation SendOrderConfirmationEmail Order Checkout
 ```
 
 **Resulting structure:**
 
 ```
-app/Services/Authentication/
+app/Services/Checkout/
 ├── Providers/
+│   ├── CheckoutServiceProvider.php
+│   └── RouteServiceProvider.php
 ├── Routes/
 │   └── api.php
 └── Modules/
-    ├── Login/
-    │   ├── Controllers/AuthController.php
-    │   ├── Requests/LoginRequest.php
-    │   └── UseCases/AuthenticateUser.php
-    ├── Registration/
-    │   ├── Controllers/RegisterController.php
-    │   ├── Requests/RegisterRequest.php
-    │   └── UseCases/CreateUser.php
-    └── Password/
-        ├── Controllers/PasswordController.php
-        ├── Requests/ResetPasswordRequest.php
-        └── UseCases/ResetPassword.php
+    ├── Cart/
+    │   ├── Controllers/CartController.php
+    │   ├── Requests/AddToCartRequest.php
+    │   └── UseCases/AddItemToCart.php
+    ├── Payment/
+    │   ├── Controllers/PaymentController.php
+    │   ├── Requests/ProcessPaymentRequest.php
+    │   └── UseCases/ProcessPayment.php
+    └── Order/
+        ├── Controllers/OrderController.php
+        ├── Requests/PlaceOrderRequest.php
+        ├── UseCases/PlaceOrder.php
+        └── Operations/SendOrderConfirmationEmail.php
 ```
 
-**Define routes** in `app/Services/Authentication/Routes/api.php`:
+**Define routes** in `app/Services/Checkout/Routes/api.php`:
 
 ```php
-use App\Services\Authentication\Modules\Login\Controllers\AuthController;
+use App\Services\Checkout\Modules\Cart\Controllers\CartController;
+use App\Services\Checkout\Modules\Order\Controllers\OrderController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
+Route::post('/cart', [CartController::class, 'add']);
+Route::post('/orders', [OrderController::class, 'store']);
 ```
 
-Routes accessible at: `/api/authentication/login`, `/api/authentication/logout`
+Routes accessible at: `/api/checkout/cart`, `/api/checkout/orders`
+
+### Domain Layer Example
+
+Building an e-commerce domain:
+
+```bash
+# 1. Create domain models
+pulse make:model Product Catalog
+pulse make:model Order Order
+
+# 2. Create actions for business operations
+pulse make:action UpdateProductStock Catalog
+pulse make:action CreateOrder Order
+
+# 3. Create DTOs for data transfer
+pulse make:dto ProductData Catalog
+pulse make:dto OrderData Order
+
+# 4. Create policies for authorization
+pulse make:policy ProductPolicy Catalog
+pulse make:policy OrderPolicy Order
+
+# 5. Create domain events
+pulse make:event ProductOutOfStock Catalog
+pulse make:event OrderPlaced Order
+
+# 6. Create enums for states
+pulse make:enum ProductStatus Catalog
+pulse make:enum OrderStatus Order
+
+# 7. Create domain exceptions
+pulse make:exception InsufficientStockException Catalog
+pulse make:exception OrderAlreadyCancelledException Order
+
+# 8. Create queries for complex reads
+pulse make:query GetLowStockProducts Catalog
+pulse make:query GetCustomerOrders Order
+```
+
+**Resulting structure:**
+
+```
+app/Domain/
+├── Catalog/
+│   ├── Models/Product.php
+│   ├── Actions/UpdateProductStock.php
+│   ├── DTOs/ProductData.php
+│   ├── Policies/ProductPolicy.php
+│   ├── Events/ProductOutOfStock.php
+│   ├── Enums/ProductStatus.php
+│   ├── Exceptions/InsufficientStockException.php
+│   └── Queries/GetLowStockProducts.php
+└── Order/
+    ├── Models/Order.php
+    ├── Actions/CreateOrder.php
+    ├── DTOs/OrderData.php
+    ├── Policies/OrderPolicy.php
+    ├── Events/OrderPlaced.php
+    ├── Enums/OrderStatus.php
+    ├── Exceptions/OrderAlreadyCancelledException.php
+    └── Queries/GetCustomerOrders.php
+```
 
 ---
 
@@ -548,173 +597,28 @@ Routes accessible at: `/api/authentication/login`, `/api/authentication/logout`
 
 ### Service Layer Commands
 
-| Command           | Arguments                   | Options          | Description                      |
-| ----------------- | --------------------------- | ---------------- | -------------------------------- |
-| `make:service`    | `{name}`                    | -                | Create a new service             |
-| `make:controller` | `{name} {module} {service}` | `--resource, -r` | Create a controller              |
-| `make:request`    | `{name} {module} {service}` | -                | Create a form request            |
-| `make:use-case`   | `{name} {module} {service}` | -                | Create a use case                |
-| `make:operation`  | `{name} {module} {service}` | -                | Create an operation              |
+| Command           | Arguments                   | Options          | Description           |
+| ----------------- | --------------------------- | ---------------- | --------------------- |
+| `make:service`    | `{name}`                    | -                | Create a new service  |
+| `make:controller` | `{name} {module} {service}` | `--resource, -r` | Create a controller   |
+| `make:request`    | `{name} {module} {service}` | -                | Create a form request |
+| `make:use-case`   | `{name} {module} {service}` | -                | Create a use case     |
+| `make:operation`  | `{name} {module} {service}` | -                | Create an operation   |
 
 ### Domain Layer Commands
 
-| Command           | Arguments          | Options | Description                      |
-| ----------------- | ------------------ | ------- | -------------------------------- |
-| `make:model`      | `{name} {domain}`  | -       | Create a domain model (Eloquent) |
-| `make:action`     | `{name} {domain}`  | -       | Create a domain action           |
-| `make:dto`        | `{name} {domain}`  | -       | Create a DTO (Data Transfer Object) |
-| `make:policy`     | `{name} {domain}`  | -       | Create a domain policy           |
-| `make:event`      | `{name} {domain}`  | -       | Create a domain event            |
-| `make:enum`       | `{name} {domain}`  | -       | Create a domain enum             |
-| `make:exception`  | `{name} {domain}`  | -       | Create a domain exception        |
-| `make:query`      | `{name} {domain}`  | -       | Create a domain query            |
+| Command          | Arguments         | Options | Description                         |
+| ---------------- | ----------------- | ------- | ----------------------------------- |
+| `make:model`     | `{name} {domain}` | -       | Create a domain model (Eloquent)    |
+| `make:action`    | `{name} {domain}` | -       | Create a domain action              |
+| `make:dto`       | `{name} {domain}` | -       | Create a DTO (Data Transfer Object) |
+| `make:policy`    | `{name} {domain}` | -       | Create a domain policy              |
+| `make:event`     | `{name} {domain}` | -       | Create a domain event               |
+| `make:enum`      | `{name} {domain}` | -       | Create a domain enum                |
+| `make:exception` | `{name} {domain}` | -       | Create a domain exception           |
+| `make:query`     | `{name} {domain}` | -       | Create a domain query               |
 
----
 
-## Domain Layer Example
-
-Building a booking system with domain-driven design:
-
-```bash
-# 1. Create domain models
-pulse make:model Guest User
-pulse make:model Reservation Booking
-
-# 2. Create actions for business operations
-pulse make:action ChargeGuest Payment
-pulse make:action CreateReservation Booking
-
-# 3. Create DTOs for data transfer
-pulse make:dto Reservation Booking
-pulse make:dto Payment Payment
-
-# 4. Create policies for authorization
-pulse make:policy Reservation Booking
-
-# 5. Create domain events
-pulse make:event ReservationCreated Booking
-pulse make:event GuestCheckedIn Booking
-
-# 6. Create enums for states
-pulse make:enum ReservationStatus Booking
-pulse make:enum PaymentStatus Payment
-
-# 7. Create domain exceptions
-pulse make:exception RoomAlreadyBooked Booking
-pulse make:exception InsufficientFunds Payment
-
-# 8. Create queries for complex reads
-pulse make:query GetGuestReservations Booking
-```
-
-**Resulting structure:**
-
-```
-app/Domain/
-├── User/
-│   └── Models/Guest.php
-├── Booking/
-│   ├── Models/Reservation.php
-│   ├── Actions/CreateReservationAction.php
-│   ├── DTOs/ReservationData.php
-│   ├── Policies/ReservationPolicy.php
-│   ├── Events/
-│   │   ├── ReservationCreated.php
-│   │   └── GuestCheckedIn.php
-│   ├── Enums/ReservationStatus.php
-│   ├── Exceptions/RoomAlreadyBooked.php
-│   └── Queries/GetGuestReservations.php
-└── Payment/
-    ├── Actions/ChargeGuestAction.php
-    ├── DTOs/PaymentData.php
-    ├── Enums/PaymentStatus.php
-    └── Exceptions/InsufficientFunds.php
-```
-
-**Auto-Suffixing:**
-- Actions: `ChargeGuest` → `ChargeGuestAction`
-- DTOs: `Reservation` → `ReservationData`
-- Policies: `Reservation` → `ReservationPolicy`
-
-**No Suffixing:**
-- Models, Events, Enums, Exceptions, Queries use exact names provided
-
----
-
-## Design Decisions
-
-### Why Services?
-
-Large applications naturally divide into business domains:
-
-- **E-commerce:** `Catalog`, `Cart`, `Checkout`, `Shipping`
-- **SaaS:** `Billing`, `Users`, `Analytics`, `Notifications`
-- **Marketplace:** `Sellers`, `Buyers`, `Products`, `Reviews`
-
-Services provide clear boundaries and prevent monolithic controllers.
-
-### Why Modules?
-
-Modules are feature-oriented slices within a service. Instead of grouping by layer (all controllers, all models), group by feature (everything for User management).
-
-**Benefits:**
-
-- Easy to locate related code
-- Simple to onboard new developers
-- Clear ownership boundaries
-- Facilitates parallel development
-
-### Why UseCases?
-
-Controllers should be thin. UseCases encapsulate business logic, making it:
-
-- **Testable** — Test business logic independently of HTTP
-- **Reusable** — Call from controllers, commands, jobs, events
-- **Maintainable** — Business rules in one place
-
-### Why Minimal Output?
-
-Less noise = better focus. You get what you need:
-
-```
-✓ Controller created successfully!
-Location: app/Services/Auth/Modules/Login/Controllers/AuthController.php
-```
-
-No tutorials, no next steps, no fluff. Just confirmation and location.
-
----
-
-## Naming Conventions
-
-### Auto-Suffixing
-
-**Controllers:** `User` → `UserController`
-**Requests:** `Login` → `LoginRequest`
-**UseCases:** No suffixing — you decide
-
-### Slug Generation
-
-Service names are converted to URL-friendly slugs:
-
-- `UserManagement` → `/api/user-management`
-- `ContentModeration` → `/api/content-moderation`
-
----
-
-## Comparison with Lucid Architecture
-
-Pulse is inspired by [Lucid Architecture](https://github.com/lucid-architecture/laravel) but diverges in key ways:
-
-| Aspect         | Lucid                                             | Pulse                                 |
-| -------------- | ------------------------------------------------- | ------------------------------------- |
-| **Structure**  | Features, Jobs, Operations, Domains               | Services, Modules, UseCases           |
-| **Layers**     | 4 levels (Controller → Feature → Operation → Job) | 3 levels (Controller → UseCase)       |
-| **Complexity** | Higher learning curve                             | Simpler, flatter                      |
-| **Use Cases**  | Jobs in Domains folder                            | UseCases in Modules                   |
-| **Philosophy** | Service-oriented with Jobs                        | Service-oriented with vertical slices |
-
-**Pulse is lighter and more opinionated** — fewer abstractions, clearer boundaries.
 
 ---
 
@@ -723,13 +627,12 @@ Pulse is inspired by [Lucid Architecture](https://github.com/lucid-architecture/
 ### 1. Keep Controllers Thin
 
 ```php
-class UserController extends Controller
+class OrderController extends Controller
 {
-    public function store(CreateUserRequest $request)
+    public function store(PlaceOrderRequest $request)
     {
-        $user = (new CreateUser)->execute($request->validated());
-
-        return response()->json($user, 201);
+        $order = (new PlaceOrder)->execute($request->validated());
+        return response()->json($order, 201);
     }
 }
 ```
@@ -737,19 +640,13 @@ class UserController extends Controller
 ### 2. UseCases Handle Business Logic
 
 ```php
-class CreateUser
+class PlaceOrder
 {
     public function execute(array $data)
     {
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
-
-        event(new UserRegistered($user));
-
-        return $user;
+        $order = (new CreateOrderAction)->execute(OrderData::from($data));
+        event(new OrderPlaced($order));
+        return $order;
     }
 }
 ```
@@ -757,7 +654,7 @@ class CreateUser
 ### 3. Requests Validate
 
 ```php
-class CreateUserRequest extends FormRequest
+class PlaceOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -767,9 +664,10 @@ class CreateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
+            'customer_id' => 'required|exists:customers,id',
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
         ];
     }
 }
@@ -777,11 +675,12 @@ class CreateUserRequest extends FormRequest
 
 ### 4. One Module = One Feature
 
-Don't create a generic "User" module with everything. Split it:
+Split modules by business capability:
 
-- `Modules/Registration` — Sign up
-- `Modules/Profile` — Edit profile
-- `Modules/Account` — Account settings
+- **Checkout Service**:
+  - `Modules/Cart` — Cart management
+  - `Modules/Payment` — Payment processing
+  - `Modules/Order` — Order placement
 
 ---
 
@@ -806,3 +705,4 @@ Inspired by:
 - [Lucid Architecture](https://github.com/lucid-architecture/laravel)
 - Vertical Slice Architecture principles
 - Domain-Driven Design concepts
+
