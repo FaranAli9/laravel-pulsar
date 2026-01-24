@@ -115,6 +115,14 @@ Then follow the sections below to generate individual file types.
 
 ## File Types
 
+> **💡 Naming Freedom:** Pulse gives you complete control over class names. Examples below use suffixes like `Controller`, `Action`, `UseCase` for clarity, but you can name classes however you prefer:
+> - `pulse make:controller ProductController ...` → `ProductController.php` ✅
+> - `pulse make:controller Product ...` → `Product.php` ✅  
+> - `pulse make:action CreateOrderAction ...` → `CreateOrderAction.php` ✅
+> - `pulse make:action CreateOrder ...` → `CreateOrder.php` ✅
+>
+> The generated class name matches exactly what you specify.
+
 ### Service Layer Files
 
 #### Controllers
@@ -134,9 +142,13 @@ pulse make:controller ProductController Product Catalog
 ```php
 class ProductController extends Controller
 {
-    public function index(ListProductsRequest $request)
+    public function __construct(
+        private ListProductsUseCase $listProducts
+    ) {}
+    
+    public function index(ListProductsRequest $request): JsonResponse
     {
-        $products = (new ListProducts)->execute($request->validated());
+        $products = $this->listProducts->execute($request->validated());
         return response()->json($products);
     }
 }
@@ -188,13 +200,26 @@ pulse make:use-case PlaceOrder Order Checkout
 **Example:**
 
 ```php
-class PlaceOrder
+class PlaceOrderUseCase
 {
-    public function execute(OrderData $data)
+    public function __construct(
+        private CreateOrderAction $createOrder,
+        private UpdateStockAction $updateStock,
+    ) {}
+    
+    public function execute(OrderData $data): Order
     {
-        $order = (new CreateOrderAction)->execute($data);
-        event(new OrderPlaced($order));
-        return $order;
+        return DB::transaction(function () use ($data) {
+            $order = $this->createOrder->execute($data);
+            
+            foreach ($data->items as $item) {
+                $this->updateStock->execute($item['product_id'], -$item['quantity']);
+            }
+            
+            event(new OrderPlaced($order));
+            
+            return $order;
+        });
     }
 }
 ```
@@ -203,7 +228,9 @@ class PlaceOrder
 
 #### Operations
 
-**Purpose:** Reusable infrastructure or cross-service operations.
+**Purpose:** Infrastructure and cross-cutting concerns (email, logging, caching, file storage, external APIs).
+
+**Not Business Logic:** Operations handle "how" (send email, log event), not "what" (place order, update stock).
 
 **Command:**
 
@@ -218,12 +245,30 @@ pulse make:operation SendOrderConfirmationEmail Order Checkout
 ```php
 class SendOrderConfirmationEmail
 {
-    public function execute(Order $order)
+    public function __construct(
+        private Mailer $mailer
+    ) {}
+    
+    public function execute(Order $order): void
     {
-        Mail::to($order->customer->email)->send(new OrderConfirmation($order));
+        $this->mailer->to($order->customer->email)
+            ->send(new OrderConfirmation($order));
     }
 }
 ```
+
+**When to use Operations:**
+- Sending emails/notifications
+- Logging/auditing
+- File uploads/downloads
+- External API calls
+- Caching operations
+- Generating PDFs/reports
+
+**When to use UseCases instead:**
+- Coordinating business workflows
+- Orchestrating multiple domain Actions
+- Implementing business processes
 
 ---
 
@@ -274,10 +319,10 @@ pulse make:action UpdateProductStock Catalog
 ```php
 class UpdateProductStock
 {
-    public function execute(Product $product, int $quantity)
+    public function execute(Product $product, int $quantity): Product
     {
         if ($product->stock + $quantity < 0) {
-            throw new InsufficientStockException();
+            throw new InsufficientStockException($product);
         }
 
         $product->update(['stock' => $product->stock + $quantity]);
@@ -285,6 +330,8 @@ class UpdateProductStock
         if ($product->stock === 0) {
             event(new ProductOutOfStock($product));
         }
+        
+        return $product->fresh();
     }
 }
 ```
@@ -448,7 +495,7 @@ pulse make:query GetCustomerOrders Order
 **Example:**
 
 ```php
-class GetCustomerOrders
+class GetCustomerOrdersQuery
 {
     public function execute(int $customerId): Collection
     {
@@ -593,6 +640,501 @@ app/Domain/
 
 ---
 
+## Architecture Best Practices
+
+### Layer Responsibilities
+
+```
+Request → Controller → UseCase → Actions/Operations/Queries → Models
+                ↓
+            Response
+```
+
+#### **Controllers** (HTTP Layer)
+- Extract validated data from Request
+- Call UseCase with DTOs or validated arrays
+- Transform domain results to HTTP responses
+- **Never contain business logic**
+
+```php
+class OrderController extends Controller
+{
+    public function __construct(
+        private PlaceOrder $placeOrder
+    ) {}
+    
+    public function store(PlaceOrderRequest $request): JsonResponse
+    {
+        $order = $this->placeOrder->execute(
+            OrderData::from($request->validated())
+        );
+        
+        return response()->json($order, 201);
+    }
+}
+```
+
+#### **Requests** (Validation Layer)
+- Validate input structure and format
+- Authorization checks (via `authorize()` method)
+- **No business logic** - only input validation
+- Business rule validation belongs in Actions/UseCases
+
+```php
+class PlaceOrderRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        // Policy-based authorization
+        return $this->user()->can('create', Order::class);
+    }
+    
+    public function rules(): array
+    {
+        // Structure validation only
+        return [
+            'customer_id' => 'required|exists:customers,id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ];
+    }
+}
+```
+
+#### **UseCases** (Application Orchestration)
+- Orchestrate business workflows
+- Coordinate multiple Actions and Operations
+- Own database transaction boundaries
+- Emit domain events
+- **Never coupled to HTTP Request objects**
+
+```php
+class PlaceOrderUseCase
+{
+    public function __construct(
+        private CreateOrderAction $createOrder,
+        private UpdateStockAction $updateStock,
+        private ReserveInventoryAction $reserveInventory,
+    ) {}
+    
+    public function execute(OrderData $data): Order
+    {
+        return DB::transaction(function () use ($data) {
+            // 1. Reserve inventory (prevents overselling)
+            $this->reserveInventory->execute($data->items);
+            
+            // 2. Create the order
+            $order = $this->createOrder->execute($data);
+            
+            // 3. Decrement stock for each item
+            foreach ($data->items as $item) {
+                $this->updateStock->execute($item['product_id'], -$item['quantity']);
+            }
+            
+            // 4. Emit event for side effects (email, notifications, etc.)
+            event(new OrderPlaced($order));
+            
+            return $order;
+        });
+    }
+}
+```
+
+#### **Actions** (Domain Operations)
+- **Atomic**: One action = one domain operation
+- Encapsulate business rules
+- Validate business invariants
+- Can emit domain events
+- Return domain objects, booleans, collections, or void
+
+```php
+class UpdateStockAction
+{
+    public function execute(Product $product, int $quantity): Product
+    {
+        // Business rule validation
+        if ($product->stock + $quantity < 0) {
+            throw new InsufficientStockException($product);
+        }
+        
+        // State mutation
+        $product->update(['stock' => $product->stock + $quantity]);
+        
+        // Domain event
+        if ($product->stock === 0) {
+            event(new ProductOutOfStock($product));
+        }
+        
+        return $product->fresh();
+    }
+}
+```
+
+**Valid Action Return Types:**
+- Domain objects: `CreateOrderAction` → `Order`
+- Collections: `BulkUpdateProductsAction` → `Collection<Product>`
+- Booleans: `ActivateAccountAction` → `bool`
+- Void: `SendNotificationOperation` → `void`
+- Primitives: `CalculateTaxAction` → `float`
+
+#### **Operations** (Infrastructure/Cross-Cutting)
+- **Infrastructure concerns**: Email, logging, caching, file storage, external APIs
+- **"How" not "What"**: Handle technical execution, not business decisions
+- Can use Actions for data retrieval
+- **Don't call other Operations or UseCases**
+
+```php
+class GenerateInvoicePDFOperation
+{
+    public function __construct(
+        private PDFGenerator $pdf,
+        private FileStorage $storage,
+    ) {}
+    
+    public function execute(Order $order): string
+    {
+        $pdf = $this->pdf->generate('invoice', [
+            'order' => $order,
+            'items' => $order->items,
+            'total' => $order->total,
+        ]);
+        
+        $path = "invoices/{$order->id}.pdf";
+        $this->storage->put($path, $pdf);
+        
+        return $path;
+    }
+}
+```
+
+**Operation Examples:**
+- `SendOrderConfirmationEmailOperation` - Sends email via mail service
+- `GenerateInvoicePDFOperation` - Creates PDF document
+- `UploadProductImageOperation` - Handles file upload to storage
+- `LogUserActivityOperation` - Records audit trail
+- `CacheProductCatalogOperation` - Updates cache layer
+- `NotifyExternalSystemOperation` - Calls third-party API
+
+**UseCase vs Operation:**
+```php
+// ✅ UseCase: Business workflow (WHAT to do)
+class ProcessRefundUseCase 
+{
+    public function execute(RefundData $data): Refund
+    {
+        // Business logic: validate refund, update order, create refund record
+    }
+}
+
+// ✅ Operation: Infrastructure (HOW to do it)
+class SendRefundEmailOperation
+{
+    public function execute(Refund $refund): void
+    {
+        // Infrastructure: send email notification
+    }
+}
+```
+
+#### **Queries** (Read Operations)
+- **Read-only**: Never mutate state
+- Complex data retrieval
+- Can return primitives, collections, or domain objects
+- Optimize for specific read scenarios
+
+```php
+class GetCustomerOrdersQuery
+{
+    public function execute(int $customerId, ?OrderStatus $status = null): Collection
+    {
+        return Order::query()
+            ->where('customer_id', $customerId)
+            ->when($status, fn($q) => $q->where('status', $status))
+            ->with(['items.product', 'customer'])
+            ->latest()
+            ->get();
+    }
+}
+```
+
+**Query Examples:**
+- `HasActiveSubscriptionQuery` → `bool`
+- `GetLowStockProductsQuery` → `Collection<Product>`
+- `CalculateCartTotalQuery` → `float`
+- `FindProductsByCategoryQuery` → `Collection<Product>`
+
+---
+
+### Dependency Rules
+
+**What Can Call What:**
+
+```
+Controllers → UseCases ✅
+Controllers → Operations ✅ (for simple cases)
+Controllers → Actions ❌ (use UseCase instead)
+
+UseCases → Actions ✅
+UseCases → Operations ✅
+UseCases → Queries ✅
+UseCases → Other UseCases ❌ (extract shared logic to Action)
+
+Actions → Models ✅
+Actions → Other Actions ❌ (compose in UseCase instead)
+Actions → Queries ✅ (for reads)
+
+Operations → Actions ✅
+Operations → Models ✅
+Operations → Other Operations ❌
+Operations → UseCases ❌
+
+Queries → Models ✅
+Queries → Other Queries ❌
+Queries → Actions ❌
+```
+
+**Domain Layer Purity:**
+- Domain layer (Models, Actions, DTOs, Events, Enums, Exceptions, Queries) has **ZERO** dependencies on Service layer
+- Domain is framework-agnostic business logic
+- Services consume Domain, never the reverse
+
+---
+
+### Dependency Injection Patterns
+
+**Critical for Laravel Octane compatibility and testability:**
+
+✅ **Constructor = Dependencies, Execute = Data**
+
+```php
+class PlaceOrderUseCase
+{
+    // Dependencies in constructor
+    public function __construct(
+        private CreateOrderAction $createOrder,
+        private EmailService $emailService,
+        private LoggerInterface $logger,
+    ) {}
+    
+    // Data in execute method
+    public function execute(OrderData $data): Order
+    {
+        // Implementation
+    }
+}
+```
+
+❌ **Anti-pattern: Data in Constructor**
+
+```php
+// Don't do this - breaks Octane singleton resolution
+public function __construct(
+    private OrderData $data,  // ❌ State in constructor
+) {}
+```
+
+**Why This Matters:**
+- **Octane**: Classes are singletons - constructor called once, execute() called per request
+- **Testing**: Easy to mock dependencies, easy to test with different data
+- **Clarity**: Clear separation between infrastructure (injected) and data (passed)
+
+---
+
+### Transaction Boundaries
+
+**UseCases own transaction boundaries** because they understand the complete business workflow:
+
+```php
+class PlaceOrderUseCase
+{
+    public function execute(OrderData $data): Order
+    {
+        return DB::transaction(function () use ($data) {
+            $order = $this->createOrder->execute($data);
+            $this->updateInventory->execute($data->items);
+            $this->recordPayment->execute($order);
+            
+            event(new OrderPlaced($order));
+            
+            return $order;
+        });
+    }
+}
+```
+
+**Actions Don't Manage Transactions:**
+```php
+class CreateOrderAction
+{
+    // No DB::transaction here - let UseCase handle it
+    public function execute(OrderData $data): Order
+    {
+        return Order::create([
+            'customer_id' => $data->customerId,
+            'total' => $data->total,
+        ]);
+    }
+}
+```
+
+**Why:**
+- UseCase sees the full workflow atomicity requirements
+- Actions stay focused and composable
+- Easier to test Actions without transaction overhead
+
+---
+
+### Data Flow with DTOs
+
+**Prefer DTOs over arrays for type safety:**
+
+```php
+// ✅ Type-safe with DTO
+readonly class OrderData
+{
+    public function __construct(
+        public int $customerId,
+        public array $items,
+        public string $shippingAddress,
+        public ?string $notes = null,
+    ) {}
+    
+    public static function from(array $data): self
+    {
+        return new self(
+            customerId: $data['customer_id'],
+            items: $data['items'],
+            shippingAddress: $data['shipping_address'],
+            notes: $data['notes'] ?? null,
+        );
+    }
+}
+
+// Usage in Controller
+$order = $this->placeOrder->execute(
+    OrderData::from($request->validated())
+);
+
+// ❌ Weak typing with arrays
+$order = $this->placeOrder->execute($request->validated());
+```
+
+---
+
+### Event-Driven Side Effects
+
+**Emit events instead of directly calling side effects:**
+
+```php
+class PlaceOrderUseCase
+{
+    public function execute(OrderData $data): Order
+    {
+        $order = DB::transaction(function () use ($data) {
+            $order = $this->createOrder->execute($data);
+            $this->updateInventory->execute($data->items);
+            return $order;
+        });
+        
+        // Let listeners handle side effects
+        event(new OrderPlaced($order));
+        
+        return $order;
+    }
+}
+
+// Listener handles email asynchronously
+class SendOrderConfirmation
+{
+    public function handle(OrderPlaced $event): void
+    {
+        $this->sendEmail->execute($event->order);
+    }
+}
+```
+
+**Benefits:**
+- Decouples core workflow from side effects
+- Side effects can be async/queued
+- Easy to add new side effects without modifying UseCase
+- Better testability
+
+---
+
+### Service Isolation
+
+Services should be **autonomous** with clear boundaries:
+
+**✅ Good: Event-based communication**
+```php
+// Order service emits event
+event(new OrderPlaced($order));
+
+// Inventory service listens
+class DecrementStockOnOrder
+{
+    public function handle(OrderPlaced $event): void
+    {
+        // Inventory service reacts independently
+    }
+}
+```
+
+**❌ Bad: Direct coupling**
+```php
+// Don't call other services directly
+app(InventoryService::class)->decrementStock($items);
+```
+
+**Cross-Service Communication:**
+- **Events**: Preferred for async workflows
+- **API contracts**: For synchronous needs (via HTTP or internal interfaces)
+- **Shared Domain**: Common domain models can be shared
+
+---
+
+### Testing Strategy
+
+The architecture enables comprehensive testing:
+
+**Unit Tests: Actions & Operations**
+```php
+test('updates product stock', function () {
+    $product = Product::factory()->create(['stock' => 10]);
+    $action = new UpdateStockAction();
+    
+    $result = $action->execute($product, -3);
+    
+    expect($result->stock)->toBe(7);
+});
+```
+
+**Integration Tests: UseCases**
+```php
+test('places order successfully', function () {
+    $useCase = app(PlaceOrderUseCase::class);
+    $data = OrderData::from([...]);
+    
+    $order = $useCase->execute($data);
+    
+    expect($order)->toBeInstanceOf(Order::class)
+        ->and($order->status)->toBe(OrderStatus::PENDING);
+});
+```
+
+**Feature Tests: Controllers**
+```php
+test('creates order via API', function () {
+    $response = $this->postJson('/api/orders', [...]);
+    
+    $response->assertCreated()
+        ->assertJsonStructure(['id', 'total', 'status']);
+});
+```
+
+---
+
 ## Commands Reference
 
 ### Service Layer Commands
@@ -627,24 +1169,44 @@ app/Domain/
 ```php
 class OrderController extends Controller
 {
-    public function store(PlaceOrderRequest $request)
+    public function __construct(
+        private PlaceOrderUseCase $placeOrder
+    ) {}
+    
+    public function store(PlaceOrderRequest $request): JsonResponse
     {
-        $order = (new PlaceOrder)->execute($request->validated());
+        $order = $this->placeOrder->execute(
+            OrderData::from($request->validated())
+        );
+        
         return response()->json($order, 201);
     }
 }
 ```
 
-### 2. UseCases Handle Business Logic
+### 2. UseCases Orchestrate Business Workflows
 
 ```php
-class PlaceOrder
+class PlaceOrderUseCase
 {
-    public function execute(array $data)
+    public function __construct(
+        private CreateOrderAction $createOrder,
+        private UpdateStockAction $updateStock,
+    ) {}
+    
+    public function execute(OrderData $data): Order
     {
-        $order = (new CreateOrderAction)->execute(OrderData::from($data));
-        event(new OrderPlaced($order));
-        return $order;
+        return DB::transaction(function () use ($data) {
+            $order = $this->createOrder->execute($data);
+            
+            foreach ($data->items as $item) {
+                $this->updateStock->execute($item['product_id'], -$item['quantity']);
+            }
+            
+            event(new OrderPlaced($order));
+            
+            return $order;
+        });
     }
 }
 ```
@@ -679,6 +1241,95 @@ Split modules by business capability:
     - `Modules/Cart` — Cart management
     - `Modules/Payment` — Payment processing
     - `Modules/Order` — Order placement
+
+---
+
+## Guiding AI Assistants
+
+To ensure AI assistants (GitHub Copilot, Cursor, etc.) follow these architectural patterns:
+
+### Option 1: Project-Level Instructions (Recommended)
+
+Create `.github/copilot-instructions.md` or `.cursorrules` in your Laravel project:
+
+```markdown
+# Project Architecture: Pulse + Vertical Slice
+
+This project uses Pulse for vertical slice architecture. Follow these rules:
+
+## File Structure
+- Controllers: `app/Services/{Service}/Modules/{Module}/Controllers/`
+- UseCases: `app/Services/{Service}/Modules/{Module}/UseCases/`
+- Actions: `app/Domain/{Domain}/Actions/`
+- Models: `app/Domain/{Domain}/Models/`
+
+## Code Rules
+1. Controllers only handle HTTP - extract validated data, call UseCase, return response
+2. UseCases orchestrate workflows - coordinate Actions/Operations, own transactions
+3. Actions are atomic - one operation, emit events, return domain objects
+4. Requests validate structure only - no business logic
+5. Use constructor DI for dependencies, execute() parameters for data
+6. Prefer DTOs over arrays for type safety
+7. Domain layer has zero dependencies on Service layer
+
+## Examples
+- See: https://github.com/faran/pulse#architecture-best-practices
+```
+
+### Option 2: Inline Code Comments
+
+Add architectural hints in base classes:
+
+```php
+<?php
+
+namespace App\Services\Checkout\Modules\Order\UseCases;
+
+/**
+ * UseCase: Orchestrates business workflow
+ * 
+ * Rules:
+ * - Constructor: Inject dependencies (Actions, Operations, Services)
+ * - execute(): Accept DTOs or validated data
+ * - Own transaction boundaries with DB::transaction()
+ * - Emit events for side effects
+ * - Never depend on Request objects
+ */
+class PlaceOrderUseCase
+{
+    public function __construct(
+        private CreateOrderAction $createOrder,
+        private UpdateInventoryAction $updateInventory,
+    ) {}
+    
+    public function execute(OrderData $data): Order
+    {
+        // Implementation
+    }
+}
+```
+
+### Option 3: Reference Documentation
+
+In your project's README or `docs/architecture.md`, link directly to Pulse patterns:
+
+```markdown
+# Our Architecture
+
+We follow Pulse's vertical slice architecture patterns:
+- [Architecture Overview](https://github.com/faran/pulse#architecture)
+- [Best Practices](https://github.com/faran/pulse#architecture-best-practices)
+- [Layer Responsibilities](https://github.com/faran/pulse#layer-responsibilities)
+```
+
+### Recommended Approach
+
+**Combine all three:**
+1. **`.github/copilot-instructions.md`** for AI context
+2. **Base class docblocks** for inline guidance  
+3. **Project docs** linking to Pulse README for team reference
+
+This ensures both AI assistants and human developers follow consistent patterns.
 
 ---
 
