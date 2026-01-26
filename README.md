@@ -116,8 +116,9 @@ Then follow the sections below to generate individual file types.
 ## File Types
 
 > **💡 Naming Freedom:** Pulse gives you complete control over class names. Examples below use suffixes like `Controller`, `Action`, `UseCase` for clarity, but you can name classes however you prefer:
+>
 > - `pulse make:controller ProductController ...` → `ProductController.php` ✅
-> - `pulse make:controller Product ...` → `Product.php` ✅  
+> - `pulse make:controller Product ...` → `Product.php` ✅
 > - `pulse make:action CreateOrderAction ...` → `CreateOrderAction.php` ✅
 > - `pulse make:action CreateOrder ...` → `CreateOrder.php` ✅
 >
@@ -145,7 +146,7 @@ class ProductController extends Controller
     public function __construct(
         private ListProductsUseCase $listProducts
     ) {}
-    
+
     public function index(ListProductsRequest $request): JsonResponse
     {
         $products = $this->listProducts->execute($request->validated());
@@ -206,18 +207,18 @@ class PlaceOrderUseCase
         private CreateOrderAction $createOrder,
         private UpdateStockAction $updateStock,
     ) {}
-    
+
     public function execute(OrderData $data): Order
     {
         return DB::transaction(function () use ($data) {
             $order = $this->createOrder->execute($data);
-            
+
             foreach ($data->items as $item) {
                 $this->updateStock->execute($item['product_id'], -$item['quantity']);
             }
-            
+
             event(new OrderPlaced($order));
-            
+
             return $order;
         });
     }
@@ -248,7 +249,7 @@ class SendOrderConfirmationEmail
     public function __construct(
         private Mailer $mailer
     ) {}
-    
+
     public function execute(Order $order): void
     {
         $this->mailer->to($order->customer->email)
@@ -258,6 +259,7 @@ class SendOrderConfirmationEmail
 ```
 
 **When to use Operations:**
+
 - Sending emails/notifications
 - Logging/auditing
 - File uploads/downloads
@@ -266,6 +268,7 @@ class SendOrderConfirmationEmail
 - Generating PDFs/reports
 
 **When to use UseCases instead:**
+
 - Coordinating business workflows
 - Orchestrating multiple domain Actions
 - Implementing business processes
@@ -330,7 +333,7 @@ class UpdateProductStock
         if ($product->stock === 0) {
             event(new ProductOutOfStock($product));
         }
-        
+
         return $product->fresh();
     }
 }
@@ -651,6 +654,7 @@ Request → Controller → UseCase → Actions/Operations/Queries → Models
 ```
 
 #### **Controllers** (HTTP Layer)
+
 - Extract validated data from Request
 - Call UseCase with DTOs or validated arrays
 - Transform domain results to HTTP responses
@@ -662,19 +666,20 @@ class OrderController extends Controller
     public function __construct(
         private PlaceOrder $placeOrder
     ) {}
-    
+
     public function store(PlaceOrderRequest $request): JsonResponse
     {
         $order = $this->placeOrder->execute(
             OrderData::from($request->validated())
         );
-        
+
         return response()->json($order, 201);
     }
 }
 ```
 
 #### **Requests** (Validation Layer)
+
 - Validate input structure and format
 - Authorization checks (via `authorize()` method)
 - **No business logic** - only input validation
@@ -688,7 +693,7 @@ class PlaceOrderRequest extends FormRequest
         // Policy-based authorization
         return $this->user()->can('create', Order::class);
     }
-    
+
     public function rules(): array
     {
         // Structure validation only
@@ -703,6 +708,7 @@ class PlaceOrderRequest extends FormRequest
 ```
 
 #### **UseCases** (Application Orchestration)
+
 - Orchestrate business workflows
 - Coordinate multiple Actions and Operations
 - Own database transaction boundaries
@@ -717,24 +723,24 @@ class PlaceOrderUseCase
         private UpdateStockAction $updateStock,
         private ReserveInventoryAction $reserveInventory,
     ) {}
-    
+
     public function execute(OrderData $data): Order
     {
         return DB::transaction(function () use ($data) {
             // 1. Reserve inventory (prevents overselling)
             $this->reserveInventory->execute($data->items);
-            
+
             // 2. Create the order
             $order = $this->createOrder->execute($data);
-            
+
             // 3. Decrement stock for each item
             foreach ($data->items as $item) {
                 $this->updateStock->execute($item['product_id'], -$item['quantity']);
             }
-            
+
             // 4. Emit event for side effects (email, notifications, etc.)
             event(new OrderPlaced($order));
-            
+
             return $order;
         });
     }
@@ -742,6 +748,7 @@ class PlaceOrderUseCase
 ```
 
 #### **Actions** (Domain Operations)
+
 - **Atomic**: One action = one domain operation
 - Encapsulate business rules
 - Validate business invariants
@@ -757,21 +764,22 @@ class UpdateStockAction
         if ($product->stock + $quantity < 0) {
             throw new InsufficientStockException($product);
         }
-        
+
         // State mutation
         $product->update(['stock' => $product->stock + $quantity]);
-        
+
         // Domain event
         if ($product->stock === 0) {
             event(new ProductOutOfStock($product));
         }
-        
+
         return $product->fresh();
     }
 }
 ```
 
 **Valid Action Return Types:**
+
 - Domain objects: `CreateOrderAction` → `Order`
 - Collections: `BulkUpdateProductsAction` → `Collection<Product>`
 - Booleans: `ActivateAccountAction` → `bool`
@@ -779,6 +787,7 @@ class UpdateStockAction
 - Primitives: `CalculateTaxAction` → `float`
 
 #### **Operations** (Infrastructure/Cross-Cutting)
+
 - **Infrastructure concerns**: Email, logging, caching, file storage, external APIs
 - **"How" not "What"**: Handle technical execution, not business decisions
 - Can use Actions for data retrieval
@@ -791,7 +800,7 @@ class GenerateInvoicePDFOperation
         private PDFGenerator $pdf,
         private FileStorage $storage,
     ) {}
-    
+
     public function execute(Order $order): string
     {
         $pdf = $this->pdf->generate('invoice', [
@@ -799,16 +808,17 @@ class GenerateInvoicePDFOperation
             'items' => $order->items,
             'total' => $order->total,
         ]);
-        
+
         $path = "invoices/{$order->id}.pdf";
         $this->storage->put($path, $pdf);
-        
+
         return $path;
     }
 }
 ```
 
 **Operation Examples:**
+
 - `SendOrderConfirmationEmailOperation` - Sends email via mail service
 - `GenerateInvoicePDFOperation` - Creates PDF document
 - `UploadProductImageOperation` - Handles file upload to storage
@@ -817,9 +827,10 @@ class GenerateInvoicePDFOperation
 - `NotifyExternalSystemOperation` - Calls third-party API
 
 **UseCase vs Operation:**
+
 ```php
 // ✅ UseCase: Business workflow (WHAT to do)
-class ProcessRefundUseCase 
+class ProcessRefundUseCase
 {
     public function execute(RefundData $data): Refund
     {
@@ -838,6 +849,7 @@ class SendRefundEmailOperation
 ```
 
 #### **Queries** (Read Operations)
+
 - **Read-only**: Never mutate state
 - Complex data retrieval
 - Can return primitives, collections, or domain objects
@@ -859,6 +871,7 @@ class GetCustomerOrdersQuery
 ```
 
 **Query Examples:**
+
 - `HasActiveSubscriptionQuery` → `bool`
 - `GetLowStockProductsQuery` → `Collection<Product>`
 - `CalculateCartTotalQuery` → `float`
@@ -895,6 +908,7 @@ Queries → Actions ❌
 ```
 
 **Domain Layer Purity:**
+
 - Domain layer (Models, Actions, DTOs, Events, Enums, Exceptions, Queries) has **ZERO** dependencies on Service layer
 - Domain is framework-agnostic business logic
 - Services consume Domain, never the reverse
@@ -916,7 +930,7 @@ class PlaceOrderUseCase
         private EmailService $emailService,
         private LoggerInterface $logger,
     ) {}
-    
+
     // Data in execute method
     public function execute(OrderData $data): Order
     {
@@ -935,6 +949,7 @@ public function __construct(
 ```
 
 **Why This Matters:**
+
 - **Octane**: Classes are singletons - constructor called once, execute() called per request
 - **Testing**: Easy to mock dependencies, easy to test with different data
 - **Clarity**: Clear separation between infrastructure (injected) and data (passed)
@@ -954,9 +969,9 @@ class PlaceOrderUseCase
             $order = $this->createOrder->execute($data);
             $this->updateInventory->execute($data->items);
             $this->recordPayment->execute($order);
-            
+
             event(new OrderPlaced($order));
-            
+
             return $order;
         });
     }
@@ -964,6 +979,7 @@ class PlaceOrderUseCase
 ```
 
 **Actions Don't Manage Transactions:**
+
 ```php
 class CreateOrderAction
 {
@@ -979,6 +995,7 @@ class CreateOrderAction
 ```
 
 **Why:**
+
 - UseCase sees the full workflow atomicity requirements
 - Actions stay focused and composable
 - Easier to test Actions without transaction overhead
@@ -999,7 +1016,7 @@ readonly class OrderData
         public string $shippingAddress,
         public ?string $notes = null,
     ) {}
-    
+
     public static function from(array $data): self
     {
         return new self(
@@ -1036,10 +1053,10 @@ class PlaceOrderUseCase
             $this->updateInventory->execute($data->items);
             return $order;
         });
-        
+
         // Let listeners handle side effects
         event(new OrderPlaced($order));
-        
+
         return $order;
     }
 }
@@ -1055,6 +1072,7 @@ class SendOrderConfirmation
 ```
 
 **Benefits:**
+
 - Decouples core workflow from side effects
 - Side effects can be async/queued
 - Easy to add new side effects without modifying UseCase
@@ -1067,6 +1085,7 @@ class SendOrderConfirmation
 Services should be **autonomous** with clear boundaries:
 
 **✅ Good: Event-based communication**
+
 ```php
 // Order service emits event
 event(new OrderPlaced($order));
@@ -1082,12 +1101,14 @@ class DecrementStockOnOrder
 ```
 
 **❌ Bad: Direct coupling**
+
 ```php
 // Don't call other services directly
 app(InventoryService::class)->decrementStock($items);
 ```
 
 **Cross-Service Communication:**
+
 - **Events**: Preferred for async workflows
 - **API contracts**: For synchronous needs (via HTTP or internal interfaces)
 - **Shared Domain**: Common domain models can be shared
@@ -1099,35 +1120,38 @@ app(InventoryService::class)->decrementStock($items);
 The architecture enables comprehensive testing:
 
 **Unit Tests: Actions & Operations**
+
 ```php
 test('updates product stock', function () {
     $product = Product::factory()->create(['stock' => 10]);
     $action = new UpdateStockAction();
-    
+
     $result = $action->execute($product, -3);
-    
+
     expect($result->stock)->toBe(7);
 });
 ```
 
 **Integration Tests: UseCases**
+
 ```php
 test('places order successfully', function () {
     $useCase = app(PlaceOrderUseCase::class);
     $data = OrderData::from([...]);
-    
+
     $order = $useCase->execute($data);
-    
+
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->status)->toBe(OrderStatus::PENDING);
 });
 ```
 
 **Feature Tests: Controllers**
+
 ```php
 test('creates order via API', function () {
     $response = $this->postJson('/api/orders', [...]);
-    
+
     $response->assertCreated()
         ->assertJsonStructure(['id', 'total', 'status']);
 });
@@ -1172,13 +1196,13 @@ class OrderController extends Controller
     public function __construct(
         private PlaceOrderUseCase $placeOrder
     ) {}
-    
+
     public function store(PlaceOrderRequest $request): JsonResponse
     {
         $order = $this->placeOrder->execute(
             OrderData::from($request->validated())
         );
-        
+
         return response()->json($order, 201);
     }
 }
@@ -1193,18 +1217,18 @@ class PlaceOrderUseCase
         private CreateOrderAction $createOrder,
         private UpdateStockAction $updateStock,
     ) {}
-    
+
     public function execute(OrderData $data): Order
     {
         return DB::transaction(function () use ($data) {
             $order = $this->createOrder->execute($data);
-            
+
             foreach ($data->items as $item) {
                 $this->updateStock->execute($item['product_id'], -$item['quantity']);
             }
-            
+
             event(new OrderPlaced($order));
-            
+
             return $order;
         });
     }
@@ -1258,12 +1282,14 @@ Create `.github/copilot-instructions.md` or `.cursorrules` in your Laravel proje
 This project uses Pulse for vertical slice architecture. Follow these rules:
 
 ## File Structure
+
 - Controllers: `app/Services/{Service}/Modules/{Module}/Controllers/`
 - UseCases: `app/Services/{Service}/Modules/{Module}/UseCases/`
 - Actions: `app/Domain/{Domain}/Actions/`
 - Models: `app/Domain/{Domain}/Models/`
 
 ## Code Rules
+
 1. Controllers only handle HTTP - extract validated data, call UseCase, return response
 2. UseCases orchestrate workflows - coordinate Actions/Operations, own transactions
 3. Actions are atomic - one operation, emit events, return domain objects
@@ -1273,6 +1299,7 @@ This project uses Pulse for vertical slice architecture. Follow these rules:
 7. Domain layer has zero dependencies on Service layer
 
 ## Examples
+
 - See: https://github.com/faran/pulse#architecture-best-practices
 ```
 
@@ -1287,7 +1314,7 @@ namespace App\Services\Checkout\Modules\Order\UseCases;
 
 /**
  * UseCase: Orchestrates business workflow
- * 
+ *
  * Rules:
  * - Constructor: Inject dependencies (Actions, Operations, Services)
  * - execute(): Accept DTOs or validated data
@@ -1301,7 +1328,7 @@ class PlaceOrderUseCase
         private CreateOrderAction $createOrder,
         private UpdateInventoryAction $updateInventory,
     ) {}
-    
+
     public function execute(OrderData $data): Order
     {
         // Implementation
@@ -1317,6 +1344,7 @@ In your project's README or `docs/architecture.md`, link directly to Pulse patte
 # Our Architecture
 
 We follow Pulse's vertical slice architecture patterns:
+
 - [Architecture Overview](https://github.com/faran/pulse#architecture)
 - [Best Practices](https://github.com/faran/pulse#architecture-best-practices)
 - [Layer Responsibilities](https://github.com/faran/pulse#layer-responsibilities)
@@ -1325,8 +1353,9 @@ We follow Pulse's vertical slice architecture patterns:
 ### Recommended Approach
 
 **Combine all three:**
+
 1. **`.github/copilot-instructions.md`** for AI context
-2. **Base class docblocks** for inline guidance  
+2. **Base class docblocks** for inline guidance
 3. **Project docs** linking to Pulse README for team reference
 
 This ensures both AI assistants and human developers follow consistent patterns.

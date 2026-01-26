@@ -132,3 +132,4 @@ class UseCaseGenerator extends Generator
         $rootNamespace = $this->findRootNamespace();
         return "{$rootNamespace}\\Services\\{$this->service}\\Modules\\{$this->module}\\UseCases";
     }
+}
