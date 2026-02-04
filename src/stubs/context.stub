@@ -229,6 +229,14 @@ class GetLowStockProductsQuery
 }
 ```
 
+## Atomicity: Actions and Queries
+
+**Actions are atomic** — One business operation on one model/aggregate. No calling other Actions or Queries.
+
+**Queries are atomic** — One read operation, return data. No calling other Queries or Actions.
+
+**If you need to compose:** Use Operation (reusable sequence) or UseCase (full workflow).
+
 ## Dependency Rules
 
 ```
@@ -241,9 +249,9 @@ UseCases → Operations ✅
 UseCases → Queries ✅
 UseCases → Other UseCases ❌ (extract shared logic to Action)
 
-Actions → Models ✅
-Actions → Queries ✅
-Actions → Other Actions ❌ (compose in UseCase instead)
+Actions → Models ✅ (atomic - single operation)
+Actions → Queries ❌ (UseCase/Operation passes needed data)
+Actions → Other Actions ❌ (compose in UseCase/Operation)
 
 Operations → Actions ✅
 Operations → Models ✅

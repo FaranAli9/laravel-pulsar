@@ -897,6 +897,16 @@ class GetCustomerOrdersQuery
 
 ---
 
+### Atomicity: Actions and Queries
+
+**Actions are atomic** — One business operation on one model/aggregate. No calling other Actions or Queries.
+
+**Queries are atomic** — One read operation, return data. No calling other Queries or Actions.
+
+**If you need to compose multiple Actions/Queries:** Use an Operation (reusable sequence) or UseCase (full workflow).
+
+---
+
 ### Dependency Rules
 
 **What Can Call What:**
@@ -911,9 +921,9 @@ UseCases → Operations ✅
 UseCases → Queries ✅
 UseCases → Other UseCases ❌ (extract shared logic to Action)
 
-Actions → Models ✅
-Actions → Other Actions ❌ (compose in UseCase instead)
-Actions → Queries ✅ (for reads)
+Actions → Models ✅ (atomic - single operation)
+Actions → Other Actions ❌ (compose in UseCase/Operation)
+Actions → Queries ❌ (UseCase/Operation passes needed data)
 
 Operations → Actions ✅
 Operations → Models ✅
