@@ -18,6 +18,7 @@ use Faran\Pulsar\Commands\MakeServiceCommand;
 use Faran\Pulsar\Commands\MakeUseCaseCommand;
 use Faran\Pulsar\Commands\PingCommand;
 use Faran\Pulsar\Commands\PublishContextCommand;
+use Faran\Pulsar\Commands\PublishSkillCommand;
 use Symfony\Component\Console\Application;
 
 $app = new Application('Pulsar', '1.0.0');
@@ -44,5 +45,6 @@ $app->addCommand(new MakeQueryCommand());
 
 // Publishing commands
 $app->addCommand(new PublishContextCommand());
+$app->addCommand(new PublishSkillCommand());
 
 $app->run();

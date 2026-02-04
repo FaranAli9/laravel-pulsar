@@ -1,0 +1,285 @@
+---
+description: Enforce Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activate when creating controllers, use cases, actions, operations, queries, models, DTOs, events, enums, exceptions, policies, or requests.
+---
+
+# Pulsar Architecture Skill
+
+You are operating in a Laravel project that uses Pulsar's vertical slice architecture. All code generation and modification MUST follow these rules. Violations are architectural errors.
+
+## Mental Model
+
+This project has two layers:
+
+- **Service Layer** (`app/Services/`): HTTP delivery and application orchestration. Organized by business capability as Services containing Modules.
+- **Domain Layer** (`app/Domain/`): Pure business logic. Framework-agnostic. Organized by business domain.
+
+Code is organized by business capability, NOT by technical layer. There is no `app/Http/Controllers/` or `app/Models/` directory.
+
+## File Locations
+
+### Service Layer
+
+```
+app/Services/{Service}/
+  Providers/{Service}ServiceProvider.php
+  Providers/RouteServiceProvider.php
+  Routes/api.php
+  Modules/{Module}/
+    Controllers/{Name}.php
+    Requests/{Name}.php
+    UseCases/{Name}.php
+    Operations/{Name}.php
+```
+
+### Domain Layer
+
+```
+app/Domain/{Domain}/
+  Models/{Name}.php
+  Actions/{Name}.php
+  DTOs/{Name}.php
+  Policies/{Name}.php
+  Events/{Name}.php
+  Enums/{Name}.php
+  Exceptions/{Name}.php
+  Queries/{Name}.php
+```
+
+### Namespace Conventions
+
+- Controllers: `App\Services\{Service}\Modules\{Module}\Controllers`
+- Requests: `App\Services\{Service}\Modules\{Module}\Requests`
+- UseCases: `App\Services\{Service}\Modules\{Module}\UseCases`
+- Operations: `App\Services\{Service}\Modules\{Module}\Operations`
+- Models: `App\Domain\{Domain}\Models`
+- Actions: `App\Domain\{Domain}\Actions`
+- DTOs: `App\Domain\{Domain}\DTOs`
+- Queries: `App\Domain\{Domain}\Queries`
+- Events: `App\Domain\{Domain}\Events`
+- Enums: `App\Domain\{Domain}\Enums`
+- Exceptions: `App\Domain\{Domain}\Exceptions`
+- Policies: `App\Domain\{Domain}\Policies`
+
+## Layer Responsibilities
+
+### Controller
+
+- MUST extract validated data from Request, call a UseCase, return HTTP response
+- MUST NOT contain business logic, database queries, or model operations
+- MUST NOT call Actions directly — use a UseCase
+
+### Request (FormRequest)
+
+- MUST validate input structure and format only
+- MUST NOT contain business rule validation
+- MAY use `authorize()` for policy-based authorization
+
+### UseCase
+
+- MUST orchestrate a complete business workflow
+- MUST own transaction boundaries via `DB::transaction()`
+- MUST coordinate Actions, Operations, and Queries
+- MUST emit domain Events for side effects
+- MUST NOT accept HTTP Request objects — accept DTOs or validated arrays
+- MUST NOT call other UseCases — extract shared logic into an Operation or Action
+
+### Action (Domain)
+
+- MUST be atomic: one business operation on one model/aggregate
+- MUST validate business invariants
+- MUST NOT call other Actions
+- MUST NOT call Queries
+- MUST NOT manage database transactions
+- MUST NOT depend on Service Layer classes
+- MAY emit domain Events
+
+### Operation (Service)
+
+- MUST compose multiple Actions and/or Queries into a reusable sequence
+- MUST be called by UseCases (or Controllers for simple cases)
+- MUST NOT call other Operations
+- MUST NOT call UseCases
+- MUST NOT manage database transactions
+- MUST NOT contain business logic — only orchestrate Actions/Queries
+
+### Query (Domain)
+
+- MUST be read-only — NEVER mutate state
+- MUST NOT call Actions
+- MUST NOT call other Queries
+- MUST NOT depend on Service Layer classes
+
+### Model (Domain)
+
+- MUST define relationships, fillable attributes, casts
+- MUST NOT contain business logic beyond simple accessors/scopes
+- MUST NOT depend on Service Layer classes
+
+### DTO (Domain)
+
+- MUST be `readonly class`
+- MUST have a `public static function from(array $data): self` factory method
+- MUST use constructor promotion for all properties
+
+### Event (Domain)
+
+- MUST use `readonly` public properties
+- MUST NOT contain logic
+
+### Enum (Domain)
+
+- MUST be a backed enum (`string` or `int`)
+
+### Exception (Domain)
+
+- MUST extend `Exception`
+- SHOULD accept domain context in constructor
+
+### Policy (Domain)
+
+- MUST define authorization rules for domain entities
+- MUST return `bool`
+
+## Dependency Rules
+
+Allowed calls:
+
+```
+Controller -> UseCase
+Controller -> Operation (simple cases only)
+UseCase -> Action
+UseCase -> Operation
+UseCase -> Query
+Operation -> Action
+Operation -> Query
+Operation -> Model
+Action -> Model
+Query -> Model
+```
+
+Forbidden calls (architectural errors):
+
+```
+Controller -> Action (MUST use UseCase)
+UseCase -> UseCase (extract to Operation or Action)
+Action -> Action (compose in UseCase or Operation)
+Action -> Query (UseCase/Operation passes needed data)
+Query -> Query (keep atomic)
+Query -> Action (read-only, no mutations)
+Operation -> Operation (no nesting)
+Operation -> UseCase (no reverse dependency)
+Domain -> Service Layer (NEVER — domain is framework-agnostic)
+Service A -> Service B (use Events for cross-service communication)
+```
+
+## Transaction Ownership
+
+- ONLY UseCases may call `DB::transaction()`
+- Actions MUST NOT start transactions — they participate in the UseCase's transaction
+- Operations MUST NOT start transactions
+- Queries MUST NOT start transactions
+
+## Data Flow Rules
+
+### Constructor vs execute()
+
+- Constructor: dependencies only (injected by Laravel container)
+- `execute()`: runtime data only (DTOs, validated arrays, primitives)
+
+```php
+// CORRECT
+public function __construct(
+    private CreateOrderAction $createOrder,  // dependency
+) {}
+
+public function execute(OrderData $data): Order  // data
+```
+
+```php
+// WRONG — breaks Laravel Octane, untestable
+public function __construct(
+    private OrderData $data,  // data in constructor
+) {}
+```
+
+### Request Object Boundary
+
+- Request objects MUST NOT pass beyond the Controller
+- Controller MUST convert Request to DTO or validated array before calling UseCase
+
+```php
+// CORRECT
+$order = $this->placeOrder->execute(OrderData::from($request->validated()));
+
+// WRONG
+$order = $this->placeOrder->execute($request);
+```
+
+### DTO Usage
+
+- Prefer DTOs over arrays when crossing layer boundaries
+- DTOs MUST be readonly with constructor promotion
+- DTOs MUST have a `from(array)` static factory
+
+## Forbidden Patterns
+
+1. **Fat controllers**: Business logic in controllers. Extract to UseCase.
+2. **Business logic in Requests**: Requests validate structure only. Business rules belong in Actions.
+3. **Actions calling Actions**: Compose in UseCase or Operation.
+4. **UseCases calling UseCases**: Extract shared logic to Operation or Action.
+5. **Domain depending on Services**: Domain layer has ZERO imports from Service layer.
+6. **Transactions outside UseCases**: Only UseCases own transaction boundaries.
+7. **Direct side effects**: Use Events instead of calling email/notification services directly from UseCases.
+8. **Direct service coupling**: Services communicate via Events, not direct calls.
+9. **Data in constructors**: Constructor is for dependencies. Data goes to `execute()`.
+10. **Generic directories**: NEVER place files in `app/Http/Controllers/`, `app/Models/`, or `app/Actions/`. Use the Pulsar directory structure.
+
+## Event-Driven Side Effects
+
+- UseCases MUST emit Events for side effects (email, notifications, logging)
+- UseCases MUST NOT directly call infrastructure services
+- Listeners handle side effects asynchronously
+
+```php
+// CORRECT
+event(new OrderPlaced($order));
+
+// WRONG
+$this->emailService->sendOrderConfirmation($order);
+```
+
+## Uncertainty Protocol
+
+If you are unsure about:
+
+- Which Service or Module a file belongs to
+- Whether logic is a UseCase, Operation, or Action
+- Whether to create a new Service or extend an existing one
+- Which Domain a model or action belongs to
+
+STOP and ASK the user before generating code. Do not guess.
+
+## Scaffolding (Optional)
+
+Pulsar CLI can scaffold files with correct paths and namespaces:
+
+```bash
+# Service Layer
+./vendor/bin/pulsar make:service {Service}
+./vendor/bin/pulsar make:controller {Name} {Module} {Service}
+./vendor/bin/pulsar make:request {Name} {Module} {Service}
+./vendor/bin/pulsar make:use-case {Name} {Module} {Service}
+./vendor/bin/pulsar make:operation {Name} {Module} {Service}
+
+# Domain Layer
+./vendor/bin/pulsar make:model {Name} {Domain}
+./vendor/bin/pulsar make:action {Name} {Domain}
+./vendor/bin/pulsar make:dto {Name} {Domain}
+./vendor/bin/pulsar make:policy {Name} {Domain}
+./vendor/bin/pulsar make:event {Name} {Domain}
+./vendor/bin/pulsar make:enum {Name} {Domain}
+./vendor/bin/pulsar make:exception {Name} {Domain}
+./vendor/bin/pulsar make:query {Name} {Domain}
+```
+
+Use these commands when creating new files. They ensure correct directory placement and namespace generation.
