@@ -45,7 +45,7 @@ app/Services/{Service}/
     ├── Controllers/                    # HTTP request handlers
     ├── Requests/                       # Input validation
     ├── UseCases/                       # Application logic
-    └── Operations/                     # Cross-cutting operations
+    └── Operations/                     # Reusable action/query sequences
 ```
 
 **Example:** E-commerce Checkout Service
@@ -229,14 +229,14 @@ class PlaceOrderUseCase
 
 #### Operations
 
-**Purpose:** Infrastructure and cross-cutting concerns (email, logging, caching, file storage, external APIs).
+**Purpose:** Reusable sequences of Actions/Queries that can be shared across multiple UseCases.
 
-**Not Business Logic:** Operations handle "how" (send email, log event), not "what" (place order, update stock).
+**When multiple UseCases need the same sequence of Actions/Queries, extract it into an Operation.**
 
 **Command:**
 
 ```bash
-pulsar make:operation SendOrderConfirmationEmail Order Checkout
+pulsar make:operation SaveAddress User Account
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Operations/`
@@ -244,34 +244,39 @@ pulsar make:operation SendOrderConfirmationEmail Order Checkout
 **Example:**
 
 ```php
-class SendOrderConfirmationEmail
+class SaveAddressOperation
 {
     public function __construct(
-        private Mailer $mailer
+        private FormatAddressAction $formatAddress,
+        private RemoveNullFieldsAction $removeNullFields,
+        private SaveAddressAction $saveAddress,
     ) {}
 
-    public function execute(Order $order): void
+    public function execute(array $addressData, User $user): Address
     {
-        $this->mailer->to($order->customer->email)
-            ->send(new OrderConfirmation($order));
+        // 1. Format address (standardize formatting)
+        $formatted = $this->formatAddress->execute($addressData);
+
+        // 2. Remove null fields (clean data)
+        $cleaned = $this->removeNullFields->execute($formatted);
+
+        // 3. Save address
+        return $this->saveAddress->execute($cleaned, $user);
     }
 }
 ```
 
 **When to use Operations:**
 
-- Sending emails/notifications
-- Logging/auditing
-- File uploads/downloads
-- External API calls
-- Caching operations
-- Generating PDFs/reports
+- Multiple UseCases perform the same sequence of Actions/Queries
+- You need to reuse a multi-step process across different workflows
+- A group of Actions/Queries always execute together
 
 **When to use UseCases instead:**
 
-- Coordinating business workflows
-- Orchestrating multiple domain Actions
-- Implementing business processes
+- Single workflow specific to one feature (not reused elsewhere)
+- Workflow owns transaction boundaries
+- Workflow emits domain events
 
 ---
 
@@ -786,64 +791,77 @@ class UpdateStockAction
 - Void: `SendNotificationOperation` → `void`
 - Primitives: `CalculateTaxAction` → `float`
 
-#### **Operations** (Infrastructure/Cross-Cutting)
+#### **Operations** (Reusable Action Orchestration)
 
-- **Infrastructure concerns**: Email, logging, caching, file storage, external APIs
-- **"How" not "What"**: Handle technical execution, not business decisions
-- Can use Actions for data retrieval
+- **Compose Actions/Queries into reusable sequences**
+- Extract common action chains shared across multiple UseCases
+- Can call Actions, Queries, and Models
 - **Don't call other Operations or UseCases**
 
 ```php
-class GenerateInvoicePDFOperation
+class SaveAddressOperation
 {
     public function __construct(
-        private PDFGenerator $pdf,
-        private FileStorage $storage,
+        private FormatAddressAction $formatAddress,
+        private RemoveNullFieldsAction $removeNullFields,
+        private SaveAddressAction $saveAddress,
     ) {}
 
-    public function execute(Order $order): string
+    public function execute(array $addressData, User $user): Address
     {
-        $pdf = $this->pdf->generate('invoice', [
-            'order' => $order,
-            'items' => $order->items,
-            'total' => $order->total,
-        ]);
+        // 1. Format address
+        $formatted = $this->formatAddress->execute($addressData);
 
-        $path = "invoices/{$order->id}.pdf";
-        $this->storage->put($path, $pdf);
+        // 2. Remove null fields
+        $cleaned = $this->removeNullFields->execute($formatted);
 
-        return $path;
+        // 3. Save address
+        return $this->saveAddress->execute($cleaned, $user);
     }
 }
 ```
 
 **Operation Examples:**
 
-- `SendOrderConfirmationEmailOperation` - Sends email via mail service
-- `GenerateInvoicePDFOperation` - Creates PDF document
-- `UploadProductImageOperation` - Handles file upload to storage
-- `LogUserActivityOperation` - Records audit trail
-- `CacheProductCatalogOperation` - Updates cache layer
-- `NotifyExternalSystemOperation` - Calls third-party API
+- `SaveAddressOperation` - Format → Clean → Save address (reused by multiple UseCases)
+- `ProcessPaymentOperation` - Validate payment → Charge → Record transaction
+- `PrepareOrderDataOperation` - Validate items → Calculate totals → Apply discounts
+- `SyncInventoryOperation` - Fetch stock → Update cache → Notify if low
 
 **UseCase vs Operation:**
 
 ```php
-// ✅ UseCase: Business workflow (WHAT to do)
-class ProcessRefundUseCase
+// ✅ UseCase: Full feature workflow (owns transactions, emits events)
+class PlaceOrderUseCase
 {
-    public function execute(RefundData $data): Refund
+    public function __construct(
+        private SaveAddressOperation $saveAddress,  // Reuses Operation
+    ) {}
+
+    public function execute(OrderData $data): Order
     {
-        // Business logic: validate refund, update order, create refund record
+        return DB::transaction(function () use ($data) {
+            // UseCase orchestrates the full workflow
+            $address = $this->saveAddress->execute($data->address, $data->user);
+            // ... create order, update stock, etc.
+            event(new OrderPlaced($order));
+            return $order;
+        });
     }
 }
 
-// ✅ Operation: Infrastructure (HOW to do it)
-class SendRefundEmailOperation
+// ✅ Operation: Reusable action sequence (called by multiple UseCases)
+class SaveAddressOperation
 {
-    public function execute(Refund $refund): void
+    public function execute(array $addressData, User $user): Address
     {
-        // Infrastructure: send email notification
+        // Operation composes multiple Actions
+        return $this->saveAddress->execute(
+            $this->removeNullFields->execute(
+                $this->formatAddress->execute($addressData)
+            ),
+            $user
+        );
     }
 }
 ```

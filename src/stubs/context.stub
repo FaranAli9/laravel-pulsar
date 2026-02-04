@@ -16,7 +16,7 @@ app/Services/{Service}/
     ├── Controllers/    # HTTP handlers (thin)
     ├── Requests/       # Input validation
     ├── UseCases/       # Workflow orchestration
-    └── Operations/     # Infrastructure (email, cache, APIs)
+    └── Operations/     # Reusable action/query orchestration
 ```
 
 ### Domain Layer
@@ -41,7 +41,7 @@ app/Domain/{Domain}/
 | **Request** | Validate input structure, authorize | No business rule validation |
 | **UseCase** | Orchestrate workflows, own transactions, emit events | Never coupled to HTTP Request objects |
 | **Action** | Atomic business operation, validate business rules | Don't call other UseCases |
-| **Operation** | Infrastructure (email, APIs, cache, files) | Don't contain business logic |
+| **Operation** | Compose multiple Actions/Queries into reusable sequences | Don't contain business logic |
 | **Query** | Complex read operations, reports | Never mutate state |
 | **Model** | Data persistence, relationships | Keep thin, no business logic |
 
@@ -151,37 +151,32 @@ class UpdateStockAction
 }
 ```
 
-### Operation (Infrastructure)
+### Operation (Reusable Action Orchestration)
 
 ```php
-class SendOrderConfirmationEmailOperation
+class SaveAddressOperation
 {
     public function __construct(
-        private Mailer $mailer,
-        private LoggerInterface $logger,
+        private FormatAddressAction $formatAddress,
+        private RemoveNullFieldsAction $removeNullFields,
+        private SaveAddressAction $saveAddress,
     ) {}
 
-    public function execute(Order $order): void
+    public function execute(array $addressData, User $user): Address
     {
-        try {
-            $this->mailer->send(
-                new OrderConfirmationMail($order),
-                $order->customer->email
-            );
+        // 1. Format address (standardize formatting)
+        $formatted = $this->formatAddress->execute($addressData);
 
-            $this->logger->info("Order confirmation sent", [
-                'order_id' => $order->id,
-            ]);
-        } catch (\Exception $e) {
-            $this->logger->error("Failed to send confirmation", [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
+        // 2. Remove null fields (clean data)
+        $cleaned = $this->removeNullFields->execute($formatted);
+
+        // 3. Save address
+        return $this->saveAddress->execute($cleaned, $user);
     }
 }
 ```
+
+Operations compose multiple Actions/Queries into reusable sequences that can be called by multiple UseCases. They prevent duplicating the same action chains across different workflows.
 
 ### DTO (Data Transfer Object)
 
@@ -389,11 +384,12 @@ app(InventoryService::class)->decrementStock($items);
 
 | Aspect | UseCase | Operation |
 |--------|---------|-----------|
-| Purpose | Business workflow (WHAT) | Infrastructure task (HOW) |
-| Example | `PlaceOrderUseCase` | `SendEmailOperation` |
-| Calls | Actions, Operations, Queries | External services, APIs |
-| Returns | Domain objects | void, primitives, DTOs |
+| Purpose | Business workflow (full feature) | Reusable action/query sequence |
+| Example | `PlaceOrderUseCase` | `SaveAddressOperation` |
+| Calls | Actions, Operations, Queries | Actions, Queries (orchestrates them) |
+| Reusability | Specific to one workflow | Shared across multiple UseCases |
 | Transactions | Owns boundaries | Never manages |
+| Called by | Controllers | UseCases, other Operations |
 
 ### Action Return Types
 
