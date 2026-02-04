@@ -1,41 +1,70 @@
 {
-	"name": "faran/pulsar",
-	"type": "library",
-	"version": "1.0.0",
-	"autoload": {
-		"psr-4": {
-			"Faran\\Pulsar\\": "src/"
-		}
-	},
-	"autoload-dev": {
-		"psr-4": {
-			"Tests\\": "tests/"
-		}
-	},
-	"authors": [
-		{
-			"name": "Faran Ali",
-			"email": "faranaliahmed@gmail.com"
-		}
-	],
-	"minimum-stability": "stable",
-	"require": {
-		"php": "^8.2",
-		"symfony/console": "^7.0"
-	},
-	"require-dev": {
-		"pestphp/pest": "^4.3"
-	},
-	"bin": [
-		"bin/pulsar"
-	],
-	"scripts": {
-		"test": "pest",
-		"test:coverage": "pest --coverage --min=85"
-	},
-	"config": {
-		"allow-plugins": {
-			"pestphp/pest-plugin": true
-		}
-	}
+    "name": "faran/pulsar",
+    "description": "An opinionated Laravel architecture for building modular, domain-driven applications at scale",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "laravel-12",
+        "architecture",
+        "laravel-architecture",
+        "code-generator",
+        "scaffolding",
+        "modular-architecture",
+        "clean-architecture",
+        "domain-driven-design",
+        "ddd",
+        "service-layer",
+        "vertical-slice",
+        "multi-tenant",
+        "saas",
+        "scalable",
+        "medium-scale",
+        "enterprise",
+        "artisan",
+        "crud",
+        "php"
+    ],
+    "homepage": "https://github.com/faran/pulsar",
+    "bin": [
+        "bin/pulsar"
+    ],
+    "support": {
+        "source": "https://github.com/faran/pulsar",
+        "issues": "https://github.com/faran/pulsar/issues"
+    },
+    "autoload": {
+        "psr-4": {
+            "Faran\\Pulsar\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Faran Ali",
+            "email": "faranaliahmed@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.2",
+        "symfony/console": "^7.0"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.3"
+    },
+    "scripts": {
+        "test": "pest",
+        "test:coverage": "pest --coverage --min=85"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
 }

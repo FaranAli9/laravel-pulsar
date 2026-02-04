@@ -1,6 +1,8 @@
 # Pulsar
 
-> A modern Laravel code generation tool for building service-oriented applications with vertical slice architecture.
+> An opinionated Laravel architecture for building modular, domain-driven applications at scale.
+
+**Pulsar is an opinionated architecture tool.** It provides a specific approach to organizing Laravel applications using clean architecture, domain-driven design, and service-oriented patterns. This architecture works well for medium-to-large scale applications, multi-tenant SaaS platforms, and teams that benefit from explicit boundaries between business logic and delivery mechanisms. If you prefer Laravel's default structure or other architectural patterns, Pulsar may not be the right fit for your project.
 
 ## Table of Contents
 
@@ -26,11 +28,11 @@ composer require faran/pulsar --dev
 
 ## Architecture
 
-Pulse organizes code into two complementary layers:
+Pulsar organizes your Laravel application into two complementary layers, following **clean architecture** and **domain-driven design** principles. Each feature is organized as a vertical slice through the Service Layer, while shared business logic lives in the Domain Layer.
 
 ### Service Layer
 
-The Service Layer handles HTTP delivery and application orchestration using **vertical slice architecture**. Each Service represents an API delivery boundary scoped to a specific consumer audience (e.g., Admin, Client), not a business capability. Business logic lives in the shared Domain layer.
+The Service Layer handles HTTP delivery and application orchestration. Each Service represents an API delivery boundary scoped to a specific consumer audience (e.g., Admin, Client), not a business capability. Business logic lives in the shared Domain layer.
 
 **Structure:**
 
@@ -117,7 +119,7 @@ Then follow the sections below to generate individual file types.
 
 ## File Types
 
-> **💡 Naming Freedom:** Pulse gives you complete control over class names. Examples below use suffixes like `Controller`, `Action`, `UseCase` for clarity, but you can name classes however you prefer:
+> **💡 Naming Freedom:** Pulsar gives you complete control over class names. Examples below use suffixes like `Controller`, `Action`, `UseCase` for clarity, but you can name classes however you prefer:
 >
 > - `pulsar make:controller ProductController ...` → `ProductController.php` ✅
 > - `pulsar make:controller Product ...` → `Product.php` ✅
@@ -1302,9 +1304,9 @@ To ensure AI assistants (GitHub Copilot, Cursor, etc.) follow these architectura
 Create `.github/copilot-instructions.md` or `.cursorrules` in your Laravel project:
 
 ```markdown
-# Project Architecture: Pulse + Vertical Slice
+# Project Architecture: Pulsar + Clean Architecture
 
-This project uses Pulse for vertical slice architecture. Follow these rules:
+This project uses Pulsar for modular, domain-driven architecture. Follow these rules:
 
 ## File Structure
 
@@ -1367,12 +1369,12 @@ class PlaceOrderUseCase
 
 ### Option 3: Reference Documentation
 
-In your project's README or `docs/architecture.md`, link directly to Pulse patterns:
+In your project's README or `docs/architecture.md`, link directly to Pulsar patterns:
 
 ```markdown
 # Our Architecture
 
-We follow Pulse's vertical slice architecture patterns:
+We follow Pulsar's clean architecture patterns:
 
 - [Architecture Overview](https://github.com/faran/pulsar#architecture)
 - [Best Practices](https://github.com/faran/pulsar#architecture-best-practices)
@@ -1385,7 +1387,7 @@ We follow Pulse's vertical slice architecture patterns:
 
 1. **`.github/copilot-instructions.md`** for AI context
 2. **Base class docblocks** for inline guidance
-3. **Project docs** linking to Pulse README for team reference
+3. **Project docs** linking to Pulsar README for team reference
 
 This ensures both AI assistants and human developers follow consistent patterns.
 
@@ -1410,5 +1412,5 @@ Built with ❤️ by Faran Ali
 Inspired by:
 
 - [Lucid Architecture](https://github.com/lucid-architecture/laravel)
-- Vertical Slice Architecture principles
+- Clean Architecture & Vertical Slice principles
 - Domain-Driven Design concepts
