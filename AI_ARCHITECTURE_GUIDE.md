@@ -9,6 +9,7 @@
 This project uses **Pulse** for vertical slice architecture with two layers:
 
 ### Service Layer (HTTP/Application)
+
 ```
 app/Services/{Service}/Modules/{Module}/
 ├── Controllers/          # HTTP handlers only
@@ -18,6 +19,7 @@ app/Services/{Service}/Modules/{Module}/
 ```
 
 ### Domain Layer (Business Logic)
+
 ```
 app/Domain/{Domain}/
 ├── Models/              # Eloquent models
@@ -37,20 +39,21 @@ app/Domain/{Domain}/
 ### 1. Layer Responsibilities
 
 **Request Flow:**
+
 ```
 HTTP Request → Controller → UseCase → Actions/Operations → Models → Database
                     ↓
             HTTP Response
 ```
 
-| Layer | Responsibility | What NOT to do |
-|-------|---------------|----------------|
-| **Controller** | Extract validated data, call UseCase, return response | Never contain business logic |
-| **Request** | Validate input structure, check authorization | No business rule validation |
-| **UseCase** | Orchestrate workflows, own transactions, emit events | Never coupled to HTTP Request objects |
-| **Action** | Atomic business operation, validate business rules | Don't call other UseCases |
-| **Operation** | Infrastructure (email, APIs, cache, files) | Don't contain business logic |
-| **Model** | Data persistence, relationships | Keep thin, no business logic |
+| Layer          | Responsibility                                        | What NOT to do                        |
+| -------------- | ----------------------------------------------------- | ------------------------------------- |
+| **Controller** | Extract validated data, call UseCase, return response | Never contain business logic          |
+| **Request**    | Validate input structure, check authorization         | No business rule validation           |
+| **UseCase**    | Orchestrate workflows, own transactions, emit events  | Never coupled to HTTP Request objects |
+| **Action**     | Atomic business operation, validate business rules    | Don't call other UseCases             |
+| **Operation**  | Infrastructure (email, APIs, cache, files)            | Don't contain business logic          |
+| **Model**      | Data persistence, relationships                       | Keep thin, no business logic          |
 
 ### 2. Dependency Injection Pattern
 
@@ -64,7 +67,7 @@ class PlaceOrderUseCase
         private CreateOrderAction $createOrder,
         private EmailService $emailService,
     ) {}
-    
+
     // Data passed per request
     public function execute(OrderData $data): Order
     {
@@ -74,6 +77,7 @@ class PlaceOrderUseCase
 ```
 
 **❌ NEVER: Data in Constructor**
+
 ```php
 // Breaks Laravel Octane - singletons can't hold state
 public function __construct(private OrderData $data) {}
@@ -92,7 +96,7 @@ class PlaceOrderUseCase
             $order = $this->createOrder->execute($data);
             $this->updateInventory->execute($data->items);
             $this->recordPayment->execute($order);
-            
+
             event(new OrderPlaced($order));
             return $order;
         });
@@ -125,7 +129,7 @@ readonly class OrderData
         public array $items,
         public string $shippingAddress,
     ) {}
-    
+
     public static function from(array $data): self
     {
         return new self(
@@ -143,6 +147,7 @@ $order = $this->placeOrder->execute(
 ```
 
 **❌ Weak typing:**
+
 ```php
 $order = $this->placeOrder->execute($request->validated());
 ```
@@ -161,16 +166,17 @@ class PlaceOrderUseCase
             $this->updateInventory->execute($data->items);
             return $order;
         });
-        
+
         // Side effects handled by listeners (async/queued)
         event(new OrderPlaced($order));
-        
+
         return $order;
     }
 }
 ```
 
 **❌ Direct coupling:**
+
 ```php
 // Don't do this in UseCase
 $this->emailService->sendOrderConfirmation($order);
@@ -180,6 +186,7 @@ $this->smsService->sendNotification($order);
 ### 6. Service Isolation
 
 **✅ Event-based communication:**
+
 ```php
 // Order service emits
 event(new OrderPlaced($order));
@@ -195,6 +202,7 @@ class DecrementStockOnOrder
 ```
 
 **❌ Direct service coupling:**
+
 ```php
 app(InventoryService::class)->decrementStock($items);
 ```
@@ -218,25 +226,27 @@ Suffixes are **optional** but recommended for clarity in generated code:
 ## Code Templates
 
 ### Controller (Thin HTTP Handler)
+
 ```php
 class OrderController extends Controller
 {
     public function __construct(
         private PlaceOrderUseCase $placeOrder
     ) {}
-    
+
     public function store(PlaceOrderRequest $request): JsonResponse
     {
         $order = $this->placeOrder->execute(
             OrderData::from($request->validated())
         );
-        
+
         return response()->json($order, 201);
     }
 }
 ```
 
 ### Request (Validation Only)
+
 ```php
 class PlaceOrderRequest extends FormRequest
 {
@@ -244,7 +254,7 @@ class PlaceOrderRequest extends FormRequest
     {
         return $this->user()->can('create', Order::class);
     }
-    
+
     public function rules(): array
     {
         return [
@@ -258,6 +268,7 @@ class PlaceOrderRequest extends FormRequest
 ```
 
 ### UseCase (Workflow Orchestrator)
+
 ```php
 class PlaceOrderUseCase
 {
@@ -266,27 +277,27 @@ class PlaceOrderUseCase
         private UpdateStockAction $updateStock,
         private ReserveInventoryAction $reserveInventory,
     ) {}
-    
+
     public function execute(OrderData $data): Order
     {
         return DB::transaction(function () use ($data) {
             // 1. Reserve to prevent overselling
             $this->reserveInventory->execute($data->items);
-            
+
             // 2. Create order
             $order = $this->createOrder->execute($data);
-            
+
             // 3. Decrement stock
             foreach ($data->items as $item) {
                 $this->updateStock->execute(
-                    $item['product_id'], 
+                    $item['product_id'],
                     -$item['quantity']
                 );
             }
-            
+
             // 4. Emit event for side effects
             event(new OrderPlaced($order));
-            
+
             return $order;
         });
     }
@@ -294,6 +305,7 @@ class PlaceOrderUseCase
 ```
 
 ### Action (Atomic Business Operation)
+
 ```php
 class UpdateStockAction
 {
@@ -303,21 +315,22 @@ class UpdateStockAction
         if ($product->stock + $quantity < 0) {
             throw new InsufficientStockException($product);
         }
-        
+
         // State mutation
         $product->update(['stock' => $product->stock + $quantity]);
-        
+
         // Domain event
         if ($product->stock === 0) {
             event(new ProductOutOfStock($product));
         }
-        
+
         return $product->fresh();
     }
 }
 ```
 
 ### Operation (Infrastructure)
+
 ```php
 class SendOrderConfirmationEmailOperation
 {
@@ -325,7 +338,7 @@ class SendOrderConfirmationEmailOperation
         private Mailer $mailer,
         private LoggerInterface $logger,
     ) {}
-    
+
     public function execute(Order $order): void
     {
         try {
@@ -333,7 +346,7 @@ class SendOrderConfirmationEmailOperation
                 new OrderConfirmationMail($order),
                 $order->customer->email
             );
-            
+
             $this->logger->info("Order confirmation sent", [
                 'order_id' => $order->id,
             ]);
@@ -349,6 +362,7 @@ class SendOrderConfirmationEmailOperation
 ```
 
 ### DTO (Data Transfer Object)
+
 ```php
 readonly class OrderData
 {
@@ -358,7 +372,7 @@ readonly class OrderData
         public string $shippingAddress,
         public ?string $notes = null,
     ) {}
-    
+
     public static function from(array $data): self
     {
         return new self(
@@ -368,7 +382,7 @@ readonly class OrderData
             notes: $data['notes'] ?? null,
         );
     }
-    
+
     public function toArray(): array
     {
         return [
@@ -421,18 +435,20 @@ pulse make:request CreateReviewRequest Review Catalog
 ## Testing Patterns
 
 ### Unit Test (Action)
+
 ```php
 test('updates product stock', function () {
     $product = Product::factory()->create(['stock' => 10]);
     $action = new UpdateStockAction();
-    
+
     $result = $action->execute($product, -3);
-    
+
     expect($result->stock)->toBe(7);
 });
 ```
 
 ### Integration Test (UseCase)
+
 ```php
 test('places order successfully', function () {
     Event::fake();
@@ -442,28 +458,29 @@ test('places order successfully', function () {
         'items' => [['product_id' => 1, 'quantity' => 2]],
         'shipping_address' => '123 Main St',
     ]);
-    
+
     $order = $useCase->execute($data);
-    
+
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->status)->toBe(OrderStatus::PENDING);
-    
+
     Event::assertDispatched(OrderPlaced::class);
 });
 ```
 
 ### Feature Test (Controller)
+
 ```php
 test('creates order via API', function () {
     $user = User::factory()->create();
-    
+
     $response = $this->actingAs($user)
         ->postJson('/api/orders', [
             'customer_id' => 1,
             'items' => [['product_id' => 1, 'quantity' => 2]],
             'shipping_address' => '123 Main St',
         ]);
-    
+
     $response->assertCreated()
         ->assertJsonStructure(['id', 'total', 'status']);
 });
@@ -475,18 +492,19 @@ test('creates order via API', function () {
 
 ### UseCase vs Operation
 
-| Aspect | UseCase | Operation |
-|--------|---------|-----------|
-| Purpose | Business workflow (WHAT) | Infrastructure task (HOW) |
-| Location | Service Layer | Service Layer |
-| Example | `PlaceOrderUseCase` | `SendEmailOperation` |
-| Calls | Actions, Operations, Queries | External services, APIs |
-| Returns | Domain objects | void, primitives, DTOs |
-| Transactions | Owns boundaries | Never manages |
+| Aspect       | UseCase                      | Operation                 |
+| ------------ | ---------------------------- | ------------------------- |
+| Purpose      | Business workflow (WHAT)     | Infrastructure task (HOW) |
+| Location     | Service Layer                | Service Layer             |
+| Example      | `PlaceOrderUseCase`          | `SendEmailOperation`      |
+| Calls        | Actions, Operations, Queries | External services, APIs   |
+| Returns      | Domain objects               | void, primitives, DTOs    |
+| Transactions | Owns boundaries              | Never manages             |
 
 ### Action Return Types
 
 Actions can return:
+
 - **Domain objects**: `CreateOrderAction` → `Order`
 - **Collections**: `BulkUpdateProductsAction` → `Collection<Product>`
 - **Booleans**: `ActivateAccountAction` → `bool`
@@ -511,6 +529,7 @@ class GetLowStockProductsQuery
 ```
 
 Use Queries for:
+
 - Complex database reads
 - Reports and analytics
 - Multi-table joins
@@ -544,6 +563,7 @@ pulse make:query GetActiveOrdersQuery Sales
 ### Path Resolution
 
 When generating code:
+
 - Controllers → `app/Services/{Service}/Modules/{Module}/Controllers/`
 - UseCases → `app/Services/{Service}/Modules/{Module}/UseCases/`
 - Actions → `app/Domain/{Domain}/Actions/`
