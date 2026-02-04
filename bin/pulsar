@@ -1,7 +1,21 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+// Autoloader resolution for both development and installed contexts
+foreach ([
+    __DIR__ . '/../../../autoload.php',  // Installed as dependency
+    __DIR__ . '/../vendor/autoload.php', // Development
+] as $file) {
+    if (file_exists($file)) {
+        require $file;
+        break;
+    }
+}
+
+if (!class_exists('Symfony\Component\Console\Application')) {
+    fwrite(STDERR, 'Composer autoloader not found. Run "composer install" first.' . PHP_EOL);
+    exit(1);
+}
 
 use Faran\Pulsar\Commands\MakeActionCommand;
 use Faran\Pulsar\Commands\MakeControllerCommand;
@@ -21,7 +35,7 @@ use Faran\Pulsar\Commands\PublishContextCommand;
 use Faran\Pulsar\Commands\PublishSkillCommand;
 use Symfony\Component\Console\Application;
 
-$app = new Application('Pulsar', '1.0.0');
+$app = new Application('Pulsar', '0.1.0');
 
 // Utility commands
 $app->addCommand(new PingCommand());
