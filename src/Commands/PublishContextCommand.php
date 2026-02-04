@@ -3,6 +3,7 @@
 namespace Faran\Pulsar\Commands;
 
 use Exception;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 use Faran\Pulsar\Generators\ContextGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -22,22 +23,23 @@ class PublishContextCommand extends PulsarCommand
     public function handle(): int
     {
         $force = $this->option('force');
+        $path = $this->option('path');
 
         try {
-            $generator = new ContextGenerator($force);
+            $generator = new ContextGenerator($force, $path);
             $filePath = $generator->generate();
 
-            $this->line();
-            $this->success("Context file published successfully");
-            $this->line();
-            $this->info("Location: {$filePath}");
-            $this->line();
+            $this->success("Pulsar context published to {$filePath}!");
+            $this->info("💡 Tip: Merge into your CLAUDE.md or .cursorrules for AI awareness");
 
             return Command::SUCCESS;
-        } catch (Exception $e) {
-            $this->line();
+        } catch (FileAlreadyExistsException $e) {
             $this->error($e->getMessage());
-            $this->line();
+            $this->info("  Use --force to overwrite or --path to specify a different location");
+
+            return Command::FAILURE;
+        } catch (Exception $e) {
+            $this->error($e->getMessage());
 
             return Command::FAILURE;
         }
@@ -51,5 +53,6 @@ class PublishContextCommand extends PulsarCommand
     protected function configure(): void
     {
         $this->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite existing context file');
+        $this->addOption('path', 'p', InputOption::VALUE_REQUIRED, 'Custom output path (default: PULSAR.md)');
     }
 }

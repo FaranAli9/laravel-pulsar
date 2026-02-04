@@ -17,13 +17,20 @@ class ContextGenerator extends Generator
     protected bool $force;
 
     /**
+     * Custom output path.
+     */
+    protected ?string $customPath = null;
+
+    /**
      * Create a new ContextGenerator instance.
      *
      * @param  bool  $force
+     * @param  string|null  $path
      */
-    public function __construct(bool $force = false)
+    public function __construct(bool $force = false, ?string $path = null)
     {
         $this->force = $force;
+        $this->customPath = $path;
     }
 
     /**
@@ -36,7 +43,16 @@ class ContextGenerator extends Generator
         $filePath = $this->getContextPath();
 
         if (!$this->force && $this->fileExists($filePath)) {
-            throw FileAlreadyExistsException::make('Context file', $this->filename, 'project root');
+            $displayPath = $this->customPath ?? $this->filename;
+            throw FileAlreadyExistsException::make('Context file', basename($displayPath), dirname($displayPath));
+        }
+
+        // Create parent directories if custom path
+        if ($this->customPath) {
+            $parentDir = dirname($filePath);
+            if (!is_dir($parentDir)) {
+                $this->createDirectory($parentDir);
+            }
         }
 
         $content = $this->loadStub($this->getStubPath('context'));
@@ -50,6 +66,14 @@ class ContextGenerator extends Generator
      */
     protected function getContextPath(): string
     {
+        if ($this->customPath) {
+            // Handle relative paths from Laravel root
+            if (!str_starts_with($this->customPath, DIRECTORY_SEPARATOR)) {
+                return $this->findLaravelRoot() . DIRECTORY_SEPARATOR . $this->customPath;
+            }
+            return $this->customPath;
+        }
+
         return $this->findLaravelRoot() . DIRECTORY_SEPARATOR . $this->filename;
     }
 }

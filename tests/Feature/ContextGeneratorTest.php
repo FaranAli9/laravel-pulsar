@@ -103,4 +103,30 @@ describe('Context Generator', function () {
             expect(file_exists($fullPath))->toBeTrue();
         });
     });
+
+    describe('Custom Path', function () {
+
+        it('publishes to custom path', function () {
+            $generator = new ContextGenerator(force: false, path: '.context/pulsar.md');
+            $relativePath = $generator->generate();
+
+            expect($relativePath)->toBe('.context' . DIRECTORY_SEPARATOR . 'pulsar.md');
+            expect(file_exists($this->tempDir . DIRECTORY_SEPARATOR . $relativePath))->toBeTrue();
+        });
+
+        it('creates parent directories for custom path', function () {
+            $generator = new ContextGenerator(force: false, path: 'docs/architecture/pulsar.md');
+            $generator->generate();
+
+            $parentDir = $this->tempDir . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'architecture';
+            expect(is_dir($parentDir))->toBeTrue();
+        });
+
+        it('uses default path when none provided', function () {
+            $generator = new ContextGenerator();
+            $relativePath = $generator->generate();
+
+            expect($relativePath)->toBe('PULSAR.md');
+        });
+    });
 });
