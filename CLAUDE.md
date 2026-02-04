@@ -4,7 +4,7 @@ Guidance for Claude Code when working on the Pulsar package.
 
 ## What is Pulsar?
 
-Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture. It generates files for a Service Layer (HTTP/application) and a Domain Layer (business logic).
+Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture. It generates files for a Service Layer (HTTP delivery, scoped by consumer audience) and a Domain Layer (shared business logic).
 
 ## Common Commands
 
@@ -27,8 +27,8 @@ vendor/bin/pest --filter=validateName
 vendor/bin/pest --parallel
 
 # Execute Pulsar commands (from package directory)
-./bin/pulsar make:service Authentication
-./bin/pulsar make:controller ProductController Product Catalog
+./bin/pulsar make:service Admin
+./bin/pulsar make:controller ProductController Products Admin
 ./bin/pulsar make:action CreateOrder Order
 ```
 

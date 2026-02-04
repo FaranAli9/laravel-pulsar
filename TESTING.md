@@ -362,15 +362,15 @@ it('rejects path traversal attempts', function () {
 
 ```php
 it('generates operation with correct structure', function () {
-    $generator = new OperationGenerator('CreateOrder', 'Checkout', 'Sales');
+    $generator = new OperationGenerator('CreateOrder', 'Orders', 'Admin');
     $filePath = $generator->generate();
-    
-    expect($filePath)->toContain('app/Services/Sales/Modules/Checkout/Operations');
-    
+
+    expect($filePath)->toContain('app/Services/Admin/Modules/Orders/Operations');
+
     $content = file_get_contents($this->tempDir . '/' . $filePath);
     expect($content)
         ->toBeValidPhp()
-        ->toHaveNamespace('App\Services\Sales\Modules\Checkout\Operations')
+        ->toHaveNamespace('App\Services\Admin\Modules\Orders\Operations')
         ->toHaveClass('CreateOrderOperation');
 });
 ```

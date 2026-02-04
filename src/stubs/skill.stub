@@ -10,10 +10,10 @@ You are operating in a Laravel project that uses Pulsar's vertical slice archite
 
 This project has two layers:
 
-- **Service Layer** (`app/Services/`): HTTP delivery and application orchestration. Organized by business capability as Services containing Modules.
-- **Domain Layer** (`app/Domain/`): Pure business logic. Framework-agnostic. Organized by business domain.
+- **Service Layer** (`app/Services/`): HTTP delivery and application orchestration. Each Service is an API delivery boundary scoped to a consumer audience (e.g., Admin, Client). Modules within a Service represent features for that audience.
+- **Domain Layer** (`app/Domain/`): Pure business logic. Framework-agnostic. Organized by business domain. Shared across all Services.
 
-Code is organized by business capability, NOT by technical layer. There is no `app/Http/Controllers/` or `app/Models/` directory.
+Services are delivery slices (who consumes the API), NOT business capabilities. There is no `app/Http/Controllers/` or `app/Models/` directory. The same Domain models and Actions are reused across Admin, Client, and other services — each service exposes different endpoints, validation, and response shapes for its audience.
 
 ## File Locations
 

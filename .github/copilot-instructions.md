@@ -4,7 +4,7 @@ Pulsar is a Laravel code generation tool using **vertical slice architecture**. 
 
 ## Architecture Overview
 
-**Vertical Slice Architecture**: Code is organized by business capability (Service → Module → Features), not by technical layer. Each service is autonomous with its own controllers, requests, and business logic co-located.
+**Vertical Slice Architecture**: Each Service is an API delivery boundary scoped to a consumer audience (e.g., Admin, Client), not a business capability. Modules within a Service represent features for that audience. Business logic lives in the shared Domain layer.
 
 ```
 app/Services/{Service}/
@@ -197,7 +197,7 @@ pulsar make:{name} Test{Name} TestModule FakeService
 
 ```bash
 # From Laravel project with Pulse installed
-vendor/bin/pulsar make:operation CreateOrder Sales Order
+vendor/bin/pulsar make:operation CreateOrder Orders Admin
 
 # From Pulse package directory (development)
 ./bin/pulsar make:operation CreateOrder Sales Order

@@ -1,6 +1,6 @@
 # Pulsar Architecture Guide
 
-This project uses Pulsar's vertical slice architecture with two layers: a Service Layer for HTTP/application orchestration and a Domain Layer for pure business logic.
+This project uses Pulsar's vertical slice architecture with two layers: a Service Layer for HTTP delivery (scoped by consumer audience, e.g., Admin, Client) and a Domain Layer for pure business logic (shared across all services).
 
 ## Directory Structure
 
@@ -364,18 +364,20 @@ $this->smsService->sendNotification($order);
 
 ## Service Isolation
 
+Services are delivery slices scoped to a consumer audience (Admin, Client). They share the Domain layer but should not call each other directly.
+
 **✅ Event-based communication:**
 
 ```php
-// Order service emits
-event(new OrderPlaced($order));
+// Admin service emits event when order status changes
+event(new OrderStatusUpdated($order));
 
-// Inventory service listens
-class DecrementStockOnOrder
+// Client service listens to notify customer
+class NotifyCustomerOnStatusChange
 {
-    public function handle(OrderPlaced $event): void
+    public function handle(OrderStatusUpdated $event): void
     {
-        // React independently
+        // Client-facing notification logic
     }
 }
 ```
@@ -383,7 +385,7 @@ class DecrementStockOnOrder
 **❌ Direct service coupling:**
 
 ```php
-app(InventoryService::class)->decrementStock($items);
+app(ClientNotificationService::class)->notifyCustomer($order);
 ```
 
 ## Key Patterns

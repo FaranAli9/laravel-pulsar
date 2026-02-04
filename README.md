@@ -30,7 +30,7 @@ Pulse organizes code into two complementary layers:
 
 ### Service Layer
 
-The Service Layer handles HTTP delivery and application orchestration using **vertical slice architecture**. Code is organized by business capability (Service → Module → Features), not by technical layer.
+The Service Layer handles HTTP delivery and application orchestration using **vertical slice architecture**. Each Service represents an API delivery boundary scoped to a specific consumer audience (e.g., Admin, Client), not a business capability. Business logic lives in the shared Domain layer.
 
 **Structure:**
 
@@ -48,24 +48,26 @@ app/Services/{Service}/
     └── Operations/                     # Reusable action/query sequences
 ```
 
-**Example:** E-commerce Checkout Service
+**Example:** Admin API Service
 
 ```
-app/Services/Checkout/
+app/Services/Admin/
 ├── Providers/
 ├── Routes/api.php
 └── Modules/
-    ├── Cart/
-    │   ├── Controllers/CartController.php
-    │   ├── Requests/AddToCartRequest.php
-    │   └── UseCases/AddItemToCart.php
-    └── Payment/
-        ├── Controllers/PaymentController.php
-        ├── Requests/ProcessPaymentRequest.php
-        └── UseCases/ProcessPayment.php
+    ├── Orders/
+    │   ├── Controllers/OrderController.php
+    │   ├── Requests/UpdateOrderRequest.php
+    │   └── UseCases/ManageOrder.php
+    └── Products/
+        ├── Controllers/ProductController.php
+        ├── Requests/CreateProductRequest.php
+        └── UseCases/CreateProduct.php
 ```
 
-Routes: `/api/checkout/cart`, `/api/checkout/payment`
+Routes: `/api/admin/orders`, `/api/admin/products`
+
+The same Domain models (Order, Product) are used by both Admin and Client services — each service exposes different endpoints, validation, and response shapes for its audience.
 
 ### Domain Layer
 
@@ -106,7 +108,7 @@ composer require faran/pulsar --dev
 ### Generate Your First Service
 
 ```bash
-pulsar make:service Authentication
+pulsar make:service Admin
 ```
 
 Then follow the sections below to generate individual file types.
@@ -133,7 +135,7 @@ Then follow the sections below to generate individual file types.
 **Command:**
 
 ```bash
-pulsar make:controller ProductController Product Catalog
+pulsar make:controller ProductController Products Admin
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Controllers/`
@@ -164,7 +166,7 @@ class ProductController extends Controller
 **Command:**
 
 ```bash
-pulsar make:request AddToCartRequest Cart Checkout
+pulsar make:request AddToCartRequest Cart Client
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Requests/`
@@ -193,7 +195,7 @@ class AddToCartRequest extends FormRequest
 **Command:**
 
 ```bash
-pulsar make:use-case PlaceOrder Order Checkout
+pulsar make:use-case PlaceOrder Orders Client
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/UseCases/`
@@ -236,7 +238,7 @@ class PlaceOrderUseCase
 **Command:**
 
 ```bash
-pulsar make:operation SaveAddress User Account
+pulsar make:operation SaveAddress Account Client
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Operations/`
@@ -523,66 +525,57 @@ class GetCustomerOrdersQuery
 
 ### Service Layer Example
 
-Building a checkout system:
+Building an Admin API service:
 
 ```bash
 # 1. Create the service
-pulsar make:service Checkout
+pulsar make:service Admin
 
-# 2. Create cart module
-pulsar make:controller CartController Cart Checkout
-pulsar make:request AddToCartRequest Cart Checkout
-pulsar make:use-case AddItemToCart Cart Checkout
+# 2. Create orders module (admin order management)
+pulsar make:controller OrderController Orders Admin -r
+pulsar make:request UpdateOrderRequest Orders Admin
+pulsar make:use-case ManageOrder Orders Admin
 
-# 3. Create payment module
-pulsar make:controller PaymentController Payment Checkout -r
-pulsar make:request ProcessPaymentRequest Payment Checkout
-pulsar make:use-case ProcessPayment Payment Checkout
-
-# 4. Create order module
-pulsar make:controller OrderController Order Checkout
-pulsar make:request PlaceOrderRequest Order Checkout
-pulsar make:use-case PlaceOrder Order Checkout
-pulsar make:operation SendOrderConfirmationEmail Order Checkout
+# 3. Create products module (admin product management)
+pulsar make:controller ProductController Products Admin -r
+pulsar make:request CreateProductRequest Products Admin
+pulsar make:use-case CreateProduct Products Admin
+pulsar make:operation SyncInventory Products Admin
 ```
 
 **Resulting structure:**
 
 ```
-app/Services/Checkout/
+app/Services/Admin/
 ├── Providers/
-│   ├── CheckoutServiceProvider.php
+│   ├── AdminServiceProvider.php
 │   └── RouteServiceProvider.php
 ├── Routes/
 │   └── api.php
 └── Modules/
-    ├── Cart/
-    │   ├── Controllers/CartController.php
-    │   ├── Requests/AddToCartRequest.php
-    │   └── UseCases/AddItemToCart.php
-    ├── Payment/
-    │   ├── Controllers/PaymentController.php
-    │   ├── Requests/ProcessPaymentRequest.php
-    │   └── UseCases/ProcessPayment.php
-    └── Order/
-        ├── Controllers/OrderController.php
-        ├── Requests/PlaceOrderRequest.php
-        ├── UseCases/PlaceOrder.php
-        └── Operations/SendOrderConfirmationEmail.php
+    ├── Orders/
+    │   ├── Controllers/OrderController.php
+    │   ├── Requests/UpdateOrderRequest.php
+    │   └── UseCases/ManageOrder.php
+    └── Products/
+        ├── Controllers/ProductController.php
+        ├── Requests/CreateProductRequest.php
+        ├── UseCases/CreateProduct.php
+        └── Operations/SyncInventory.php
 ```
 
-**Define routes** in `app/Services/Checkout/Routes/api.php`:
+**Define routes** in `app/Services/Admin/Routes/api.php`:
 
 ```php
-use App\Services\Checkout\Modules\Cart\Controllers\CartController;
-use App\Services\Checkout\Modules\Order\Controllers\OrderController;
+use App\Services\Admin\Modules\Orders\Controllers\OrderController;
+use App\Services\Admin\Modules\Products\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/cart', [CartController::class, 'add']);
-Route::post('/orders', [OrderController::class, 'store']);
+Route::apiResource('/orders', OrderController::class);
+Route::apiResource('/products', ProductController::class);
 ```
 
-Routes accessible at: `/api/checkout/cart`, `/api/checkout/orders`
+Routes accessible at: `/api/admin/orders`, `/api/admin/products`
 
 ### Domain Layer Example
 
@@ -1115,15 +1108,15 @@ Services should be **autonomous** with clear boundaries:
 **✅ Good: Event-based communication**
 
 ```php
-// Order service emits event
-event(new OrderPlaced($order));
+// Admin service emits event when order status changes
+event(new OrderStatusUpdated($order));
 
-// Inventory service listens
-class DecrementStockOnOrder
+// Client service listens to update customer-facing status
+class NotifyCustomerOnStatusChange
 {
-    public function handle(OrderPlaced $event): void
+    public function handle(OrderStatusUpdated $event): void
     {
-        // Inventory service reacts independently
+        // Client-facing notification logic
     }
 }
 ```
@@ -1132,14 +1125,14 @@ class DecrementStockOnOrder
 
 ```php
 // Don't call other services directly
-app(InventoryService::class)->decrementStock($items);
+app(ClientNotificationService::class)->notifyCustomer($order);
 ```
 
 **Cross-Service Communication:**
 
 - **Events**: Preferred for async workflows
+- **Shared Domain**: Both Admin and Client services consume the same Domain models
 - **API contracts**: For synchronous needs (via HTTP or internal interfaces)
-- **Shared Domain**: Common domain models can be shared
 
 ---
 
@@ -1287,12 +1280,16 @@ class PlaceOrderRequest extends FormRequest
 
 ### 4. One Module = One Feature
 
-Split modules by business capability:
+Split modules by feature within each service:
 
-- **Checkout Service**:
+- **Admin Service**:
+    - `Modules/Orders` — Order management (CRUD, status changes)
+    - `Modules/Products` — Product management (create, update, inventory)
+    - `Modules/Users` — User management (list, ban, roles)
+- **Client Service**:
+    - `Modules/Orders` — Place orders, view order history
     - `Modules/Cart` — Cart management
-    - `Modules/Payment` — Payment processing
-    - `Modules/Order` — Order placement
+    - `Modules/Account` — Profile, addresses
 
 ---
 
@@ -1316,6 +1313,10 @@ This project uses Pulse for vertical slice architecture. Follow these rules:
 - Actions: `app/Domain/{Domain}/Actions/`
 - Models: `app/Domain/{Domain}/Models/`
 
+## Service Model
+
+Services are delivery boundaries scoped to a consumer audience (Admin, Client), not business capabilities. The Domain layer holds all shared business logic.
+
 ## Code Rules
 
 1. Controllers only handle HTTP - extract validated data, call UseCase, return response
@@ -1338,7 +1339,7 @@ Add architectural hints in base classes:
 ```php
 <?php
 
-namespace App\Services\Checkout\Modules\Order\UseCases;
+namespace App\Services\Client\Modules\Orders\UseCases;
 
 /**
  * UseCase: Orchestrates business workflow
