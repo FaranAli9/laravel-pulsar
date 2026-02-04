@@ -1,6 +1,6 @@
-# Copilot Instructions for Pulse
+# Copilot Instructions for Pulsar
 
-Pulse is a Laravel code generation tool using **vertical slice architecture**. This guide helps AI agents work effectively in this codebase.
+Pulsar is a Laravel code generation tool using **vertical slice architecture**. This guide helps AI agents work effectively in this codebase.
 
 ## Architecture Overview
 
@@ -142,7 +142,7 @@ class Make{Name}Command extends PulseCommand
 1. **Create stub** in `src/stubs/{name}.stub` with `{{namespace}}`, `{{name}}` placeholders
 2. **Create generator** in `src/Generators/{Name}Generator.php` extending `Generator`
 3. **Create command** in `src/Commands/Make{Name}Command.php` extending `PulseCommand`
-4. **Register command** in `bin/pulse`: `$app->addCommand(new Make{Name}Command());`
+4. **Register command** in `bin/pulsar`: `$app->addCommand(new Make{Name}Command());`
 5. **Test all scenarios** (see Testing section below)
 
 ## Key Conventions
@@ -167,15 +167,15 @@ Test these scenarios before considering work complete:
 
 ```bash
 # 1. Success case
-pulse make:{name} Test{Name} TestModule TestService
+pulsar make:{name} Test{Name} TestModule TestService
 # → Creates file, shows success message with relative path
 
 # 2. Duplicate file
-pulse make:{name} Test{Name} TestModule TestService  # run twice
+pulsar make:{name} Test{Name} TestModule TestService  # run twice
 # → Should error: "{Name} [Test{Name}] already exists..."
 
 # 3. Non-existent service
-pulse make:{name} Test{Name} TestModule FakeService
+pulsar make:{name} Test{Name} TestModule FakeService
 # → Should error: "Service [FakeService] does not exist!"
 ```
 
@@ -197,10 +197,10 @@ pulse make:{name} Test{Name} TestModule FakeService
 
 ```bash
 # From Laravel project with Pulse installed
-vendor/bin/pulse make:operation CreateOrder Sales Order
+vendor/bin/pulsar make:operation CreateOrder Sales Order
 
 # From Pulse package directory (development)
-./bin/pulse make:operation CreateOrder Sales Order
+./bin/pulsar make:operation CreateOrder Sales Order
 ```
 
 ## Reference Files

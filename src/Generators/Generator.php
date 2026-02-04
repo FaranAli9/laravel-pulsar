@@ -1,13 +1,13 @@
 <?php
 
-namespace Faran\Pulse\Generators;
+namespace Faran\Pulsar\Generators;
 
-use Faran\Pulse\Exceptions\InvalidNameException;
-use Faran\Pulse\Exceptions\StubNotFoundException;
-use Faran\Pulse\Traits\Finder;
+use Faran\Pulsar\Exceptions\InvalidNameException;
+use Faran\Pulsar\Exceptions\StubNotFoundException;
+use Faran\Pulsar\Traits\Finder;
 
 /**
- * Base generator class for Pulse code generation.
+ * Base generator class for Pulsar code generation.
  * 
  * Provides common functionality for creating directories and files.
  */

@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\EventGenerator;
+use Faran\Pulsar\Generators\EventGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:event',
     description: 'Create a new domain event class',
 )]
-class MakeEventCommand extends PulseCommand
+class MakeEventCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

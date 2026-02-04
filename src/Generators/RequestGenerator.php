@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Generators;
+namespace Faran\Pulsar\Generators;
 
 use Exception;
-use Faran\Pulse\Exceptions\ServiceDoesNotExistException;
+use Faran\Pulsar\Exceptions\ServiceDoesNotExistException;
 
 class RequestGenerator extends Generator
 {

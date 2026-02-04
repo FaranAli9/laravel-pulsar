@@ -2,13 +2,13 @@
 
 This file provides comprehensive guidance to Claude Code (claude.ai/code) when working with the Pulse codebase and understanding the architecture it generates.
 
-## What is Pulse?
+## What is Pulsar?
 
-Pulse is a Laravel code generation tool for building service-oriented applications with vertical slice architecture. It generates scaffolding for both a Service Layer (HTTP/application orchestration) and a Domain Layer (pure business logic).
+Pulsar is a Laravel code generation tool for building service-oriented applications with vertical slice architecture. It generates scaffolding for both a Service Layer (HTTP/application orchestration) and a Domain Layer (pure business logic).
 
 This guide covers:
-1. **Pulse Codebase**: How the tool itself is built (Commands, Generators, Stubs)
-2. **Generated Architecture**: What Pulse creates and the patterns applications should follow
+1. **Pulsar Codebase**: How the tool itself is built (Commands, Generators, Stubs)
+2. **Generated Architecture**: What Pulsar creates and the patterns applications should follow
 
 ## Common Commands
 
@@ -30,10 +30,10 @@ vendor/bin/pest --filter=validateName
 # Run tests in parallel
 vendor/bin/pest --parallel
 
-# Execute Pulse commands (from package directory)
-./bin/pulse make:service Authentication
-./bin/pulse make:controller ProductController Product Catalog
-./bin/pulse make:action CreateOrder Order
+# Execute Pulsar commands (from package directory)
+./bin/pulsar make:service Authentication
+./bin/pulsar make:controller ProductController Product Catalog
+./bin/pulsar make:action CreateOrder Order
 ```
 
 ## Architecture
@@ -43,7 +43,7 @@ vendor/bin/pest --parallel
 ```
 src/
 ├── Commands/           # CLI commands (thin wrappers)
-│   ├── PulseCommand.php        # Base command class
+│   ├── PulsarCommand.php        # Base command class
 │   └── Make{Name}Command.php   # One per generator
 ├── Generators/         # All file generation logic
 │   ├── Generator.php           # Base class with shared utilities
@@ -119,8 +119,8 @@ protected function serviceExists(string $service): bool
 
 1. Create stub in `src/stubs/{name}.stub` with placeholders
 2. Create generator in `src/Generators/{Name}Generator.php` extending `Generator`
-3. Create command in `src/Commands/Make{Name}Command.php` extending `PulseCommand`
-4. Register command in `bin/pulse`
+3. Create command in `src/Commands/Make{Name}Command.php` extending `PulsarCommand`
+4. Register command in `bin/pulsar`
 
 Use `OperationGenerator.php` and `MakeOperationCommand.php` as canonical examples.
 
@@ -567,7 +567,7 @@ Actions can return:
 
 ## Testing
 
-### Testing the Pulse Codebase
+### Testing the Pulsar Codebase
 
 Tests use Pest PHP. Critical areas with security implications:
 - `InputValidationTest.php`: Reserved PHP keywords, path traversal, invalid characters
@@ -661,15 +661,15 @@ When Claude generates new features using Pulse:
 
 ```bash
 # 1. Domain layer
-pulse make:action CreateReviewAction Product
-pulse make:dto ReviewData Product
-pulse make:event ReviewCreated Product
-pulse make:policy ReviewPolicy Product
+pulsar make:action CreateReviewAction Product
+pulsar make:dto ReviewData Product
+pulsar make:event ReviewCreated Product
+pulsar make:policy ReviewPolicy Product
 
 # 2. Service layer
-pulse make:use-case CreateReviewUseCase Review Catalog
-pulse make:controller ReviewController Review Catalog
-pulse make:request CreateReviewRequest Review Catalog
+pulsar make:use-case CreateReviewUseCase Review Catalog
+pulsar make:controller ReviewController Review Catalog
+pulsar make:request CreateReviewRequest Review Catalog
 ```
 
 ### File Organization Rules
@@ -683,25 +683,25 @@ When generating code, ensure:
 
 ## Quick Reference
 
-### Pulse Generator Commands
+### Pulsar Generator Commands
 
 ```bash
 # Service layer
-pulse make:service Sales
-pulse make:controller OrderController Order Sales
-pulse make:request PlaceOrderRequest Order Sales
-pulse make:use-case PlaceOrderUseCase Order Sales
-pulse make:operation SendEmailOperation Order Sales
+pulsar make:service Sales
+pulsar make:controller OrderController Order Sales
+pulsar make:request PlaceOrderRequest Order Sales
+pulsar make:use-case PlaceOrderUseCase Order Sales
+pulsar make:operation SendEmailOperation Order Sales
 
 # Domain layer
-pulse make:model Order Sales
-pulse make:action CreateOrderAction Sales
-pulse make:dto OrderData Sales
-pulse make:policy OrderPolicy Sales
-pulse make:event OrderPlaced Sales
-pulse make:enum OrderStatus Sales
-pulse make:exception InvalidOrderException Sales
-pulse make:query GetActiveOrdersQuery Sales
+pulsar make:model Order Sales
+pulsar make:action CreateOrderAction Sales
+pulsar make:dto OrderData Sales
+pulsar make:policy OrderPolicy Sales
+pulsar make:event OrderPlaced Sales
+pulsar make:enum OrderStatus Sales
+pulsar make:exception InvalidOrderException Sales
+pulsar make:query GetActiveOrdersQuery Sales
 ```
 
 ### Path Resolution
@@ -723,4 +723,4 @@ When generating code, files are placed at:
 
 ---
 
-**For full documentation, see:** https://github.com/faran/pulse
+**For full documentation, see:** https://github.com/faran/pulsar

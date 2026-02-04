@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\ServiceGenerator;
+use Faran\Pulsar\Generators\ServiceGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:service',
     description: 'Create a new Service'
 )]
-class MakeServiceCommand extends PulseCommand
+class MakeServiceCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

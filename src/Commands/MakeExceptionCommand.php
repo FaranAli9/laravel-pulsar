@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\ExceptionGenerator;
+use Faran\Pulsar\Generators\ExceptionGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:exception',
     description: 'Create a new domain exception class',
 )]
-class MakeExceptionCommand extends PulseCommand
+class MakeExceptionCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

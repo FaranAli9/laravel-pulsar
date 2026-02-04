@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\EnumGenerator;
+use Faran\Pulsar\Generators\EnumGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:enum',
     description: 'Create a new domain enum',
 )]
-class MakeEnumCommand extends PulseCommand
+class MakeEnumCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

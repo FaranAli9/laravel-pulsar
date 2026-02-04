@@ -1,4 +1,4 @@
-# Pulse Architecture Guide for AI Assistants
+# Pulsar Architecture Guide for AI Assistants
 
 > Copy this file to your Laravel project as `.github/copilot-instructions.md` or `.cursorrules` to guide AI assistants.
 
@@ -6,7 +6,7 @@
 
 ## Project Structure
 
-This project uses **Pulse** for vertical slice architecture with two layers:
+This project uses **Pulsar** for vertical slice architecture with two layers:
 
 ### Service Layer (HTTP/Application)
 
@@ -411,15 +411,15 @@ readonly class OrderData
 
 ```bash
 # 1. Domain layer
-pulse make:action CreateReviewAction Product
-pulse make:dto ReviewData Product
-pulse make:event ReviewCreated Product
-pulse make:policy ReviewPolicy Product
+pulsar make:action CreateReviewAction Product
+pulsar make:dto ReviewData Product
+pulsar make:event ReviewCreated Product
+pulsar make:policy ReviewPolicy Product
 
 # 2. Service layer
-pulse make:use-case CreateReviewUseCase Review Catalog
-pulse make:controller ReviewController Review Catalog
-pulse make:request CreateReviewRequest Review Catalog
+pulsar make:use-case CreateReviewUseCase Review Catalog
+pulsar make:controller ReviewController Review Catalog
+pulsar make:request CreateReviewRequest Review Catalog
 ```
 
 ### File Organization Rules
@@ -543,21 +543,21 @@ Use Queries for:
 
 ```bash
 # Service layer
-pulse make:service Sales
-pulse make:controller OrderController Order Sales
-pulse make:request PlaceOrderRequest Order Sales
-pulse make:use-case PlaceOrderUseCase Order Sales
-pulse make:operation SendEmailOperation Order Sales
+pulsar make:service Sales
+pulsar make:controller OrderController Order Sales
+pulsar make:request PlaceOrderRequest Order Sales
+pulsar make:use-case PlaceOrderUseCase Order Sales
+pulsar make:operation SendEmailOperation Order Sales
 
 # Domain layer
-pulse make:model Order Sales
-pulse make:action CreateOrderAction Sales
-pulse make:dto OrderData Sales
-pulse make:policy OrderPolicy Sales
-pulse make:event OrderPlaced Sales
-pulse make:enum OrderStatus Sales
-pulse make:exception InvalidOrderException Sales
-pulse make:query GetActiveOrdersQuery Sales
+pulsar make:model Order Sales
+pulsar make:action CreateOrderAction Sales
+pulsar make:dto OrderData Sales
+pulsar make:policy OrderPolicy Sales
+pulsar make:event OrderPlaced Sales
+pulsar make:enum OrderStatus Sales
+pulsar make:exception InvalidOrderException Sales
+pulsar make:query GetActiveOrdersQuery Sales
 ```
 
 ### Path Resolution
@@ -605,4 +605,4 @@ When generating code:
 
 ---
 
-**For full examples and detailed explanations, see:** https://github.com/faran/pulse
+**For full examples and detailed explanations, see:** https://github.com/faran/pulsar

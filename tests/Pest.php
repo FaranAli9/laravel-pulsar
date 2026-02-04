@@ -144,7 +144,7 @@ function deleteDirectory(string $dir): void
 
 uses()->beforeEach(function () {
     // Set up temp directory for all tests
-    $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pulse-tests-' . uniqid();
+    $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pulsar-tests-' . uniqid();
     mkdir($this->tempDir, 0755, true);
     
     // Resolve symlinks (important for macOS where /var -> /private/var)

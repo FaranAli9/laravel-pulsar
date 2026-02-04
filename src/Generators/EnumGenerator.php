@@ -1,6 +1,6 @@
 <?php
 
-namespace Faran\Pulse\Generators;
+namespace Faran\Pulsar\Generators;
 
 use Exception;
 

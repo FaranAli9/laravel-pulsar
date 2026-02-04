@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\OperationGenerator;
+use Faran\Pulsar\Generators\OperationGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:operation',
     description: 'Create a new operation class',
 )]
-class MakeOperationCommand extends PulseCommand
+class MakeOperationCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

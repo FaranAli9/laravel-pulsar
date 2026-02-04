@@ -1,7 +1,7 @@
 <?php
 
 use Tests\Helpers\TestGenerator;
-use Faran\Pulse\Exceptions\StubNotFoundException;
+use Faran\Pulsar\Exceptions\StubNotFoundException;
 
 describe('Generator Base Class', function () {
     

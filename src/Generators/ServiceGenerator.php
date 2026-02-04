@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Generators;
+namespace Faran\Pulsar\Generators;
 
 use Exception;
-use Faran\Pulse\Exceptions\ServiceAlreadyExistsException;
+use Faran\Pulsar\Exceptions\ServiceAlreadyExistsException;
 
 class ServiceGenerator extends Generator
 {
@@ -56,7 +56,7 @@ class ServiceGenerator extends Generator
     /**
      * Create the service directories.
      * 
-     * Pulse services are vertically sliced with:
+     * Pulsar services are vertically sliced with:
      * - Providers/ (service providers)
      * - Routes/ (route definitions)
      * - Modules/ (feature modules with controllers, requests, use cases, etc.)

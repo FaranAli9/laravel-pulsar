@@ -1,6 +1,6 @@
 <?php
 
-namespace Faran\Pulse\Traits;
+namespace Faran\Pulsar\Traits;
 
 use Exception;
 

@@ -1,4 +1,4 @@
-# Pulse
+# Pulsar
 
 > A modern Laravel code generation tool for building service-oriented applications with vertical slice architecture.
 
@@ -21,7 +21,7 @@
 ## Installation
 
 ```bash
-composer require faran/pulse --dev
+composer require faran/pulsar --dev
 ```
 
 ## Architecture
@@ -100,13 +100,13 @@ app/Domain/Product/
 ```
 
 ```bash
-composer require faran/pulse --dev
+composer require faran/pulsar --dev
 ```
 
 ### Generate Your First Service
 
 ```bash
-pulse make:service Authentication
+pulsar make:service Authentication
 ```
 
 Then follow the sections below to generate individual file types.
@@ -117,10 +117,10 @@ Then follow the sections below to generate individual file types.
 
 > **💡 Naming Freedom:** Pulse gives you complete control over class names. Examples below use suffixes like `Controller`, `Action`, `UseCase` for clarity, but you can name classes however you prefer:
 >
-> - `pulse make:controller ProductController ...` → `ProductController.php` ✅
-> - `pulse make:controller Product ...` → `Product.php` ✅
-> - `pulse make:action CreateOrderAction ...` → `CreateOrderAction.php` ✅
-> - `pulse make:action CreateOrder ...` → `CreateOrder.php` ✅
+> - `pulsar make:controller ProductController ...` → `ProductController.php` ✅
+> - `pulsar make:controller Product ...` → `Product.php` ✅
+> - `pulsar make:action CreateOrderAction ...` → `CreateOrderAction.php` ✅
+> - `pulsar make:action CreateOrder ...` → `CreateOrder.php` ✅
 >
 > The generated class name matches exactly what you specify.
 
@@ -133,7 +133,7 @@ Then follow the sections below to generate individual file types.
 **Command:**
 
 ```bash
-pulse make:controller ProductController Product Catalog
+pulsar make:controller ProductController Product Catalog
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Controllers/`
@@ -164,7 +164,7 @@ class ProductController extends Controller
 **Command:**
 
 ```bash
-pulse make:request AddToCartRequest Cart Checkout
+pulsar make:request AddToCartRequest Cart Checkout
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Requests/`
@@ -193,7 +193,7 @@ class AddToCartRequest extends FormRequest
 **Command:**
 
 ```bash
-pulse make:use-case PlaceOrder Order Checkout
+pulsar make:use-case PlaceOrder Order Checkout
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/UseCases/`
@@ -236,7 +236,7 @@ class PlaceOrderUseCase
 **Command:**
 
 ```bash
-pulse make:operation SendOrderConfirmationEmail Order Checkout
+pulsar make:operation SendOrderConfirmationEmail Order Checkout
 ```
 
 **Location:** `app/Services/{Service}/Modules/{Module}/Operations/`
@@ -284,7 +284,7 @@ class SendOrderConfirmationEmail
 **Command:**
 
 ```bash
-pulse make:model Product Catalog
+pulsar make:model Product Catalog
 ```
 
 **Location:** `app/Domain/{Domain}/Models/`
@@ -312,7 +312,7 @@ class Product extends Model
 **Command:**
 
 ```bash
-pulse make:action UpdateProductStock Catalog
+pulsar make:action UpdateProductStock Catalog
 ```
 
 **Location:** `app/Domain/{Domain}/Actions/`
@@ -348,7 +348,7 @@ class UpdateProductStock
 **Command:**
 
 ```bash
-pulse make:dto OrderData Order
+pulsar make:dto OrderData Order
 ```
 
 **Location:** `app/Domain/{Domain}/DTOs/`
@@ -384,7 +384,7 @@ readonly class OrderData
 **Command:**
 
 ```bash
-pulse make:policy OrderPolicy Order
+pulsar make:policy OrderPolicy Order
 ```
 
 **Location:** `app/Domain/{Domain}/Policies/`
@@ -411,7 +411,7 @@ class OrderPolicy
 **Command:**
 
 ```bash
-pulse make:event OrderPlaced Order
+pulsar make:event OrderPlaced Order
 ```
 
 **Location:** `app/Domain/{Domain}/Events/`
@@ -437,7 +437,7 @@ class OrderPlaced
 **Command:**
 
 ```bash
-pulse make:enum OrderStatus Order
+pulsar make:enum OrderStatus Order
 ```
 
 **Location:** `app/Domain/{Domain}/Enums/`
@@ -464,7 +464,7 @@ enum OrderStatus: string
 **Command:**
 
 ```bash
-pulse make:exception InsufficientStockException Catalog
+pulsar make:exception InsufficientStockException Catalog
 ```
 
 **Location:** `app/Domain/{Domain}/Exceptions/`
@@ -490,7 +490,7 @@ class InsufficientStockException extends Exception
 **Command:**
 
 ```bash
-pulse make:query GetCustomerOrders Order
+pulsar make:query GetCustomerOrders Order
 ```
 
 **Location:** `app/Domain/{Domain}/Queries/`
@@ -522,23 +522,23 @@ Building a checkout system:
 
 ```bash
 # 1. Create the service
-pulse make:service Checkout
+pulsar make:service Checkout
 
 # 2. Create cart module
-pulse make:controller CartController Cart Checkout
-pulse make:request AddToCartRequest Cart Checkout
-pulse make:use-case AddItemToCart Cart Checkout
+pulsar make:controller CartController Cart Checkout
+pulsar make:request AddToCartRequest Cart Checkout
+pulsar make:use-case AddItemToCart Cart Checkout
 
 # 3. Create payment module
-pulse make:controller PaymentController Payment Checkout -r
-pulse make:request ProcessPaymentRequest Payment Checkout
-pulse make:use-case ProcessPayment Payment Checkout
+pulsar make:controller PaymentController Payment Checkout -r
+pulsar make:request ProcessPaymentRequest Payment Checkout
+pulsar make:use-case ProcessPayment Payment Checkout
 
 # 4. Create order module
-pulse make:controller OrderController Order Checkout
-pulse make:request PlaceOrderRequest Order Checkout
-pulse make:use-case PlaceOrder Order Checkout
-pulse make:operation SendOrderConfirmationEmail Order Checkout
+pulsar make:controller OrderController Order Checkout
+pulsar make:request PlaceOrderRequest Order Checkout
+pulsar make:use-case PlaceOrder Order Checkout
+pulsar make:operation SendOrderConfirmationEmail Order Checkout
 ```
 
 **Resulting structure:**
@@ -585,36 +585,36 @@ Building an e-commerce domain:
 
 ```bash
 # 1. Create domain models
-pulse make:model Product Catalog
-pulse make:model Order Order
+pulsar make:model Product Catalog
+pulsar make:model Order Order
 
 # 2. Create actions for business operations
-pulse make:action UpdateProductStock Catalog
-pulse make:action CreateOrder Order
+pulsar make:action UpdateProductStock Catalog
+pulsar make:action CreateOrder Order
 
 # 3. Create DTOs for data transfer
-pulse make:dto ProductData Catalog
-pulse make:dto OrderData Order
+pulsar make:dto ProductData Catalog
+pulsar make:dto OrderData Order
 
 # 4. Create policies for authorization
-pulse make:policy ProductPolicy Catalog
-pulse make:policy OrderPolicy Order
+pulsar make:policy ProductPolicy Catalog
+pulsar make:policy OrderPolicy Order
 
 # 5. Create domain events
-pulse make:event ProductOutOfStock Catalog
-pulse make:event OrderPlaced Order
+pulsar make:event ProductOutOfStock Catalog
+pulsar make:event OrderPlaced Order
 
 # 6. Create enums for states
-pulse make:enum ProductStatus Catalog
-pulse make:enum OrderStatus Order
+pulsar make:enum ProductStatus Catalog
+pulsar make:enum OrderStatus Order
 
 # 7. Create domain exceptions
-pulse make:exception InsufficientStockException Catalog
-pulse make:exception OrderAlreadyCancelledException Order
+pulsar make:exception InsufficientStockException Catalog
+pulsar make:exception OrderAlreadyCancelledException Order
 
 # 8. Create queries for complex reads
-pulse make:query GetLowStockProducts Catalog
-pulse make:query GetCustomerOrders Order
+pulsar make:query GetLowStockProducts Catalog
+pulsar make:query GetCustomerOrders Order
 ```
 
 **Resulting structure:**
@@ -1300,7 +1300,7 @@ This project uses Pulse for vertical slice architecture. Follow these rules:
 
 ## Examples
 
-- See: https://github.com/faran/pulse#architecture-best-practices
+- See: https://github.com/faran/pulsar#architecture-best-practices
 ```
 
 ### Option 2: Inline Code Comments
@@ -1345,9 +1345,9 @@ In your project's README or `docs/architecture.md`, link directly to Pulse patte
 
 We follow Pulse's vertical slice architecture patterns:
 
-- [Architecture Overview](https://github.com/faran/pulse#architecture)
-- [Best Practices](https://github.com/faran/pulse#architecture-best-practices)
-- [Layer Responsibilities](https://github.com/faran/pulse#layer-responsibilities)
+- [Architecture Overview](https://github.com/faran/pulsar#architecture)
+- [Best Practices](https://github.com/faran/pulsar#architecture-best-practices)
+- [Layer Responsibilities](https://github.com/faran/pulsar#layer-responsibilities)
 ```
 
 ### Recommended Approach

@@ -1,6 +1,6 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -9,13 +9,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
     name: 'ping',
-    description: 'Pulse sanity check'
+    description: 'Pulsar sanity check'
 )]
 class PingCommand extends Command
 {
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('<info>Pulse is alive.</info>');
+        $output->writeln('<info>Pulsar is alive.</info>');
 
         return Command::SUCCESS;
     }

@@ -1,6 +1,6 @@
 <?php
 
-use Faran\Pulse\Exceptions\InvalidNameException;
+use Faran\Pulsar\Exceptions\InvalidNameException;
 use Tests\Helpers\TestGenerator;
 
 describe('Input Validation', function () {

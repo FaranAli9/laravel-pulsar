@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\ControllerGenerator;
+use Faran\Pulsar\Generators\ControllerGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\InputOption;
     name: 'make:controller',
     description: 'Create a new Controller in a Service Module'
 )]
-class MakeControllerCommand extends PulseCommand
+class MakeControllerCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

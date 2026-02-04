@@ -1,8 +1,8 @@
 <?php
 
-use Faran\Pulse\Exceptions\InvalidNameException;
-use Faran\Pulse\Exceptions\FileAlreadyExistsException;
-use Faran\Pulse\Exceptions\StubNotFoundException;
+use Faran\Pulsar\Exceptions\InvalidNameException;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
+use Faran\Pulsar\Exceptions\StubNotFoundException;
 
 describe('Custom Exceptions', function () {
     

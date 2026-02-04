@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\UseCaseGenerator;
+use Faran\Pulsar\Generators\UseCaseGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:use-case',
     description: 'Create a new UseCase in a Service Module'
 )]
-class MakeUseCaseCommand extends PulseCommand
+class MakeUseCaseCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

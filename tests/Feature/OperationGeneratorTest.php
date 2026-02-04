@@ -1,7 +1,7 @@
 <?php
 
-use Faran\Pulse\Generators\OperationGenerator;
-use Faran\Pulse\Exceptions\ServiceDoesNotExistException;
+use Faran\Pulsar\Generators\OperationGenerator;
+use Faran\Pulsar\Exceptions\ServiceDoesNotExistException;
 
 describe('Operation Generator', function () {
     

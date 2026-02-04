@@ -3,23 +3,23 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Faran\Pulse\Commands\MakeActionCommand;
-use Faran\Pulse\Commands\MakeControllerCommand;
-use Faran\Pulse\Commands\MakeDtoCommand;
-use Faran\Pulse\Commands\MakeEnumCommand;
-use Faran\Pulse\Commands\MakeEventCommand;
-use Faran\Pulse\Commands\MakeExceptionCommand;
-use Faran\Pulse\Commands\MakeModelCommand;
-use Faran\Pulse\Commands\MakeOperationCommand;
-use Faran\Pulse\Commands\MakePolicyCommand;
-use Faran\Pulse\Commands\MakeQueryCommand;
-use Faran\Pulse\Commands\MakeRequestCommand;
-use Faran\Pulse\Commands\MakeServiceCommand;
-use Faran\Pulse\Commands\MakeUseCaseCommand;
-use Faran\Pulse\Commands\PingCommand;
+use Faran\Pulsar\Commands\MakeActionCommand;
+use Faran\Pulsar\Commands\MakeControllerCommand;
+use Faran\Pulsar\Commands\MakeDtoCommand;
+use Faran\Pulsar\Commands\MakeEnumCommand;
+use Faran\Pulsar\Commands\MakeEventCommand;
+use Faran\Pulsar\Commands\MakeExceptionCommand;
+use Faran\Pulsar\Commands\MakeModelCommand;
+use Faran\Pulsar\Commands\MakeOperationCommand;
+use Faran\Pulsar\Commands\MakePolicyCommand;
+use Faran\Pulsar\Commands\MakeQueryCommand;
+use Faran\Pulsar\Commands\MakeRequestCommand;
+use Faran\Pulsar\Commands\MakeServiceCommand;
+use Faran\Pulsar\Commands\MakeUseCaseCommand;
+use Faran\Pulsar\Commands\PingCommand;
 use Symfony\Component\Console\Application;
 
-$app = new Application('Pulse', '1.0.0');
+$app = new Application('Pulsar', '1.0.0');
 
 // Utility commands
 $app->addCommand(new PingCommand());

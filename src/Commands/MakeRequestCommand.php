@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\RequestGenerator;
+use Faran\Pulsar\Generators\RequestGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:request',
     description: 'Create a new Form Request in a Service Module'
 )]
-class MakeRequestCommand extends PulseCommand
+class MakeRequestCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

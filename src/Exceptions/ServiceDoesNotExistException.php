@@ -1,6 +1,6 @@
 <?php
 
-namespace Faran\Pulse\Exceptions;
+namespace Faran\Pulsar\Exceptions;
 
 use Exception;
 

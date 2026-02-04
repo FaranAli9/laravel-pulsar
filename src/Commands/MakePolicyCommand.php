@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\PolicyGenerator;
+use Faran\Pulsar\Generators\PolicyGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:policy',
     description: 'Create a new domain policy class',
 )]
-class MakePolicyCommand extends PulseCommand
+class MakePolicyCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

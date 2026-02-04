@@ -565,7 +565,7 @@ beforeEach(fn() => $this->generator = new OperationGenerator(...));
 ```php
 beforeEach(function () {
     // Unique temp dir per test prevents cross-contamination
-    $this->tempDir = sys_get_temp_dir() . '/pulse-tests-' . uniqid();
+    $this->tempDir = sys_get_temp_dir() . '/pulsar-tests-' . uniqid();
     mkdir($this->tempDir, 0755, true);
     
     // Simulate working inside Laravel project

@@ -1,9 +1,9 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulse\Generators\QueryGenerator;
+use Faran\Pulsar\Generators\QueryGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
     name: 'make:query',
     description: 'Create a new domain query class',
 )]
-class MakeQueryCommand extends PulseCommand
+class MakeQueryCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.

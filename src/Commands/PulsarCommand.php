@@ -1,18 +1,18 @@
 <?php
 
-namespace Faran\Pulse\Commands;
+namespace Faran\Pulsar\Commands;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Base command class for Pulse commands.
- * 
+ * Base command class for Pulsar commands.
+ *
  * Provides template method pattern for consistent command structure
  * and helper methods for styled output.
  */
-abstract class PulseCommand extends Command
+abstract class PulsarCommand extends Command
 {
     /**
      * The input interface implementation.

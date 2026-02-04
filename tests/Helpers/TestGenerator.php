@@ -2,7 +2,7 @@
 
 namespace Tests\Helpers;
 
-use Faran\Pulse\Generators\Generator;
+use Faran\Pulsar\Generators\Generator;
 
 /**
  * Test implementation of abstract Generator class.
