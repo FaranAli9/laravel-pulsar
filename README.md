@@ -110,13 +110,13 @@ It is independent of HTTP, **not** independent of Laravel.
 
 ### Shared Vocabulary
 
-| Term | Meaning |
-|------|---------|
+| Term        | Meaning                                   |
+|-------------|-------------------------------------------|
 | **Service** | Delivery boundary for a consumer audience |
-| **Module** | Feature slice within a Service |
-| **Domain** | Business capability (Order, Catalog) |
-| **UseCase** | Application workflow |
-| **Action** | Atomic domain operation |
+| **Module**  | Feature slice within a Service            |
+| **Domain**  | Business capability (Order, Catalog)      |
+| **UseCase** | Application workflow                      |
+| **Action**  | Atomic domain operation                   |
 
 ---
 
@@ -171,25 +171,25 @@ Flexibility is traded for consistency — deliberately.
 
 ### Service Layer
 
-| Type | Purpose |
-|------|---------|
-| Service | Bootstrap a delivery boundary |
-| Controller | HTTP handling only |
-| Request | Validation and authorization |
-| UseCase | Workflow orchestration |
-| Operation | Reusable action sequences |
+| Type       | Purpose                       |
+|------------|-------------------------------|
+| Service    | Bootstrap a delivery boundary |
+| Controller | HTTP handling only            |
+| Request    | Validation and authorization  |
+| UseCase    | Workflow orchestration        |
+| Operation  | Reusable action sequences     |
 
 ### Domain Layer
 
-| Type | Purpose |
-|------|---------|
-| Model | Domain entity (Eloquent) |
-| Action | Atomic business operation |
-| DTO | Data transfer |
-| Event | Domain event |
-| Enum | Domain state |
-| Exception | Business rule violation |
-| Query | Read-only domain query |
+| Type      | Purpose                   |
+|-----------|---------------------------|
+| Model     | Domain entity (Eloquent)  |
+| Action    | Atomic business operation |
+| DTO       | Data transfer             |
+| Event     | Domain event              |
+| Enum      | Domain state              |
+| Exception | Business rule violation   |
+| Query     | Read-only domain query    |
 
 ---
 
