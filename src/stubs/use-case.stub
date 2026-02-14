@@ -5,7 +5,7 @@ namespace {{namespace}};
 /**
  * {{name}} UseCase
  *
- * Handles {{module}} module business logic in the {{service}} service.
+ * Orchestrates {{module}} workflows in the {{service}} service, including Operation calls when shared workflow fragments are needed.
  */
 class {{name}}
 {

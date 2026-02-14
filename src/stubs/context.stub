@@ -16,7 +16,7 @@ app/Services/{Service}/
     ├── Controllers/    # HTTP handlers (thin)
     ├── Requests/       # Input validation
     ├── UseCases/       # Workflow orchestration
-    └── Operations/     # Reusable action/query orchestration
+    └── Operations/     # Reusable workflow fragments for UseCases
 ```
 
 ### Domain Layer
@@ -37,11 +37,11 @@ app/Domain/{Domain}/
 
 | Layer | Responsibility | What NOT to do |
 |-------|---------------|----------------|
-| **Controller** | Extract validated data, call UseCase, return response | Never contain business logic |
+| **Controller** | Extract validated data, call UseCase, return response | Never contain business logic; never call Operations directly |
 | **Request** | Validate input structure, authorize | No business rule validation |
 | **UseCase** | Orchestrate workflows, own transactions, emit events | Never coupled to HTTP Request objects |
 | **Action** | Atomic business operation, validate business rules | Don't call other UseCases |
-| **Operation** | Compose multiple Actions/Queries into reusable sequences | Don't contain business logic |
+| **Operation** | Reusable workflow fragment across UseCases (conditional branching allowed) | No transactions, no event emission, never called by Controllers |
 | **Query** | Complex read operations, reports | Never mutate state |
 | **Model** | Data persistence, relationships | Keep thin, no business logic |
 
@@ -151,7 +151,7 @@ class UpdateStockAction
 }
 ```
 
-### Operation (Reusable Action Orchestration)
+### Operation (Reusable Workflow Fragment)
 
 ```php
 class SaveAddressOperation
@@ -159,6 +159,7 @@ class SaveAddressOperation
     public function __construct(
         private FormatAddressAction $formatAddress,
         private RemoveNullFieldsAction $removeNullFields,
+        private ClearDefaultAddressAction $clearDefaultAddress,
         private SaveAddressAction $saveAddress,
     ) {}
 
@@ -170,13 +171,18 @@ class SaveAddressOperation
         // 2. Remove null fields (clean data)
         $cleaned = $this->removeNullFields->execute($formatted);
 
-        // 3. Save address
+        // 3. Conditional branching is allowed in Operations
+        if (($cleaned['is_default'] ?? false) === true) {
+            $this->clearDefaultAddress->execute($user);
+        }
+
+        // 4. Save address
         return $this->saveAddress->execute($cleaned, $user);
     }
 }
 ```
 
-Operations compose multiple Actions/Queries into reusable sequences that can be called by multiple UseCases. They prevent duplicating the same action chains across different workflows.
+Operations are reusable workflow fragments that can be called by multiple UseCases. Sequencing and conditional branching are valid business logic here. They still never manage transactions or emit events.
 
 ### DTO (Data Transfer Object)
 
@@ -241,7 +247,7 @@ class GetLowStockProductsQuery
 
 ```
 Controllers → UseCases ✅
-Controllers → Operations ✅ (for simple cases)
+Controllers → Operations ❌ (always call a UseCase)
 Controllers → Actions ❌ (use UseCase instead)
 
 UseCases → Actions ✅
@@ -254,9 +260,11 @@ Actions → Queries ❌ (UseCase/Operation passes needed data)
 Actions → Other Actions ❌ (compose in UseCase/Operation)
 
 Operations → Actions ✅
+Operations → Queries ✅
 Operations → Models ✅
 Operations → Other Operations ❌
 Operations → UseCases ❌
+Operations → Events ❌ (emit from UseCase)
 
 Queries → Models ✅
 Queries → Other Queries ❌
@@ -394,12 +402,12 @@ app(ClientNotificationService::class)->notifyCustomer($order);
 
 | Aspect | UseCase | Operation |
 |--------|---------|-----------|
-| Purpose | Business workflow (full feature) | Reusable action/query sequence |
+| Purpose | Business workflow (full feature) | Reusable workflow fragment for multiple UseCases |
 | Example | `PlaceOrderUseCase` | `SaveAddressOperation` |
-| Calls | Actions, Operations, Queries | Actions, Queries (orchestrates them) |
+| Calls | Actions, Operations, Queries | Actions, Queries, Models |
 | Reusability | Specific to one workflow | Shared across multiple UseCases |
 | Transactions | Owns boundaries | Never manages |
-| Called by | Controllers | UseCases, other Operations |
+| Called by | Controllers | UseCases only |
 
 ### Action Return Types
 
@@ -416,7 +424,7 @@ Actions can return:
 2. **Workflow orchestration?** → UseCase
 3. **HTTP handling?** → Controller
 4. **Input validation?** → Request
-5. **Infrastructure (email, API)?** → Operation
+5. **Reusable workflow fragment shared across UseCases?** → Operation
 6. **Complex read?** → Query
 7. **Data transfer?** → DTO
 8. **Business state?** → Enum

@@ -7,7 +7,7 @@ use Illuminate\Routing\Controller;
 /**
  * {{name}} Controller
  *
- * Handles {{module}} module operations for the {{service}} service.
+ * Handles HTTP delivery for the {{module}} module in the {{service}} service by delegating to UseCases.
  */
 class {{name}} extends Controller
 {

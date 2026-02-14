@@ -6,6 +6,14 @@ Guidance for Claude Code when working on the Pulsar package.
 
 Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture. It generates files for a Service Layer (HTTP delivery, scoped by consumer audience) and a Domain Layer (shared business logic).
 
+## Architecture Invariants
+
+- Controllers call UseCases only.
+- Operations are called by UseCases only (never by Controllers).
+- Multiple UseCases may reuse the same Operation.
+- Operations are reusable workflow fragments; conditional branching is allowed.
+- Operations never start transactions and never emit events.
+
 ## Common Commands
 
 ```bash

@@ -116,9 +116,24 @@ It is independent of HTTP, **not** independent of Laravel.
 | **Module**  | Feature slice within a Service            |
 | **Domain**  | Business capability (Order, Catalog)      |
 | **UseCase** | Application workflow                      |
+| **Operation** | Reusable workflow fragment for UseCases |
 | **Action**  | Atomic domain operation                   |
 
 ---
+
+### Service Layer Call Graph
+
+Controllers call **UseCases** only.
+Only **UseCases** call Operations.
+Multiple UseCases may call the same Operation.
+
+---
+
+### Operations
+
+Operations are reusable workflow fragments shared across UseCases.
+They may include sequencing and conditional branching decisions.
+They must never own transactions or emit domain events.
 
 ### Cross-Domain Logic
 
@@ -144,6 +159,7 @@ They must never return HTTP or framework response objects.
 ### Anti-Patterns
 
 - Fat Controllers containing business logic
+- Controllers calling Operations directly
 - Actions calling other Actions
 - Operations emitting domain events
 - Transactions inside Actions or Operations
@@ -177,7 +193,7 @@ Flexibility is traded for consistency — deliberately.
 | Controller | HTTP handling only            |
 | Request    | Validation and authorization  |
 | UseCase    | Workflow orchestration        |
-| Operation  | Reusable action sequences     |
+| Operation  | Reusable workflow fragment across UseCases (branching allowed; no transactions/events) |
 
 ### Domain Layer
 

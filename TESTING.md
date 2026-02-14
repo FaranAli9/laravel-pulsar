@@ -128,7 +128,7 @@ Duration: 0.61s
 **Integration Scenarios**:
 - ❌ Generating multiple files in sequence
 - ❌ Service creation followed by module generation
-- ❌ Full vertical slice creation (service → module → controller → operations)
+- ❌ Full vertical slice creation (service → module → controller → use case → operation)
 - ❌ Rollback behavior on failures
 
 ---
@@ -262,6 +262,7 @@ Each generator follows the OperationGeneratorTest pattern:
    - Plain controller generation (6 tests)
    - Resource controller generation (8 tests)
    - Stub selection logic (4 tests)
+   - Controller stub guidance enforces Controller → UseCase (never Controller → Operation)
 
 3. **RequestGeneratorTest.php** (~20 tests)
    - Request class generation
@@ -271,6 +272,7 @@ Each generator follows the OperationGeneratorTest pattern:
 
 **Medium Priority**:
 4. **UseCaseGeneratorTest.php** (~20 tests)
+   - UseCase stubs are documented as the entry point for Operation calls
 5. **ModelGeneratorTest.php** (~18 tests)
 6. **ActionGeneratorTest.php** (~20 tests)
 
@@ -293,7 +295,7 @@ Each generator follows the OperationGeneratorTest pattern:
 **Estimated Time**: 4-5 hours
 
 1. **Vertical Slice Workflow** (~12 tests)
-   - Create service → create module → create controller → create operations
+   - Create service → create module → create controller → create use case → create operation
    - Verify all files reference each other correctly
    - Test namespace consistency across vertical slice
    - Validate routes are properly registered

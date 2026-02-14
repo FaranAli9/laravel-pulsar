@@ -1,285 +1,310 @@
 ---
-description: Enforce Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activate when creating controllers, use cases, actions, operations, queries, models, DTOs, events, enums, exceptions, policies, or requests.
+name: pulsar
+description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, use cases, actions, operations, queries, models, DTOs, events, enums, exceptions, or policies.
+license: MIT
+metadata:
+    author: faran
+    framework: laravel
+    architecture: pulsar
+    pattern: vertical-slice
+    strictness: mandatory
 ---
 
 # Pulsar Architecture Skill
 
-You are operating in a Laravel project that uses Pulsar's vertical slice architecture. All code generation and modification MUST follow these rules. Violations are architectural errors.
+All Laravel code MUST follow Pulsar vertical slice architecture rules.
+Violations are architectural errors.
+
+---
 
 ## Mental Model
 
-This project has two layers:
+Two layers exist:
 
-- **Service Layer** (`app/Services/`): HTTP delivery and application orchestration. Each Service is an API delivery boundary scoped to a consumer audience (e.g., Admin, Client). Modules within a Service represent features for that audience.
-- **Domain Layer** (`app/Domain/`): Pure business logic. Framework-agnostic. Organized by business domain. Shared across all Services.
+Service Layer: `app/Services/`
+Domain Layer: `app/Domain/`
 
-Services are delivery slices (who consumes the API), NOT business capabilities. There is no `app/Http/Controllers/` or `app/Models/` directory. The same Domain models and Actions are reused across Admin, Client, and other services — each service exposes different endpoints, validation, and response shapes for its audience.
+There is no `app/Http/Controllers`.
+There is no `app/Models`.
 
-## File Locations
+Services are delivery boundaries scoped to a consumer audience (Admin, Client, Internal).
+A Service is NOT a microservice, bounded context, or deployment unit.
+Domain is pure business logic — Laravel-aware but delivery-agnostic.
 
-### Service Layer
+---
+
+## File Structure
+
+Service Layer:
 
 ```
 app/Services/{Service}/
-  Providers/{Service}ServiceProvider.php
-  Providers/RouteServiceProvider.php
-  Routes/api.php
+  Providers/
+  Routes/
   Modules/{Module}/
-    Controllers/{Name}.php
-    Requests/{Name}.php
-    UseCases/{Name}.php
-    Operations/{Name}.php
+    Controllers/
+    Requests/
+    UseCases/
+    Operations/
 ```
 
-### Domain Layer
+Domain Layer:
 
 ```
 app/Domain/{Domain}/
-  Models/{Name}.php
-  Actions/{Name}.php
-  DTOs/{Name}.php
-  Policies/{Name}.php
-  Events/{Name}.php
-  Enums/{Name}.php
-  Exceptions/{Name}.php
-  Queries/{Name}.php
+  Models/
+  Actions/
+  DTOs/
+  Policies/
+  Events/
+  Enums/
+  Exceptions/
+  Queries/
 ```
 
-### Namespace Conventions
+---
 
-- Controllers: `App\Services\{Service}\Modules\{Module}\Controllers`
-- Requests: `App\Services\{Service}\Modules\{Module}\Requests`
-- UseCases: `App\Services\{Service}\Modules\{Module}\UseCases`
-- Operations: `App\Services\{Service}\Modules\{Module}\Operations`
-- Models: `App\Domain\{Domain}\Models`
-- Actions: `App\Domain\{Domain}\Actions`
-- DTOs: `App\Domain\{Domain}\DTOs`
-- Queries: `App\Domain\{Domain}\Queries`
-- Events: `App\Domain\{Domain}\Events`
-- Enums: `App\Domain\{Domain}\Enums`
-- Exceptions: `App\Domain\{Domain}\Exceptions`
-- Policies: `App\Domain\{Domain}\Policies`
+## Naming Conventions
+
+Service Layer:
+
+| Type       | Pattern                     | Example               |
+| ---------- | --------------------------- | --------------------- |
+| Service    | `{Audience}`                | `Admin`, `Client`     |
+| Module     | `{Feature}` plural          | `Orders`, `Products`  |
+| Controller | `{Resource}Controller`      | `OrderController`     |
+| Request    | `{Verb}{Resource}Request`   | `CreateOrderRequest`  |
+| UseCase    | `{Verb}{Resource}UseCase`   | `CreateOrderUseCase`  |
+| Operation  | `{Verb}{Resource}Operation` | `PriceOrderOperation` |
+
+Domain Layer:
+
+| Type      | Pattern                   | Example                      |
+| --------- | ------------------------- | ---------------------------- |
+| Domain    | `{Capability}` singular   | `Order`, `Catalog`           |
+| Model     | `{Entity}`                | `Order`                      |
+| Action    | `{Verb}{Entity}Action`    | `CreateOrderAction`          |
+| DTO       | `{Entity}Data`            | `OrderData`                  |
+| Query     | `{Describe}{Result}Query` | `FindActiveOrdersQuery`      |
+| Event     | `{Entity}{PastTenseVerb}` | `OrderCreated`               |
+| Enum      | `{Entity}{Concept}`       | `OrderStatus`                |
+| Exception | `{Descriptive}Exception`  | `InsufficientStockException` |
+| Policy    | `{Entity}Policy`          | `OrderPolicy`                |
+
+---
 
 ## Layer Responsibilities
 
-### Controller
+**Controller** — Extract validated data, call UseCase, return HTTP response. No business logic. Call UseCases only (never Operations, Actions, or Queries directly).
 
-- MUST extract validated data from Request, call a UseCase, return HTTP response
-- MUST NOT contain business logic, database queries, or model operations
-- MUST NOT call Actions directly — use a UseCase
+**Request** — Validate input structure only. No business rules. Authorization via `authorize()` is allowed.
 
-### Request (FormRequest)
+**UseCase** — Orchestrate workflow. Own `DB::transaction()`. Coordinate Actions, Operations, Queries. Emit Events. Never accept Request object. Never call another UseCase. Only UseCases invoke Operations.
 
-- MUST validate input structure and format only
-- MUST NOT contain business rule validation
-- MAY use `authorize()` for policy-based authorization
+**Operation** — Reusable workflow fragment shared across UseCases. Compose Actions and Queries and allow conditional branching when needed. No nested Operations. No transactions. No event emission. Never called directly by Controllers.
 
-### UseCase
+**Action** — Atomic business operation. Validate business invariants. No other Action calls. No Query calls. No transactions. No Service layer dependencies.
 
-- MUST orchestrate a complete business workflow
-- MUST own transaction boundaries via `DB::transaction()`
-- MUST coordinate Actions, Operations, and Queries
-- MUST emit domain Events for side effects
-- MUST NOT accept HTTP Request objects — accept DTOs or validated arrays
-- MUST NOT call other UseCases — extract shared logic into an Operation or Action
+**Query** — Read-only. No mutations. No Action calls. No nested Queries. No Service dependencies.
 
-### Action (Domain)
+**Model** — Relationships, fillable, casts, accessors, scopes. No business logic beyond that.
 
-- MUST be atomic: one business operation on one model/aggregate
-- MUST validate business invariants
-- MUST NOT call other Actions
-- MUST NOT call Queries
-- MUST NOT manage database transactions
-- MUST NOT depend on Service Layer classes
-- MAY emit domain Events
+**DTO** — `readonly` class, constructor promotion, static `from(array $data)`. No logic.
 
-### Operation (Service)
+**Event** — Readonly properties. No logic. Emitted by UseCases only.
 
-- MUST compose multiple Actions and/or Queries into a reusable sequence
-- MUST be called by UseCases (or Controllers for simple cases)
-- MUST NOT call other Operations
-- MUST NOT call UseCases
-- MUST NOT manage database transactions
-- MUST NOT contain business logic — only orchestrate Actions/Queries
+**Enum** — Backed enum only (`string` or `int`).
 
-### Query (Domain)
+**Exception** — Extends `Exception`. Descriptive name communicating the business rule violated.
 
-- MUST be read-only — NEVER mutate state
-- MUST NOT call Actions
-- MUST NOT call other Queries
-- MUST NOT depend on Service Layer classes
+**Policy** — Returns `bool`. Standard Laravel policy.
 
-### Model (Domain)
-
-- MUST define relationships, fillable attributes, casts
-- MUST NOT contain business logic beyond simple accessors/scopes
-- MUST NOT depend on Service Layer classes
-
-### DTO (Domain)
-
-- MUST be `readonly class`
-- MUST have a `public static function from(array $data): self` factory method
-- MUST use constructor promotion for all properties
-
-### Event (Domain)
-
-- MUST use `readonly` public properties
-- MUST NOT contain logic
-
-### Enum (Domain)
-
-- MUST be a backed enum (`string` or `int`)
-
-### Exception (Domain)
-
-- MUST extend `Exception`
-- SHOULD accept domain context in constructor
-
-### Policy (Domain)
-
-- MUST define authorization rules for domain entities
-- MUST return `bool`
+---
 
 ## Dependency Rules
 
-Allowed calls:
+Allowed:
 
 ```
 Controller -> UseCase
-Controller -> Operation (simple cases only)
-UseCase -> Action
-UseCase -> Operation
-UseCase -> Query
-Operation -> Action
-Operation -> Query
-Operation -> Model
-Action -> Model
-Query -> Model
+UseCase    -> Action, Operation, Query, Event (emit)
+Operation  -> Action, Query, Model
+Action     -> Model
+Query      -> Model
 ```
 
-Forbidden calls (architectural errors):
+Forbidden:
 
 ```
-Controller -> Action (MUST use UseCase)
-UseCase -> UseCase (extract to Operation or Action)
-Action -> Action (compose in UseCase or Operation)
-Action -> Query (UseCase/Operation passes needed data)
-Query -> Query (keep atomic)
-Query -> Action (read-only, no mutations)
-Operation -> Operation (no nesting)
-Operation -> UseCase (no reverse dependency)
-Domain -> Service Layer (NEVER — domain is framework-agnostic)
-Service A -> Service B (use Events for cross-service communication)
+Controller -> Operation, Action, or Query directly
+UseCase    -> UseCase
+Action     -> Action
+Action     -> Query
+Query      -> Query or Action
+Operation  -> Operation or UseCase
+Domain     -> Service (any direction)
+Service A  -> Service B
 ```
+
+---
 
 ## Transaction Ownership
 
-- ONLY UseCases may call `DB::transaction()`
-- Actions MUST NOT start transactions — they participate in the UseCase's transaction
-- Operations MUST NOT start transactions
-- Queries MUST NOT start transactions
+Only UseCases call `DB::transaction()`.
+Actions, Operations, and Queries never start transactions.
+
+---
 
 ## Data Flow Rules
 
-### Constructor vs execute()
+Constructor = dependencies only (injected services).
+`execute()` = runtime data (DTOs, IDs, arrays).
+Request objects never cross Controller boundary — convert to DTO or `$request->validated()` first.
+Actions and Queries return domain types (models, collections, primitives, void). Never HTTP responses.
 
-- Constructor: dependencies only (injected by Laravel container)
-- `execute()`: runtime data only (DTOs, validated arrays, primitives)
+---
+
+## Cross-Domain Coordination
+
+When a workflow spans multiple domains (e.g., Order + Inventory + Payment), the UseCase coordinates. Actions stay within their own domain. Never have an Action call an Action from another domain.
+
+---
+
+## Event Side Effects
+
+UseCases emit Events.
+Listeners handle infrastructure (email, notifications, external APIs).
+Never call mail, notification, or external services directly inside UseCase or Action.
+
+---
+
+## Routing
+
+Routes live inside the Service, not in Laravel's default `routes/` directory.
+
+```
+app/Services/Admin/Routes/api.php
+app/Services/Client/Routes/api.php
+```
+
+Each Service's `RouteServiceProvider` loads its own route file with appropriate prefix and middleware.
+
+---
+
+## End-to-End Example
+
+This single example demonstrates the full flow: Controller → UseCase → Action, with correct namespaces, data flow, and transaction ownership.
 
 ```php
-// CORRECT
-public function __construct(
-    private CreateOrderAction $createOrder,  // dependency
-) {}
+// app/Services/Admin/Modules/Orders/Controllers/OrderController.php
+namespace App\Services\Admin\Modules\Orders\Controllers;
 
-public function execute(OrderData $data): Order  // data
+use App\Domain\Order\DTOs\OrderData;
+use App\Services\Admin\Modules\Orders\Requests\CreateOrderRequest;
+use App\Services\Admin\Modules\Orders\UseCases\CreateOrderUseCase;
+
+class OrderController extends Controller
+{
+    public function store(CreateOrderRequest $request, CreateOrderUseCase $useCase)
+    {
+        $order = $useCase->execute(OrderData::from($request->validated()));
+        return response()->json($order, 201);
+    }
+}
 ```
 
 ```php
-// WRONG — breaks Laravel Octane, untestable
-public function __construct(
-    private OrderData $data,  // data in constructor
-) {}
+// app/Services/Admin/Modules/Orders/UseCases/CreateOrderUseCase.php
+namespace App\Services\Admin\Modules\Orders\UseCases;
+
+use App\Domain\Order\Actions\CreateOrderAction;
+use App\Domain\Inventory\Actions\ReserveStockAction;
+use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Events\OrderCreated;
+use Illuminate\Support\Facades\DB;
+
+class CreateOrderUseCase
+{
+    public function __construct(
+        private CreateOrderAction $createOrder,
+        private ReserveStockAction $reserveStock,
+    ) {}
+
+    public function execute(OrderData $data): Order
+    {
+        return DB::transaction(function () use ($data) {
+            $order = $this->createOrder->execute($data);
+            $this->reserveStock->execute($order->items);
+            event(new OrderCreated($order));
+            return $order;
+        });
+    }
+}
 ```
-
-### Request Object Boundary
-
-- Request objects MUST NOT pass beyond the Controller
-- Controller MUST convert Request to DTO or validated array before calling UseCase
 
 ```php
-// CORRECT
-$order = $this->placeOrder->execute(OrderData::from($request->validated()));
+// app/Domain/Order/Actions/CreateOrderAction.php
+namespace App\Domain\Order\Actions;
 
-// WRONG
-$order = $this->placeOrder->execute($request);
+use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Models\Order;
+
+class CreateOrderAction
+{
+    public function execute(OrderData $data): Order
+    {
+        return Order::create([
+            'customer_id' => $data->customerId,
+            'status'      => OrderStatus::Pending,
+        ]);
+    }
+}
 ```
 
-### DTO Usage
+This example also demonstrates cross-domain coordination: the UseCase imports from both `Order` and `Inventory` domains. The Actions themselves have no knowledge of each other.
 
-- Prefer DTOs over arrays when crossing layer boundaries
-- DTOs MUST be readonly with constructor promotion
-- DTOs MUST have a `from(array)` static factory
+---
 
 ## Forbidden Patterns
 
-1. **Fat controllers**: Business logic in controllers. Extract to UseCase.
-2. **Business logic in Requests**: Requests validate structure only. Business rules belong in Actions.
-3. **Actions calling Actions**: Compose in UseCase or Operation.
-4. **UseCases calling UseCases**: Extract shared logic to Operation or Action.
-5. **Domain depending on Services**: Domain layer has ZERO imports from Service layer.
-6. **Transactions outside UseCases**: Only UseCases own transaction boundaries.
-7. **Direct side effects**: Use Events instead of calling email/notification services directly from UseCases.
-8. **Direct service coupling**: Services communicate via Events, not direct calls.
-9. **Data in constructors**: Constructor is for dependencies. Data goes to `execute()`.
-10. **Generic directories**: NEVER place files in `app/Http/Controllers/`, `app/Models/`, or `app/Actions/`. Use the Pulsar directory structure.
+- Fat Controllers containing business logic
+- Controllers calling Operations directly
+- Actions calling other Actions
+- Actions calling Queries (pass the data in instead)
+- Operations emitting domain events
+- Transactions inside Actions or Operations
+- UseCases calling other UseCases
+- Request objects leaking past Controller
+- Business logic in Models beyond accessors/scopes
 
-## Event-Driven Side Effects
+If you feel tempted to do any of the above, the architecture is being violated.
 
-- UseCases MUST emit Events for side effects (email, notifications, logging)
-- UseCases MUST NOT directly call infrastructure services
-- Listeners handle side effects asynchronously
+---
 
-```php
-// CORRECT
-event(new OrderPlaced($order));
+## Scaffolding
 
-// WRONG
-$this->emailService->sendOrderConfirmation($order);
-```
-
-## Uncertainty Protocol
-
-If you are unsure about:
-
-- Which Service or Module a file belongs to
-- Whether logic is a UseCase, Operation, or Action
-- Whether to create a new Service or extend an existing one
-- Which Domain a model or action belongs to
-
-STOP and ASK the user before generating code. Do not guess.
-
-## Scaffolding (Optional)
-
-Pulsar CLI can scaffold files with correct paths and namespaces:
+Use Pulsar CLI to generate files to ensure correct namespace and location.
 
 ```bash
 # Service Layer
-./vendor/bin/pulsar make:service {Service}
-./vendor/bin/pulsar make:controller {Name} {Module} {Service}
-./vendor/bin/pulsar make:request {Name} {Module} {Service}
-./vendor/bin/pulsar make:use-case {Name} {Module} {Service}
-./vendor/bin/pulsar make:operation {Name} {Module} {Service}
+pulsar make:service Admin
+pulsar make:controller OrderController Orders Admin --resource
+pulsar make:request CreateOrderRequest Orders Admin
+pulsar make:use-case CreateOrderUseCase Orders Admin
+pulsar make:operation PriceOrderOperation Orders Admin
 
 # Domain Layer
-./vendor/bin/pulsar make:model {Name} {Domain}
-./vendor/bin/pulsar make:action {Name} {Domain}
-./vendor/bin/pulsar make:dto {Name} {Domain}
-./vendor/bin/pulsar make:policy {Name} {Domain}
-./vendor/bin/pulsar make:event {Name} {Domain}
-./vendor/bin/pulsar make:enum {Name} {Domain}
-./vendor/bin/pulsar make:exception {Name} {Domain}
-./vendor/bin/pulsar make:query {Name} {Domain}
+pulsar make:model Order Order
+pulsar make:action CreateOrderAction Order
+pulsar make:dto OrderData Order
+pulsar make:event OrderCreated Order
+pulsar make:query FindActiveOrdersQuery Order
 ```
 
-Use these commands when creating new files. They ensure correct directory placement and namespace generation.
+---
+
+## Uncertainty Protocol
+
+If unsure about placement, layer type, or domain ownership:
+STOP and ask the user.
+Never guess.
