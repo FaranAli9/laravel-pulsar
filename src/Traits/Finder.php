@@ -46,11 +46,19 @@ trait Finder
     }
 
     /**
+     * Find the root path of the Pulsar architecture.
+     */
+    public function findPulsarRootPath(): string
+    {
+        return $this->findSourceRoot() . DIRECTORY_SEPARATOR . 'Pulsar';
+    }
+
+    /**
      * Find the root path of all the services.
      */
     public function findServicesRootPath(): string
     {
-        return $this->findSourceRoot() . DIRECTORY_SEPARATOR . 'Services';
+        return $this->findPulsarRootPath() . DIRECTORY_SEPARATOR . 'Services';
     }
 
     /**
@@ -58,7 +66,7 @@ trait Finder
      */
     public function findDomainRootPath(): string
     {
-        return $this->findSourceRoot() . DIRECTORY_SEPARATOR . 'Domain';
+        return $this->findPulsarRootPath() . DIRECTORY_SEPARATOR . 'Domain';
     }
 
     /**
@@ -98,7 +106,7 @@ trait Finder
      */
     public function findServiceNamespace(string $service): string
     {
-        $root = $this->findRootNamespace();
+        $root = $this->findPulsarRootNamespace();
 
         return "$root\\Services\\$service";
     }
@@ -110,9 +118,19 @@ trait Finder
      */
     public function findDomainNamespace(string $domain): string
     {
-        $root = $this->findRootNamespace();
+        $root = $this->findPulsarRootNamespace();
 
         return "$root\\Domain\\$domain";
+    }
+
+    /**
+     * Find the Pulsar root namespace.
+     *
+     * @throws Exception
+     */
+    public function findPulsarRootNamespace(): string
+    {
+        return $this->findRootNamespace() . '\\Pulsar';
     }
 
     /**

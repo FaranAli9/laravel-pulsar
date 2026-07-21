@@ -137,7 +137,6 @@ class ControllerGenerator extends Generator
      */
     protected function getNamespace(): string
     {
-        $rootNamespace = $this->findRootNamespace();
-        return "{$rootNamespace}\\Services\\{$this->service}\\Modules\\{$this->module}\\Controllers";
+        return $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\Controllers";
     }
 }

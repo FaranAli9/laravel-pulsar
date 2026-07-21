@@ -24,7 +24,7 @@ describe('Operation Generator', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $relativePath = $generator->generate();
             
-            expect($relativePath)->toContain('app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'TestService');
+            expect($relativePath)->toContain('app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'TestService');
             expect($relativePath)->toContain('Modules' . DIRECTORY_SEPARATOR . 'Checkout');
             expect($relativePath)->toContain('Operations');
         });
@@ -49,7 +49,7 @@ describe('Operation Generator', function () {
             $relativePath = $generator->generate();
             
             $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
-            expect($content)->toHaveNamespace('App\Services\TestService\Modules\Checkout\Operations');
+            expect($content)->toHaveNamespace('App\Pulsar\Services\TestService\Modules\Checkout\Operations');
         });
         
         it('class name is correct', function () {
@@ -72,7 +72,7 @@ describe('Operation Generator', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $generator->generate();
             
-            $modulePath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $modulePath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                          DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
                          DIRECTORY_SEPARATOR . 'Checkout';
             
@@ -172,7 +172,7 @@ describe('Operation Generator', function () {
                 // Expected
             }
             
-            $operationPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $operationPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                            DIRECTORY_SEPARATOR . 'NonExistent';
             
             expect(file_exists($operationPath))->toBeFalse();
@@ -187,7 +187,7 @@ describe('Operation Generator', function () {
             
             expect($relativePath)->toContain('UserAuthentication');
             $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
-            expect($content)->toHaveNamespace('App\Services\TestService\Modules\UserAuthentication\Operations');
+            expect($content)->toHaveNamespace('App\Pulsar\Services\TestService\Modules\UserAuthentication\Operations');
         });
         
         it('handles multi-word service names', function () {
@@ -198,11 +198,11 @@ describe('Operation Generator', function () {
             
             expect($relativePath)->toContain('OrderManagement');
             $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
-            expect($content)->toHaveNamespace('App\Services\OrderManagement\Modules\Orders\Operations');
+            expect($content)->toHaveNamespace('App\Pulsar\Services\OrderManagement\Modules\Orders\Operations');
         });
         
         it('creates module if it does not exist', function () {
-            $modulePath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $modulePath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                          DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
                          DIRECTORY_SEPARATOR . 'NewModule';
             
@@ -215,7 +215,7 @@ describe('Operation Generator', function () {
         });
         
         it('creates Operations directory if needed', function () {
-            $operationsPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $operationsPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                             DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
                             DIRECTORY_SEPARATOR . 'Checkout' . DIRECTORY_SEPARATOR . 'Operations';
             
@@ -234,7 +234,7 @@ describe('Operation Generator', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $generator->generate();
             
-            $operationsPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $operationsPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                              DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
                              DIRECTORY_SEPARATOR . 'Checkout' . DIRECTORY_SEPARATOR . 'Operations';
             
@@ -245,7 +245,7 @@ describe('Operation Generator', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $generator->generate();
             
-            $modulePath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $modulePath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                           DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
                           DIRECTORY_SEPARATOR . 'Checkout';
             
@@ -256,7 +256,7 @@ describe('Operation Generator', function () {
             $generator = new OperationGenerator('CreateOrder', 'Checkout', 'TestService');
             $generator->generate();
             
-            $operationPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . 
+            $operationPath = $this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . 
                           DIRECTORY_SEPARATOR . 'TestService' . DIRECTORY_SEPARATOR . 'Modules' . 
                           DIRECTORY_SEPARATOR . 'Checkout' . DIRECTORY_SEPARATOR . 'Operations' . DIRECTORY_SEPARATOR . 'CreateOrder.php';
             

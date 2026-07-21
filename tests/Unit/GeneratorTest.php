@@ -19,12 +19,12 @@ describe('Generator Base Class', function () {
             $generator = new TestGenerator();
             $stub = '{{namespace}}\{{class}} extends {{parent}}';
             $result = $generator->testReplaceStubPlaceholders($stub, [
-                'namespace' => 'App\\Services',
+                'namespace' => 'App\\Pulsar\\Services',
                 'class' => 'MyClass',
                 'parent' => 'BaseClass'
             ]);
             
-            expect($result)->toBe('App\\Services\MyClass extends BaseClass');
+            expect($result)->toBe('App\\Pulsar\\Services\MyClass extends BaseClass');
         });
         
         it('replaces repeated placeholders', function () {
@@ -70,12 +70,12 @@ describe('Generator Base Class', function () {
             $generator = new TestGenerator();
             $stub = "namespace {{namespace}};\n\nclass {{class}}\n{\n    // {{comment}}\n}";
             $result = $generator->testReplaceStubPlaceholders($stub, [
-                'namespace' => 'App\\Services\\Order',
+                'namespace' => 'App\\Pulsar\\Services\\Order',
                 'class' => 'CreateOrder',
                 'comment' => 'Business logic here'
             ]);
             
-            expect($result)->toContain('namespace App\\Services\\Order;');
+            expect($result)->toContain('namespace App\\Pulsar\\Services\\Order;');
             expect($result)->toContain('class CreateOrder');
             expect($result)->toContain('// Business logic here');
         });
@@ -177,22 +177,50 @@ describe('Generator Base Class', function () {
         it('handles nested service paths', function () {
             $generator = new TestGenerator();
             $cwd = getcwd();
-            $absolutePath = $cwd . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'Order' . DIRECTORY_SEPARATOR . 'CreateOrder.php';
+            $absolutePath = $cwd . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'Order' . DIRECTORY_SEPARATOR . 'CreateOrder.php';
             
             $relativePath = $generator->testGetRelativePath($absolutePath);
             
-            expect($relativePath)->toBe('app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'Order' . DIRECTORY_SEPARATOR . 'CreateOrder.php');
+            expect($relativePath)->toBe('app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'Order' . DIRECTORY_SEPARATOR . 'CreateOrder.php');
             expect($relativePath)->toStartWith('app');
         });
         
         it('preserves directory separators', function () {
             $generator = new TestGenerator();
             $cwd = getcwd();
-            $absolutePath = $cwd . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services';
+            $absolutePath = $cwd . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services';
             
             $relativePath = $generator->testGetRelativePath($absolutePath);
             
             expect($relativePath)->toContain(DIRECTORY_SEPARATOR);
+        });
+    });
+
+    describe('Pulsar architecture paths and namespaces', function () {
+
+        it('resolves Pulsar root path inside app directory', function () {
+            $generator = new TestGenerator();
+
+            expect($generator->findPulsarRootPath())
+                ->toBe($this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar');
+        });
+
+        it('resolves service and domain root paths inside Pulsar root', function () {
+            $generator = new TestGenerator();
+
+            expect($generator->findServicesRootPath())
+                ->toBe($this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services');
+
+            expect($generator->findDomainRootPath())
+                ->toBe($this->tempDir . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Domain');
+        });
+
+        it('resolves service and domain namespaces inside App Pulsar namespace', function () {
+            $generator = new TestGenerator();
+
+            expect($generator->findPulsarRootNamespace())->toBe('App\Pulsar');
+            expect($generator->findServiceNamespace('Admin'))->toBe('App\Pulsar\Services\Admin');
+            expect($generator->findDomainNamespace('Order'))->toBe('App\Pulsar\Domain\Order');
         });
     });
     
@@ -323,12 +351,12 @@ describe('Generator Base Class', function () {
         it('creates nested directory structure', function () {
             $generator = new TestGenerator();
             $root = $this->tempDir;
-            $elements = ['app', 'Services', 'Order', 'Modules'];
+            $elements = ['app', 'Pulsar', 'Services', 'Order', 'Modules'];
             
             $fullPath = $generator->testCreateRecursiveDirectories($root, $elements);
             
             expect(is_dir($fullPath))->toBeTrue();
-            expect($fullPath)->toContain('app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'Order' . DIRECTORY_SEPARATOR . 'Modules');
+            expect($fullPath)->toContain('app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . 'Order' . DIRECTORY_SEPARATOR . 'Modules');
         });
         
         it('returns full path', function () {
