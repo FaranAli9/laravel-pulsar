@@ -79,13 +79,13 @@ function createMockLaravelApp(string $root): void
     file_put_contents($root . DIRECTORY_SEPARATOR . 'artisan', "<?php\n// Laravel artisan\n");
     
     // Create directory structure
-    mkdir($root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services', 0755, true);
-    mkdir($root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Domain', 0755, true);
+    mkdir($root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services', 0755, true);
+    mkdir($root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Domain', 0755, true);
 }
 
 function createService(string $root, string $name): void
 {
-    $path = $root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . $name;
+    $path = $root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . $name;
     mkdir($path . DIRECTORY_SEPARATOR . 'Providers', 0755, true);
     mkdir($path . DIRECTORY_SEPARATOR . 'Routes', 0755, true);
     
@@ -93,7 +93,7 @@ function createService(string $root, string $name): void
     $providerContent = <<<PHP
 <?php
 
-namespace App\\Services\\{$name}\\Providers;
+namespace App\\Pulsar\\Services\\{$name}\\Providers;
 
 use Illuminate\\Support\\ServiceProvider;
 

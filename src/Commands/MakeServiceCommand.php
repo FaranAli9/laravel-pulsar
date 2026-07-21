@@ -29,7 +29,7 @@ class MakeServiceCommand extends PulsarCommand
 
             $this->line();
             $this->success("{$name} Service created successfully!");
-            $this->info("Location: app/Services/{$name}");
+            $this->info("Location: app/Pulsar/Services/{$name}");
             $this->line();
 
             return Command::SUCCESS;

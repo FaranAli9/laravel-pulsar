@@ -129,9 +129,7 @@ class RequestGenerator extends Generator
      */
     protected function getNamespace(): string
     {
-        $rootNamespace = $this->findRootNamespace();
-        return "{$rootNamespace}\\Services\\{$this->service}\\Modules\\{$this->module}\\Requests";
+        return $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\Requests";
     }
 
 }
-
