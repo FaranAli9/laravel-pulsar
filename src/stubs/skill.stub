@@ -21,15 +21,17 @@ Violations are architectural errors.
 
 Two layers exist:
 
-Service Layer: `app/Services/`
-Domain Layer: `app/Domain/`
+Service Layer: `app/Pulsar/Services/`
+Domain Layer: `app/Pulsar/Domain/`
+
+`app/Pulsar` is the architecture boundary. Code inside this directory follows Pulsar placement, dependency, and transaction rules.
 
 There is no `app/Http/Controllers`.
 There is no `app/Models`.
 
 Services are delivery boundaries scoped to a consumer audience (Admin, Client, Internal).
 A Service is NOT a microservice, bounded context, or deployment unit.
-Domain is pure business logic — Laravel-aware but delivery-agnostic.
+Domain is Laravel-aware business logic shared across services and independent of delivery concerns.
 
 ---
 
@@ -38,7 +40,7 @@ Domain is pure business logic — Laravel-aware but delivery-agnostic.
 Service Layer:
 
 ```
-app/Services/{Service}/
+app/Pulsar/Services/{Service}/
   Providers/
   Routes/
   Modules/{Module}/
@@ -51,7 +53,7 @@ app/Services/{Service}/
 Domain Layer:
 
 ```
-app/Domain/{Domain}/
+app/Pulsar/Domain/{Domain}/
   Models/
   Actions/
   DTOs/
@@ -183,8 +185,8 @@ Never call mail, notification, or external services directly inside UseCase or A
 Routes live inside the Service, not in Laravel's default `routes/` directory.
 
 ```
-app/Services/Admin/Routes/api.php
-app/Services/Client/Routes/api.php
+app/Pulsar/Services/Admin/Routes/api.php
+app/Pulsar/Services/Client/Routes/api.php
 ```
 
 Each Service's `RouteServiceProvider` loads its own route file with appropriate prefix and middleware.
@@ -196,12 +198,12 @@ Each Service's `RouteServiceProvider` loads its own route file with appropriate 
 This single example demonstrates the full flow: Controller → UseCase → Action, with correct namespaces, data flow, and transaction ownership.
 
 ```php
-// app/Services/Admin/Modules/Orders/Controllers/OrderController.php
-namespace App\Services\Admin\Modules\Orders\Controllers;
+// app/Pulsar/Services/Admin/Modules/Orders/Controllers/OrderController.php
+namespace App\Pulsar\Services\Admin\Modules\Orders\Controllers;
 
-use App\Domain\Order\DTOs\OrderData;
-use App\Services\Admin\Modules\Orders\Requests\CreateOrderRequest;
-use App\Services\Admin\Modules\Orders\UseCases\CreateOrderUseCase;
+use App\Pulsar\Domain\Order\DTOs\OrderData;
+use App\Pulsar\Services\Admin\Modules\Orders\Requests\CreateOrderRequest;
+use App\Pulsar\Services\Admin\Modules\Orders\UseCases\CreateOrderUseCase;
 
 class OrderController extends Controller
 {
@@ -214,13 +216,13 @@ class OrderController extends Controller
 ```
 
 ```php
-// app/Services/Admin/Modules/Orders/UseCases/CreateOrderUseCase.php
-namespace App\Services\Admin\Modules\Orders\UseCases;
+// app/Pulsar/Services/Admin/Modules/Orders/UseCases/CreateOrderUseCase.php
+namespace App\Pulsar\Services\Admin\Modules\Orders\UseCases;
 
-use App\Domain\Order\Actions\CreateOrderAction;
-use App\Domain\Inventory\Actions\ReserveStockAction;
-use App\Domain\Order\DTOs\OrderData;
-use App\Domain\Order\Events\OrderCreated;
+use App\Pulsar\Domain\Order\Actions\CreateOrderAction;
+use App\Pulsar\Domain\Inventory\Actions\ReserveStockAction;
+use App\Pulsar\Domain\Order\DTOs\OrderData;
+use App\Pulsar\Domain\Order\Events\OrderCreated;
 use Illuminate\Support\Facades\DB;
 
 class CreateOrderUseCase
@@ -243,11 +245,11 @@ class CreateOrderUseCase
 ```
 
 ```php
-// app/Domain/Order/Actions/CreateOrderAction.php
-namespace App\Domain\Order\Actions;
+// app/Pulsar/Domain/Order/Actions/CreateOrderAction.php
+namespace App\Pulsar\Domain\Order\Actions;
 
-use App\Domain\Order\DTOs\OrderData;
-use App\Domain\Order\Models\Order;
+use App\Pulsar\Domain\Order\DTOs\OrderData;
+use App\Pulsar\Domain\Order\Models\Order;
 
 class CreateOrderAction
 {

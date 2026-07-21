@@ -42,44 +42,48 @@ A bug in a generator affects every file it creates. Tests prevent multiplied fai
 
 ### Test Coverage: 100% (Critical Foundation Complete)
 
-**Status**: ✅ **All critical foundation tests complete - 219 tests passing**
+**Status**: ✅ **All critical foundation tests complete - 249 tests passing**
 
 **Test Results** (as of latest run):
 ```
-Tests:    219 passed (266 assertions)
-Duration: 0.61s
+Tests:    249 passed (315 assertions)
+Duration: 0.74s
 ```
 
 **Completed Test Suites**:
 - ✅ **InputValidationTest**: 132 tests (security-critical input validation)
 - ✅ **OperationGeneratorTest**: 24 tests (end-to-end generation workflow)
-- ✅ **GeneratorTest**: 43 tests (base class shared methods)
+- ✅ **ContextGeneratorTest**: 12 tests (architecture guide publishing)
+- ✅ **SkillGeneratorTest**: 15 tests (architecture skill publishing)
+- ✅ **GeneratorTest**: 46 tests (base class shared methods and architecture paths)
 - ✅ **ExceptionsTest**: 20 tests (custom exception hierarchy)
 
 **Coverage Breakdown**:
 - Security validation (validateName): 116 tests
 - Path sanitization (sanitizeDirectoryName): 16 tests  
 - Stub handling (replaceStubPlaceholders, loadStub): 11 tests
-- Path utilities (getStubPath, getRelativePath, generateSlug): 11 tests
-- File operations (createFile, createDirectory, fileExists): 15 tests
+- Path utilities and architecture roots: 14 tests
+- Filesystem helpers: 18 tests
 - Operation generation workflow: 24 tests
+- Architecture guide and skill publishing: 27 tests
 - Custom exceptions: 20 tests
 - Custom PHP expectations: 4 helpers (toBeValidPhp, toHaveNamespace, toHaveClass, toHaveMethod)
 
 ### What's Been Tested
 
-**Unit Tests (195 tests)**:
+**Unit Tests (198 tests)**:
 - ✅ Input validation with security focus (132 tests)
   - Reserved PHP keywords (75 tests)
   - Invalid characters (24 tests)  
   - Path traversal attacks (10 tests)
   - Length limits (3 tests)
   - Edge cases (20 tests)
-- ✅ Base Generator class methods (43 tests)
+- ✅ Base Generator class methods (46 tests)
   - Stub placeholder replacement (8 tests)
   - Slug generation (6 tests)
   - Stub path resolution (5 tests)
   - Relative path handling (3 tests)
+  - Pulsar architecture paths and namespaces (3 tests)
   - Stub loading (3 tests)
   - File/directory operations (18 tests)
 - ✅ Custom exception hierarchy (20 tests)
@@ -88,13 +92,15 @@ Duration: 0.61s
   - StubNotFoundException (4 tests)
   - Exception inheritance (3 tests)
 
-**Feature Tests (24 tests)**:
+**Feature Tests (51 tests)**:
 - ✅ OperationGenerator end-to-end workflow (24 tests)
   - Happy path file generation (8 tests)
   - Suffix enforcement (4 tests)
   - Error handling (5 tests)
   - Edge cases (4 tests)
   - Directory structure validation (3 tests)
+- ✅ ContextGenerator architecture guide publishing (12 tests)
+- ✅ SkillGenerator architecture skill publishing (15 tests)
 
 **Test Infrastructure**:
 - ✅ Custom Pest expectations (toBeValidPhp, toHaveNamespace, toHaveClass, toHaveMethod)
@@ -120,8 +126,9 @@ Duration: 0.61s
 - ❌ UseCaseGenerator
 
 **Finder Trait Coverage**:
-- ❌ findServicesRootPath()
-- ❌ findServiceNamespace()
+- ✅ Pulsar root path
+- ✅ Service and domain root paths
+- ✅ Service and domain namespaces
 - ❌ findLaravelRoot() edge cases
 - ❌ serviceExists() validation
 
@@ -149,23 +156,18 @@ Duration: 0.61s
 tests/
 ├── Pest.php                        # Configuration & custom expectations
 ├── Helpers/
-│   ├── TestGenerator.php           # Exposes protected methods for testing
-│   └── CreatesLaravelStructure.php # Mock Laravel app builder
+│   └── TestGenerator.php           # Exposes protected methods for testing
 ├── Unit/
-│   ├── GeneratorTest.php           # Base class methods (45 tests)
-│   ├── InputValidationTest.php     # Security critical (53 tests)
-│   ├── StubHandlingTest.php        # Stub system (18 tests)
-│   ├── PathHelperTest.php          # Path utilities (19 tests)
-│   └── ExceptionsTest.php          # Custom exceptions (12 tests)
+│   ├── GeneratorTest.php           # Base class methods and architecture paths (46 tests)
+│   ├── InputValidationTest.php     # Security critical input validation (132 tests)
+│   └── ExceptionsTest.php          # Custom exceptions (20 tests)
 ├── Feature/
-│   ├── OperationGeneratorTest.php  # E2E operation (25 tests)
-│   ├── ServiceGeneratorTest.php    # Service scaffolding (20 tests)
-│   └── ControllerGeneratorTest.php # Resource controllers (16 tests)
-└── Fixtures/
-    └── laravel-project/            # Mock Laravel structure
+│   ├── ContextGeneratorTest.php    # Architecture guide publishing (12 tests)
+│   ├── OperationGeneratorTest.php  # E2E operation generation (24 tests)
+│   └── SkillGeneratorTest.php      # Architecture skill publishing (15 tests)
 ```
 
-**Total**: ~208 tests across 8 test files
+**Total**: 249 tests across 6 test files
 
 ---
 
@@ -175,7 +177,7 @@ tests/
 
 **Priority**: Security & core functionality
 
-**Status**: All 219 tests passing (266 assertions)
+**Status**: All 249 tests passing (315 assertions)
 
 1. ✅ **InputValidationTest.php** 
    - Reserved PHP keyword blocking (75 tests)
@@ -197,34 +199,44 @@ tests/
    - Slug generation (6 tests)
    - Stub path resolution (5 tests)
    - Relative path handling (3 tests)
+   - Pulsar architecture paths and namespaces (3 tests)
    - Stub loading (3 tests)
-   - File/directory operations (15 tests)
+   - Directory creation (4 tests)
+   - File creation (4 tests)
    - Recursive directories (4 tests)
-   - **Total: 43 tests**
+   - Gitkeep creation (3 tests)
+   - File existence checks (3 tests)
+   - **Total: 46 tests**
 
 4. ✅ **ExceptionsTest.php**
    - Custom exception factories (20 tests)
    - Error message quality validation
    - **Total: 20 tests**
 
+5. ✅ **ContextGeneratorTest.php**
+   - Architecture guide publishing, overwrite behavior, and custom paths
+   - **Total: 12 tests**
+
+6. ✅ **SkillGeneratorTest.php**
+   - Architecture skill publishing, overwrite behavior, and custom paths
+   - **Total: 15 tests**
+
 **Outcome**: ✅ Security vulnerabilities and core workflow validated. All critical paths tested.
 
 ---
 
-### 📋 Phase 2: Finder Trait & Path Utilities (PLANNED)
+### 📋 Phase 2: Finder Trait Edge Cases (PLANNED)
 
 **Priority**: Core infrastructure supporting all generators
 
 **Estimated Time**: 3-4 hours
 
-1. **FinderTraitTest.php** (~22 tests)
+1. **FinderTraitTest.php** (~12 tests)
    - `findLaravelRoot()` detection in various scenarios (6 tests)
      - Standard Laravel project
      - Nested package development
      - Monorepo structure
      - Missing composer.json/artisan error handling
-   - `findServicesRootPath()` validation (4 tests)
-   - `findServiceNamespace()` from composer.json (6 tests)
    - `serviceExists()` validation (4 tests)
    - Edge cases: symlinks, case sensitivity (2 tests)
 
@@ -344,7 +356,7 @@ expect($generatedCode)->toBeValidPhp();
 
 // Check namespace and class in one assertion
 expect($content)
-    ->toHaveNamespace('App\Services\Auth\Operations')
+    ->toHaveNamespace('App\Pulsar\Services\Auth\Modules\Orders\Operations')
     ->toHaveClass('CreateOrderOperation')
     ->toHaveMethod('handle');
 ```
@@ -367,12 +379,12 @@ it('generates operation with correct structure', function () {
     $generator = new OperationGenerator('CreateOrder', 'Orders', 'Admin');
     $filePath = $generator->generate();
 
-    expect($filePath)->toContain('app/Services/Admin/Modules/Orders/Operations');
+    expect($filePath)->toContain('app/Pulsar/Services/Admin/Modules/Orders/Operations');
 
     $content = file_get_contents($this->tempDir . '/' . $filePath);
     expect($content)
         ->toBeValidPhp()
-        ->toHaveNamespace('App\Services\Admin\Modules\Orders\Operations')
+        ->toHaveNamespace('App\Pulsar\Services\Admin\Modules\Orders\Operations')
         ->toHaveClass('CreateOrderOperation');
 });
 ```
