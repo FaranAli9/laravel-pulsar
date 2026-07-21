@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guidance for Claude Code when working on the Pulsar package.
+Guidance for Codex when working on the Pulsar package.
 
 ## What is Pulsar?
 

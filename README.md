@@ -42,14 +42,18 @@ Pulsar organizes your Laravel application into **two complementary layers**.
 - **Service Layer** — delivery and orchestration
 - **Domain Layer** — business logic
 
+Pulsar places its generated architecture under `app/Pulsar` so the application's architectural boundary is explicit. Everything inside this directory follows Pulsar's placement, dependency, and transaction rules; everything outside it remains available for ordinary Laravel code that is not governed by Pulsar.
+
 ---
 
 ### Service Layer
 
 **Purpose:** HTTP delivery and application orchestration, scoped by consumer audience (Admin, Client, Internal).
 
+Services live in `app/Pulsar/Services` because they are part of the Pulsar delivery layer. This keeps audience-specific HTTP entrypoints, routing, requests, use cases, and reusable operations together without mixing them into Laravel's default application folders.
+
 ```
-app/Services/{Service}/
+app/Pulsar/Services/{Service}/
 ├── Providers/
 │   ├── {Service}ServiceProvider.php
 │   └── RouteServiceProvider.php
@@ -83,8 +87,10 @@ Services may share the same database, Domain layer, and deployment.
 
 **Purpose:** Business logic independent of delivery concerns (HTTP, controllers).
 
+Domains live in `app/Pulsar/Domain` because they represent business capabilities shared by all services. The Domain layer is reusable across delivery boundaries while remaining inside Laravel's autoloaded application namespace.
+
 ```
-app/Domain/{Domain}/
+app/Pulsar/Domain/{Domain}/
 ├── Models/
 ├── Actions/
 ├── DTOs/

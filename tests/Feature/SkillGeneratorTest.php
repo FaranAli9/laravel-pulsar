@@ -60,8 +60,8 @@ describe('Skill Generator', function () {
             $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
 
             expect($content)
-                ->toContain('app/Services/{Service}/')
-                ->toContain('app/Domain/{Domain}/');
+                ->toContain('app/Pulsar/Services/{Service}/')
+                ->toContain('app/Pulsar/Domain/{Domain}/');
         });
 
         it('content has no stub placeholders', function () {

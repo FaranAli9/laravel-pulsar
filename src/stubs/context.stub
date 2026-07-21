@@ -1,13 +1,17 @@
 # Pulsar Architecture Guide
 
-This project uses Pulsar's vertical slice architecture with two layers: a Service Layer for HTTP delivery (scoped by consumer audience, e.g., Admin, Client) and a Domain Layer for pure business logic (shared across all services).
+This project uses Pulsar's vertical slice architecture under `app/Pulsar`, with two layers: a Service Layer for HTTP delivery (scoped by consumer audience, e.g., Admin, Client) and a Domain Layer for business logic shared across all services.
+
+`app/Pulsar` is the explicit boundary for Pulsar-governed application code. Files inside it follow Pulsar's placement, dependency, and transaction rules; ordinary Laravel code outside it remains separate from the Pulsar architecture.
 
 ## Directory Structure
 
 ### Service Layer
 
+Services live in `app/Pulsar/Services` because they are delivery and orchestration boundaries for consumer audiences.
+
 ```
-app/Services/{Service}/
+app/Pulsar/Services/{Service}/
 ├── Providers/
 │   ├── {Service}ServiceProvider.php
 │   └── RouteServiceProvider.php
@@ -21,8 +25,10 @@ app/Services/{Service}/
 
 ### Domain Layer
 
+Domains live in `app/Pulsar/Domain` because they represent Laravel-aware business capabilities shared across services.
+
 ```
-app/Domain/{Domain}/
+app/Pulsar/Domain/{Domain}/
 ├── Models/         # Eloquent models
 ├── Actions/        # Atomic business operations
 ├── DTOs/           # Data transfer objects
