@@ -62,7 +62,7 @@
         "phpstan/phpstan": "^2.1"
     },
     "scripts": {
-        "analyse": "phpstan analyse --no-progress --debug",
+        "analyse": "phpstan analyse --no-progress",
         "lint": "pint --test",
         "test": "pest",
         "test:coverage": "pest --coverage --min=85"

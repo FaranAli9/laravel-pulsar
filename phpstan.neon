@@ -3,5 +3,4 @@ parameters:
     paths:
         - src
         - bin/pulsar
-    parallel:
-        maximumNumberOfProcesses: 1
+    # Tests are intentionally excluded because Pest closure binding and custom expectations produce false positives.
