@@ -26,10 +26,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @param  InputInterface  $input
-     * @param  OutputInterface  $output
-     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -41,7 +37,7 @@ abstract class PulsarCommand extends Command
 
     /**
      * Handle the command execution.
-     * 
+     *
      * Subclasses must implement this method to provide command logic.
      *
      * @return int Exit code (0 for success, non-zero for failure)
@@ -50,9 +46,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Get the value of a command argument.
-     *
-     * @param  string  $key
-     * @return mixed
      */
     protected function argument(string $key): mixed
     {
@@ -61,9 +54,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Get the value of a command option.
-     *
-     * @param  string  $key
-     * @return mixed
      */
     protected function option(string $key): mixed
     {
@@ -72,9 +62,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Write a string as information output.
-     *
-     * @param  string  $message
-     * @return void
      */
     protected function info(string $message): void
     {
@@ -83,9 +70,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Write a string as success output.
-     *
-     * @param  string  $message
-     * @return void
      */
     protected function success(string $message): void
     {
@@ -94,9 +78,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Write a string as error output.
-     *
-     * @param  string  $message
-     * @return void
      */
     protected function error(string $message): void
     {
@@ -105,9 +86,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Write a string as warning output.
-     *
-     * @param  string  $message
-     * @return void
      */
     protected function warning(string $message): void
     {
@@ -116,8 +94,6 @@ abstract class PulsarCommand extends Command
 
     /**
      * Write a blank line.
-     *
-     * @return void
      */
     protected function line(): void
     {

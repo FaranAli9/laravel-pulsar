@@ -18,9 +18,6 @@ class PolicyGenerator extends Generator
 
     /**
      * Create a new PolicyGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class PolicyGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $policiesPath = $domainPath . DIRECTORY_SEPARATOR . 'Policies';
+        $policiesPath = $domainPath.DIRECTORY_SEPARATOR.'Policies';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($policiesPath);
@@ -66,7 +63,7 @@ class PolicyGenerator extends Generator
      */
     protected function getPolicyPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'Policies' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'Policies'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class PolicyGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class PolicyGenerator extends Generator
      */
     protected function getPolicyContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\Policies";
+        $namespace = $this->findDomainNamespace($this->domain).'\\Policies';
         $stubPath = $this->getStubPath('policy');
         $stub = $this->loadStub($stubPath);
 
@@ -91,6 +88,4 @@ class PolicyGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }
-

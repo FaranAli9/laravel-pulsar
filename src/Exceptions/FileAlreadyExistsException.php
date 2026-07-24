@@ -6,16 +6,13 @@ use Exception;
 
 /**
  * Exception thrown when trying to create a file that already exists.
+ *
+ * @phpstan-consistent-constructor
  */
 class FileAlreadyExistsException extends Exception
 {
     /**
      * Create a new FileAlreadyExistsException instance.
-     *
-     * @param  string  $fileType
-     * @param  string  $fileName
-     * @param  string  $location
-     * @return static
      */
     public static function make(string $fileType, string $fileName, string $location): static
     {

@@ -18,9 +18,6 @@ class EnumGenerator extends Generator
 
     /**
      * Create a new EnumGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class EnumGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $enumsPath = $domainPath . DIRECTORY_SEPARATOR . 'Enums';
+        $enumsPath = $domainPath.DIRECTORY_SEPARATOR.'Enums';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($enumsPath);
@@ -66,7 +63,7 @@ class EnumGenerator extends Generator
      */
     protected function getEnumPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'Enums' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'Enums'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class EnumGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class EnumGenerator extends Generator
      */
     protected function getEnumContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\Enums";
+        $namespace = $this->findDomainNamespace($this->domain).'\\Enums';
         $stubPath = $this->getStubPath('enum');
         $stub = $this->loadStub($stubPath);
 
@@ -91,5 +88,4 @@ class EnumGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }

@@ -6,15 +6,13 @@ use Exception;
 
 /**
  * Exception thrown when an invalid name is provided for class, service, module, etc.
+ *
+ * @phpstan-consistent-constructor
  */
 class InvalidNameException extends Exception
 {
     /**
      * Create a new InvalidNameException instance.
-     *
-     * @param  string  $name
-     * @param  string  $reason
-     * @return static
      */
     public static function make(string $name, string $reason): static
     {
@@ -23,10 +21,6 @@ class InvalidNameException extends Exception
 
     /**
      * Create exception for reserved PHP keyword.
-     *
-     * @param  string  $name
-     * @param  string  $type
-     * @return static
      */
     public static function reservedKeyword(string $name, string $type): static
     {
@@ -35,10 +29,6 @@ class InvalidNameException extends Exception
 
     /**
      * Create exception for invalid characters.
-     *
-     * @param  string  $name
-     * @param  string  $type
-     * @return static
      */
     public static function invalidCharacters(string $name, string $type): static
     {

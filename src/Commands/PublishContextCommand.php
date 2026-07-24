@@ -17,8 +17,6 @@ class PublishContextCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -30,12 +28,12 @@ class PublishContextCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->success("Pulsar context published to {$filePath}!");
-            $this->info("💡 Tip: Merge into your CLAUDE.md or .cursorrules for AI awareness");
+            $this->info('💡 Tip: Merge into your CLAUDE.md or .cursorrules for AI awareness');
 
             return Command::SUCCESS;
         } catch (FileAlreadyExistsException $e) {
             $this->error($e->getMessage());
-            $this->info("  Use --force to overwrite or --path to specify a different location");
+            $this->info('  Use --force to overwrite or --path to specify a different location');
 
             return Command::FAILURE;
         } catch (Exception $e) {
@@ -47,8 +45,6 @@ class PublishContextCommand extends PulsarCommand
 
     /**
      * Configure the command options.
-     *
-     * @return void
      */
     protected function configure(): void
     {

@@ -16,8 +16,6 @@ class MakeOperationCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -30,7 +28,7 @@ class MakeOperationCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success("Operation created successfully");
+            $this->success('Operation created successfully');
             $this->line();
             $this->info("Location: {$filePath}");
             $this->line();
@@ -47,8 +45,6 @@ class MakeOperationCommand extends PulsarCommand
 
     /**
      * Configure the command arguments.
-     *
-     * @return void
      */
     protected function configure(): void
     {

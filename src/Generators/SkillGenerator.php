@@ -9,7 +9,7 @@ class SkillGenerator extends Generator
     /**
      * The default output path relative to Laravel root.
      */
-    protected string $defaultPath = '.claude' . DIRECTORY_SEPARATOR . 'skills' . DIRECTORY_SEPARATOR . 'pulsar' . DIRECTORY_SEPARATOR . 'SKILL.md';
+    protected string $defaultPath = '.claude'.DIRECTORY_SEPARATOR.'skills'.DIRECTORY_SEPARATOR.'pulsar'.DIRECTORY_SEPARATOR.'SKILL.md';
 
     /**
      * Whether to overwrite an existing file.
@@ -23,9 +23,6 @@ class SkillGenerator extends Generator
 
     /**
      * Create a new SkillGenerator instance.
-     *
-     * @param  bool  $force
-     * @param  string|null  $path
      */
     public function __construct(bool $force = false, ?string $path = null)
     {
@@ -42,14 +39,14 @@ class SkillGenerator extends Generator
     {
         $filePath = $this->getSkillPath();
 
-        if (!$this->force && $this->fileExists($filePath)) {
+        if (! $this->force && $this->fileExists($filePath)) {
             $displayPath = $this->customPath ?? $this->defaultPath;
             throw FileAlreadyExistsException::make('Skill file', basename($displayPath), dirname($displayPath));
         }
 
         // Create parent directories
         $parentDir = dirname($filePath);
-        if (!is_dir($parentDir)) {
+        if (! is_dir($parentDir)) {
             $this->createDirectory($parentDir);
         }
 
@@ -66,12 +63,13 @@ class SkillGenerator extends Generator
     {
         if ($this->customPath) {
             // Handle relative paths from Laravel root
-            if (!str_starts_with($this->customPath, DIRECTORY_SEPARATOR)) {
-                return $this->findLaravelRoot() . DIRECTORY_SEPARATOR . $this->customPath;
+            if (! str_starts_with($this->customPath, DIRECTORY_SEPARATOR)) {
+                return $this->findLaravelRoot().DIRECTORY_SEPARATOR.$this->customPath;
             }
+
             return $this->customPath;
         }
 
-        return $this->findLaravelRoot() . DIRECTORY_SEPARATOR . $this->defaultPath;
+        return $this->findLaravelRoot().DIRECTORY_SEPARATOR.$this->defaultPath;
     }
 }

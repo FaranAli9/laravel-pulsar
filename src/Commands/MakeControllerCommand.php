@@ -17,8 +17,6 @@ class MakeControllerCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -32,7 +30,7 @@ class MakeControllerCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success("Controller created successfully ");
+            $this->success('Controller created successfully ');
             $this->line();
             $this->info("Location: {$filePath}");
             $this->line();
@@ -49,8 +47,6 @@ class MakeControllerCommand extends PulsarCommand
 
     /**
      * Configure the command arguments.
-     *
-     * @return void
      */
     protected function configure(): void
     {

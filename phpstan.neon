@@ -1,0 +1,7 @@
+parameters:
+    level: 6
+    paths:
+        - src
+        - bin/pulsar
+    parallel:
+        maximumNumberOfProcesses: 1

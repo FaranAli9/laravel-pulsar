@@ -18,9 +18,6 @@ class EventGenerator extends Generator
 
     /**
      * Create a new EventGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class EventGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $eventsPath = $domainPath . DIRECTORY_SEPARATOR . 'Events';
+        $eventsPath = $domainPath.DIRECTORY_SEPARATOR.'Events';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($eventsPath);
@@ -66,7 +63,7 @@ class EventGenerator extends Generator
      */
     protected function getEventPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'Events' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'Events'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class EventGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class EventGenerator extends Generator
      */
     protected function getEventContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\Events";
+        $namespace = $this->findDomainNamespace($this->domain).'\\Events';
         $stubPath = $this->getStubPath('event');
         $stub = $this->loadStub($stubPath);
 
@@ -91,5 +88,4 @@ class EventGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }

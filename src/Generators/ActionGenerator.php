@@ -18,9 +18,6 @@ class ActionGenerator extends Generator
 
     /**
      * Create a new ActionGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class ActionGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $actionsPath = $domainPath . DIRECTORY_SEPARATOR . 'Actions';
+        $actionsPath = $domainPath.DIRECTORY_SEPARATOR.'Actions';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($actionsPath);
@@ -66,7 +63,7 @@ class ActionGenerator extends Generator
      */
     protected function getActionPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'Actions' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'Actions'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class ActionGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class ActionGenerator extends Generator
      */
     protected function getActionContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\Actions";
+        $namespace = $this->findDomainNamespace($this->domain).'\\Actions';
         $stubPath = $this->getStubPath('action');
         $stub = $this->loadStub($stubPath);
 
@@ -91,6 +88,4 @@ class ActionGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }
-

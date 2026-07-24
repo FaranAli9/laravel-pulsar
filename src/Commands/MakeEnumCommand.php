@@ -16,8 +16,6 @@ class MakeEnumCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -29,7 +27,7 @@ class MakeEnumCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success("Enum created successfully");
+            $this->success('Enum created successfully');
             $this->line();
             $this->info("Location: {$filePath}");
             $this->line();
@@ -46,8 +44,6 @@ class MakeEnumCommand extends PulsarCommand
 
     /**
      * Configure the command arguments.
-     *
-     * @return void
      */
     protected function configure(): void
     {

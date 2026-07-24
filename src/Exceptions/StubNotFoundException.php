@@ -6,14 +6,13 @@ use Exception;
 
 /**
  * Exception thrown when a stub file cannot be found.
+ *
+ * @phpstan-consistent-constructor
  */
 class StubNotFoundException extends Exception
 {
     /**
      * Create a new StubNotFoundException instance.
-     *
-     * @param  string  $stubPath
-     * @return static
      */
     public static function make(string $stubPath): static
     {

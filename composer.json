@@ -57,11 +57,18 @@
         "symfony/console": "^7.2|^8.0"
     },
     "require-dev": {
-        "pestphp/pest": "^4.4"
+        "laravel/pint": "^1.24",
+        "pestphp/pest": "^4.4",
+        "phpstan/phpstan": "^2.1"
     },
     "scripts": {
+        "analyse": "phpstan analyse --no-progress --debug",
+        "lint": "pint --test",
         "test": "pest",
         "test:coverage": "pest --coverage --min=85"
+    },
+    "suggest": {
+        "ext-pcov": "Required to run the test:coverage script locally."
     },
     "config": {
         "allow-plugins": {

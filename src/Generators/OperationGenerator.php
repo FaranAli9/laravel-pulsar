@@ -24,10 +24,6 @@ class OperationGenerator extends Generator
 
     /**
      * Create a new OperationGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $module
-     * @param  string  $service
      */
     public function __construct(string $name, string $module, string $service)
     {
@@ -65,7 +61,7 @@ class OperationGenerator extends Generator
      */
     protected function validateServiceExists(): void
     {
-        if (!$this->serviceExists($this->service)) {
+        if (! $this->serviceExists($this->service)) {
             throw ServiceDoesNotExistException::make($this->service);
         }
     }
@@ -76,7 +72,7 @@ class OperationGenerator extends Generator
     protected function createModuleDirectories(): void
     {
         $modulePath = $this->getModulePath();
-        $operationsPath = $modulePath . DIRECTORY_SEPARATOR . 'Operations';
+        $operationsPath = $modulePath.DIRECTORY_SEPARATOR.'Operations';
 
         $this->createDirectory($modulePath);
         $this->createDirectory($operationsPath);
@@ -87,7 +83,7 @@ class OperationGenerator extends Generator
      */
     protected function getOperationPath(): string
     {
-        return $this->getModulePath() . DIRECTORY_SEPARATOR . 'Operations' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getModulePath().DIRECTORY_SEPARATOR.'Operations'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -95,7 +91,7 @@ class OperationGenerator extends Generator
      */
     protected function getModulePath(): string
     {
-        return $this->findServicesRootPath() . DIRECTORY_SEPARATOR . $this->service . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $this->module;
+        return $this->findServicesRootPath().DIRECTORY_SEPARATOR.$this->service.DIRECTORY_SEPARATOR.'Modules'.DIRECTORY_SEPARATOR.$this->module;
     }
 
     /**
@@ -103,7 +99,7 @@ class OperationGenerator extends Generator
      */
     protected function getOperationContent(): string
     {
-        $namespace = $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\Operations";
+        $namespace = $this->findServiceNamespace($this->service)."\\Modules\\{$this->module}\\Operations";
         $stubPath = $this->getStubPath('operation');
         $stub = $this->loadStub($stubPath);
 
@@ -112,6 +108,4 @@ class OperationGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }
-

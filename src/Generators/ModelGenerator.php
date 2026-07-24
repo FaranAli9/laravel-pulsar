@@ -18,9 +18,6 @@ class ModelGenerator extends Generator
 
     /**
      * Create a new ModelGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class ModelGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $modelsPath = $domainPath . DIRECTORY_SEPARATOR . 'Models';
+        $modelsPath = $domainPath.DIRECTORY_SEPARATOR.'Models';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($modelsPath);
@@ -66,7 +63,7 @@ class ModelGenerator extends Generator
      */
     protected function getModelPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'Models'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class ModelGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class ModelGenerator extends Generator
      */
     protected function getModelContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\Models";
+        $namespace = $this->findDomainNamespace($this->domain).'\\Models';
         $stubPath = $this->getStubPath('model');
         $stub = $this->loadStub($stubPath);
 
@@ -91,5 +88,4 @@ class ModelGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }

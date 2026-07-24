@@ -16,8 +16,6 @@ class MakeRequestCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -30,7 +28,7 @@ class MakeRequestCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success("Request created successfully!");
+            $this->success('Request created successfully!');
             $this->info("Location: {$filePath}");
             $this->line();
 
@@ -46,8 +44,6 @@ class MakeRequestCommand extends PulsarCommand
 
     /**
      * Configure the command arguments.
-     *
-     * @return void
      */
     protected function configure(): void
     {
