@@ -1,39 +1,39 @@
 <?php
 
-use Faran\Pulsar\Generators\ContextGenerator;
 use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
+use Faran\Pulsar\Generators\ContextGenerator;
 
 describe('Context Generator', function () {
 
     describe('Happy Path', function () {
 
         it('publishes context file', function () {
-            $generator = new ContextGenerator();
+            $generator = new ContextGenerator;
             $relativePath = $generator->generate();
 
-            $fullPath = $this->tempDir . DIRECTORY_SEPARATOR . $relativePath;
+            $fullPath = $this->tempDir.DIRECTORY_SEPARATOR.$relativePath;
             expect(file_exists($fullPath))->toBeTrue();
         });
 
         it('publishes to project root', function () {
-            $generator = new ContextGenerator();
+            $generator = new ContextGenerator;
             $relativePath = $generator->generate();
 
             expect($relativePath)->toBe('PULSAR.md');
         });
 
         it('returns relative path', function () {
-            $generator = new ContextGenerator();
+            $generator = new ContextGenerator;
             $relativePath = $generator->generate();
 
             expect($relativePath)->not->toStartWith($this->tempDir);
         });
 
         it('content contains architecture sections', function () {
-            $generator = new ContextGenerator();
+            $generator = new ContextGenerator;
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)
                 ->toContain('Service Layer')
@@ -44,10 +44,10 @@ describe('Context Generator', function () {
         });
 
         it('content has no stub placeholders', function () {
-            $generator = new ContextGenerator();
+            $generator = new ContextGenerator;
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)->not->toMatch('/\{\{[a-zA-Z_]+\}\}/');
         });
@@ -56,21 +56,21 @@ describe('Context Generator', function () {
     describe('Error Cases', function () {
 
         it('throws if file already exists', function () {
-            $generator1 = new ContextGenerator();
+            $generator1 = new ContextGenerator;
             $generator1->generate();
 
-            $generator2 = new ContextGenerator();
+            $generator2 = new ContextGenerator;
 
-            expect(fn() => $generator2->generate())
+            expect(fn () => $generator2->generate())
                 ->toThrow(FileAlreadyExistsException::class, 'already exists');
         });
 
         it('error message mentions context file', function () {
-            $generator1 = new ContextGenerator();
+            $generator1 = new ContextGenerator;
             $generator1->generate();
 
             try {
-                $generator2 = new ContextGenerator();
+                $generator2 = new ContextGenerator;
                 $generator2->generate();
                 $this->fail('Should have thrown exception');
             } catch (FileAlreadyExistsException $e) {
@@ -83,13 +83,13 @@ describe('Context Generator', function () {
 
         it('overwrites existing file with force flag', function () {
             // Create initial file with different content
-            $filePath = $this->tempDir . DIRECTORY_SEPARATOR . 'PULSAR.md';
+            $filePath = $this->tempDir.DIRECTORY_SEPARATOR.'PULSAR.md';
             file_put_contents($filePath, 'existing content');
 
             $generator = new ContextGenerator(force: true);
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
             expect($content)
                 ->not->toBe('existing content')
                 ->toContain('Pulsar Architecture');
@@ -99,7 +99,7 @@ describe('Context Generator', function () {
             $generator = new ContextGenerator(force: true);
             $relativePath = $generator->generate();
 
-            $fullPath = $this->tempDir . DIRECTORY_SEPARATOR . $relativePath;
+            $fullPath = $this->tempDir.DIRECTORY_SEPARATOR.$relativePath;
             expect(file_exists($fullPath))->toBeTrue();
         });
     });
@@ -110,20 +110,20 @@ describe('Context Generator', function () {
             $generator = new ContextGenerator(force: false, path: '.context/pulsar.md');
             $relativePath = $generator->generate();
 
-            expect($relativePath)->toBe('.context' . DIRECTORY_SEPARATOR . 'pulsar.md');
-            expect(file_exists($this->tempDir . DIRECTORY_SEPARATOR . $relativePath))->toBeTrue();
+            expect($relativePath)->toBe('.context'.DIRECTORY_SEPARATOR.'pulsar.md');
+            expect(file_exists($this->tempDir.DIRECTORY_SEPARATOR.$relativePath))->toBeTrue();
         });
 
         it('creates parent directories for custom path', function () {
             $generator = new ContextGenerator(force: false, path: 'docs/architecture/pulsar.md');
             $generator->generate();
 
-            $parentDir = $this->tempDir . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'architecture';
+            $parentDir = $this->tempDir.DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'architecture';
             expect(is_dir($parentDir))->toBeTrue();
         });
 
         it('uses default path when none provided', function () {
-            $generator = new ContextGenerator();
+            $generator = new ContextGenerator;
             $relativePath = $generator->generate();
 
             expect($relativePath)->toBe('PULSAR.md');

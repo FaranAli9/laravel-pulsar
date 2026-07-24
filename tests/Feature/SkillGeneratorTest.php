@@ -1,49 +1,49 @@
 <?php
 
-use Faran\Pulsar\Generators\SkillGenerator;
 use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
+use Faran\Pulsar\Generators\SkillGenerator;
 
 describe('Skill Generator', function () {
 
     describe('Happy Path', function () {
 
         it('publishes skill file', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
-            $fullPath = $this->tempDir . DIRECTORY_SEPARATOR . $relativePath;
+            $fullPath = $this->tempDir.DIRECTORY_SEPARATOR.$relativePath;
             expect(file_exists($fullPath))->toBeTrue();
         });
 
         it('publishes to .claude/skills/pulsar/SKILL.md', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
             expect($relativePath)->toBe(
-                '.claude' . DIRECTORY_SEPARATOR . 'skills' . DIRECTORY_SEPARATOR . 'pulsar' . DIRECTORY_SEPARATOR . 'SKILL.md'
+                '.claude'.DIRECTORY_SEPARATOR.'skills'.DIRECTORY_SEPARATOR.'pulsar'.DIRECTORY_SEPARATOR.'SKILL.md'
             );
         });
 
         it('returns relative path', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
             expect($relativePath)->not->toStartWith($this->tempDir);
         });
 
         it('creates parent directories', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $generator->generate();
 
-            $skillDir = $this->tempDir . DIRECTORY_SEPARATOR . '.claude' . DIRECTORY_SEPARATOR . 'skills' . DIRECTORY_SEPARATOR . 'pulsar';
+            $skillDir = $this->tempDir.DIRECTORY_SEPARATOR.'.claude'.DIRECTORY_SEPARATOR.'skills'.DIRECTORY_SEPARATOR.'pulsar';
             expect(is_dir($skillDir))->toBeTrue();
         });
 
         it('content contains architecture sections', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)
                 ->toContain('Layer Responsibilities')
@@ -54,10 +54,10 @@ describe('Skill Generator', function () {
         });
 
         it('content contains file locations', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)
                 ->toContain('app/Pulsar/Services/{Service}/')
@@ -65,19 +65,19 @@ describe('Skill Generator', function () {
         });
 
         it('content has no stub placeholders', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)->not->toMatch('/\{\{[a-zA-Z_]+\}\}/');
         });
 
         it('content has skill frontmatter', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)
                 ->toStartWith('---')
@@ -88,21 +88,21 @@ describe('Skill Generator', function () {
     describe('Error Cases', function () {
 
         it('throws if file already exists', function () {
-            $generator1 = new SkillGenerator();
+            $generator1 = new SkillGenerator;
             $generator1->generate();
 
-            $generator2 = new SkillGenerator();
+            $generator2 = new SkillGenerator;
 
-            expect(fn() => $generator2->generate())
+            expect(fn () => $generator2->generate())
                 ->toThrow(FileAlreadyExistsException::class, 'already exists');
         });
 
         it('error message mentions SKILL.md', function () {
-            $generator1 = new SkillGenerator();
+            $generator1 = new SkillGenerator;
             $generator1->generate();
 
             try {
-                $generator2 = new SkillGenerator();
+                $generator2 = new SkillGenerator;
                 $generator2->generate();
                 $this->fail('Should have thrown exception');
             } catch (FileAlreadyExistsException $e) {
@@ -115,15 +115,15 @@ describe('Skill Generator', function () {
 
         it('overwrites existing file with force flag', function () {
             // Create initial file with different content
-            $skillDir = $this->tempDir . DIRECTORY_SEPARATOR . '.claude' . DIRECTORY_SEPARATOR . 'skills' . DIRECTORY_SEPARATOR . 'pulsar';
+            $skillDir = $this->tempDir.DIRECTORY_SEPARATOR.'.claude'.DIRECTORY_SEPARATOR.'skills'.DIRECTORY_SEPARATOR.'pulsar';
             mkdir($skillDir, 0755, true);
-            $filePath = $skillDir . DIRECTORY_SEPARATOR . 'SKILL.md';
+            $filePath = $skillDir.DIRECTORY_SEPARATOR.'SKILL.md';
             file_put_contents($filePath, 'existing content');
 
             $generator = new SkillGenerator(force: true);
             $relativePath = $generator->generate();
 
-            $content = file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . $relativePath);
+            $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
             expect($content)
                 ->not->toBe('existing content')
                 ->toContain('Pulsar Architecture');
@@ -133,7 +133,7 @@ describe('Skill Generator', function () {
             $generator = new SkillGenerator(force: true);
             $relativePath = $generator->generate();
 
-            $fullPath = $this->tempDir . DIRECTORY_SEPARATOR . $relativePath;
+            $fullPath = $this->tempDir.DIRECTORY_SEPARATOR.$relativePath;
             expect(file_exists($fullPath))->toBeTrue();
         });
     });
@@ -144,24 +144,24 @@ describe('Skill Generator', function () {
             $generator = new SkillGenerator(force: false, path: '.claude/skills/custom/SKILL.md');
             $relativePath = $generator->generate();
 
-            expect($relativePath)->toBe('.claude' . DIRECTORY_SEPARATOR . 'skills' . DIRECTORY_SEPARATOR . 'custom' . DIRECTORY_SEPARATOR . 'SKILL.md');
-            expect(file_exists($this->tempDir . DIRECTORY_SEPARATOR . $relativePath))->toBeTrue();
+            expect($relativePath)->toBe('.claude'.DIRECTORY_SEPARATOR.'skills'.DIRECTORY_SEPARATOR.'custom'.DIRECTORY_SEPARATOR.'SKILL.md');
+            expect(file_exists($this->tempDir.DIRECTORY_SEPARATOR.$relativePath))->toBeTrue();
         });
 
         it('creates parent directories for custom path', function () {
             $generator = new SkillGenerator(force: false, path: 'docs/skills/pulsar.md');
             $generator->generate();
 
-            $parentDir = $this->tempDir . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'skills';
+            $parentDir = $this->tempDir.DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'skills';
             expect(is_dir($parentDir))->toBeTrue();
         });
 
         it('uses default path when none provided', function () {
-            $generator = new SkillGenerator();
+            $generator = new SkillGenerator;
             $relativePath = $generator->generate();
 
             expect($relativePath)->toBe(
-                '.claude' . DIRECTORY_SEPARATOR . 'skills' . DIRECTORY_SEPARATOR . 'pulsar' . DIRECTORY_SEPARATOR . 'SKILL.md'
+                '.claude'.DIRECTORY_SEPARATOR.'skills'.DIRECTORY_SEPARATOR.'pulsar'.DIRECTORY_SEPARATOR.'SKILL.md'
             );
         });
     });

@@ -17,7 +17,7 @@ class TestGenerator extends Generator
     {
         return 'test';
     }
-    
+
     /**
      * Expose validateName for testing.
      */
@@ -25,7 +25,7 @@ class TestGenerator extends Generator
     {
         $this->validateName($name, $type);
     }
-    
+
     /**
      * Expose sanitizeDirectoryName for testing.
      */
@@ -33,7 +33,7 @@ class TestGenerator extends Generator
     {
         return $this->sanitizeDirectoryName($name, $type);
     }
-    
+
     /**
      * Expose replaceStubPlaceholders for testing.
      */
@@ -41,7 +41,7 @@ class TestGenerator extends Generator
     {
         return $this->replaceStubPlaceholders($stub, $replacements);
     }
-    
+
     /**
      * Expose generateSlug for testing.
      */
@@ -49,7 +49,7 @@ class TestGenerator extends Generator
     {
         return $this->generateSlug($name);
     }
-    
+
     /**
      * Expose getStubPath for testing.
      */
@@ -57,7 +57,7 @@ class TestGenerator extends Generator
     {
         return $this->getStubPath($stubName);
     }
-    
+
     /**
      * Expose getRelativePath for testing.
      */
@@ -65,7 +65,7 @@ class TestGenerator extends Generator
     {
         return $this->getRelativePath($filePath);
     }
-    
+
     /**
      * Expose loadStub for testing.
      */
@@ -73,7 +73,7 @@ class TestGenerator extends Generator
     {
         return $this->loadStub($stubPath);
     }
-    
+
     /**
      * Expose createDirectory for testing.
      */
@@ -81,7 +81,7 @@ class TestGenerator extends Generator
     {
         $this->createDirectory($path, $mode, $recursive);
     }
-    
+
     /**
      * Expose createFile for testing.
      */
@@ -89,7 +89,7 @@ class TestGenerator extends Generator
     {
         $this->createFile($path, $contents);
     }
-    
+
     /**
      * Expose createRecursiveDirectories for testing.
      */
@@ -97,7 +97,7 @@ class TestGenerator extends Generator
     {
         return $this->createRecursiveDirectories($root, $elements);
     }
-    
+
     /**
      * Expose createGitkeep for testing.
      */
@@ -105,7 +105,7 @@ class TestGenerator extends Generator
     {
         $this->createGitkeep($directory);
     }
-    
+
     /**
      * Expose fileExists for testing.
      */
