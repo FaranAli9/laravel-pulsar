@@ -1,646 +1,125 @@
-# Testing Documentation
+# Testing Pulsar
 
-> Testing philosophy, current state, and future plans for the Pulse package
+Pulsar tests generated files in isolated mock Laravel project directories. The package test
+suite checks filesystem placement, namespaces, declarations, public methods, CLI argument
+wiring, command output, exit codes, and PHP syntax without requiring Laravel as a package
+dependency.
 
-## Testing Philosophy
+## Current measured state
 
-### Core Principles
+The latest local run on July 24, 2026 produced:
 
-**1. Security First**
-- Input validation must be exhaustively tested
-- Path traversal prevention is critical
-- Reserved PHP keyword blocking prevents runtime errors
-
-**2. Fail Fast, Fail Clearly**
-- Tests should catch issues before they reach production
-- Error messages must be helpful for debugging
-- Validation failures should guide developers to fixes
-
-**3. Real-World Simulation**
-- Use actual Laravel directory structures in tests
-- Generate real files in isolated environments
-- Verify generated code has valid PHP syntax
-
-**4. Maintainability Over Coverage**
-- Focus on critical paths and edge cases
-- Write tests that document expected behavior
-- Prefer readable tests over clever abstractions
-
-### Why Test a Code Generator?
-
-Code generators have unique risks:
-- **Silent Failures**: Generated code may be syntactically invalid
-- **Namespace Errors**: Wrong namespaces cause runtime crashes hours later
-- **Security Risks**: Path traversal can overwrite system files
-- **Regression**: Refactoring breaks generation without obvious symptoms
-
-A bug in a generator affects every file it creates. Tests prevent multiplied failures.
-
----
-
-## Current State
-
-### Test Coverage: 100% (Critical Foundation Complete)
-
-**Status**: ✅ **All critical foundation tests complete - 249 tests passing**
-
-**Test Results** (as of latest run):
-```
-Tests:    249 passed (315 assertions)
-Duration: 0.74s
+```text
+Tests:    304 passed (538 assertions)
+Coverage: 90.5%
 ```
 
-**Completed Test Suites**:
-- ✅ **InputValidationTest**: 132 tests (security-critical input validation)
-- ✅ **OperationGeneratorTest**: 24 tests (end-to-end generation workflow)
-- ✅ **ContextGeneratorTest**: 12 tests (architecture guide publishing)
-- ✅ **SkillGeneratorTest**: 15 tests (architecture skill publishing)
-- ✅ **GeneratorTest**: 46 tests (base class shared methods and architecture paths)
-- ✅ **ExceptionsTest**: 20 tests (custom exception hierarchy)
+The measured line-coverage figure is **90.5%**. The enforced minimum remains **85%**.
 
-**Coverage Breakdown**:
-- Security validation (validateName): 116 tests
-- Path sanitization (sanitizeDirectoryName): 16 tests  
-- Stub handling (replaceStubPlaceholders, loadStub): 11 tests
-- Path utilities and architecture roots: 14 tests
-- Filesystem helpers: 18 tests
-- Operation generation workflow: 24 tests
-- Architecture guide and skill publishing: 27 tests
-- Custom exceptions: 20 tests
-- Custom PHP expectations: 4 helpers (toBeValidPhp, toHaveNamespace, toHaveClass, toHaveMethod)
+All 15 existing generators have dedicated feature coverage:
 
-### What's Been Tested
+- Service layer: Service, Controller, Request, UseCase, Operation
+- Domain layer: Model, Action, Dto, Policy, Event, Enum, Exception, Query
+- Publishing: Context, Skill
 
-**Unit Tests (198 tests)**:
-- ✅ Input validation with security focus (132 tests)
-  - Reserved PHP keywords (75 tests)
-  - Invalid characters (24 tests)  
-  - Path traversal attacks (10 tests)
-  - Length limits (3 tests)
-  - Edge cases (20 tests)
-- ✅ Base Generator class methods (46 tests)
-  - Stub placeholder replacement (8 tests)
-  - Slug generation (6 tests)
-  - Stub path resolution (5 tests)
-  - Relative path handling (3 tests)
-  - Pulsar architecture paths and namespaces (3 tests)
-  - Stub loading (3 tests)
-  - File/directory operations (18 tests)
-- ✅ Custom exception hierarchy (20 tests)
-  - InvalidNameException factory methods (8 tests)
-  - FileAlreadyExistsException (5 tests)
-  - StubNotFoundException (4 tests)
-  - Exception inheritance (3 tests)
+Every one of the 13 `Make*Command` classes is exercised through Symfony's `CommandTester`.
+Those tests assert successful and failed exit codes, output, generated paths, and the
+Controller `name/module/service` to `name/service/module` constructor mapping.
 
-**Feature Tests (51 tests)**:
-- ✅ OperationGenerator end-to-end workflow (24 tests)
-  - Happy path file generation (8 tests)
-  - Suffix enforcement (4 tests)
-  - Error handling (5 tests)
-  - Edge cases (4 tests)
-  - Directory structure validation (3 tests)
-- ✅ ContextGenerator architecture guide publishing (12 tests)
-- ✅ SkillGenerator architecture skill publishing (15 tests)
+Generated PHP is checked with the `toBeValidPhp`, `toHaveNamespace`, and `toHaveClass`
+expectations. Tests now use Pest's reflection-based `toHaveMethod` expectation to lock current
+generated method names, including `Operation::handle()` and
+`Action::execute()` / `Query::execute()` / `UseCase::execute()`.
 
-**Test Infrastructure**:
-- ✅ Custom Pest expectations (toBeValidPhp, toHaveNamespace, toHaveClass, toHaveMethod)
-- ✅ TestGenerator helper to expose protected methods
-- ✅ Mock Laravel app structure with real filesystem isolation
-- ✅ Automatic temp directory setup/teardown
-- ✅ Cross-platform path handling (macOS symlink resolution)
+## Running the checks
 
-### What Hasn't Been Tested
-
-**Remaining Generators (12 generators)**:
-- ❌ ActionGenerator
-- ❌ ControllerGenerator (plain vs resource)
-- ❌ DtoGenerator
-- ❌ EnumGenerator
-- ❌ EventGenerator
-- ❌ ExceptionGenerator (the generator, not the exception classes)
-- ❌ ModelGenerator
-- ❌ PolicyGenerator
-- ❌ QueryGenerator
-- ❌ RequestGenerator
-- ❌ ServiceGenerator (complex multi-file generation)
-- ❌ UseCaseGenerator
-
-**Finder Trait Coverage**:
-- ✅ Pulsar root path
-- ✅ Service and domain root paths
-- ✅ Service and domain namespaces
-- ❌ findLaravelRoot() edge cases
-- ❌ serviceExists() validation
-
-**Integration Scenarios**:
-- ❌ Generating multiple files in sequence
-- ❌ Service creation followed by module generation
-- ❌ Full vertical slice creation (service → module → controller → use case → operation)
-- ❌ Rollback behavior on failures
-
----
-
-## Planned Testing
-
-### Framework: Pest PHP
-
-**Why Pest?**
-- Expressive, readable syntax for documentation
-- Built on PHPUnit (industry standard)
-- Excellent for generator testing (file I/O focus)
-- Active Laravel community support
-
-### Test Structure
-
-```
-tests/
-├── Pest.php                        # Configuration & custom expectations
-├── Helpers/
-│   └── TestGenerator.php           # Exposes protected methods for testing
-├── Unit/
-│   ├── GeneratorTest.php           # Base class methods and architecture paths (46 tests)
-│   ├── InputValidationTest.php     # Security critical input validation (132 tests)
-│   └── ExceptionsTest.php          # Custom exceptions (20 tests)
-├── Feature/
-│   ├── ContextGeneratorTest.php    # Architecture guide publishing (12 tests)
-│   ├── OperationGeneratorTest.php  # E2E operation generation (24 tests)
-│   └── SkillGeneratorTest.php      # Architecture skill publishing (15 tests)
-```
-
-**Total**: 249 tests across 6 test files
-
----
-
-## Implementation Phases
-
-### ✅ Phase 1: Critical Foundation (COMPLETE)
-
-**Priority**: Security & core functionality
-
-**Status**: All 249 tests passing (315 assertions)
-
-1. ✅ **InputValidationTest.php** 
-   - Reserved PHP keyword blocking (75 tests)
-   - Invalid character rejection (24 tests)
-   - Path traversal prevention (10 tests)
-   - Length limits & edge cases (23 tests)
-   - **Total: 132 tests**
-
-2. ✅ **OperationGeneratorTest.php**
-   - End-to-end file generation (8 tests)
-   - Suffix enforcement (4 tests)
-   - Error cases (5 tests)
-   - Edge cases (4 tests)
-   - Module directory structure (3 tests)
-   - **Total: 24 tests**
-
-3. ✅ **GeneratorTest.php**
-   - Placeholder replacement (8 tests)
-   - Slug generation (6 tests)
-   - Stub path resolution (5 tests)
-   - Relative path handling (3 tests)
-   - Pulsar architecture paths and namespaces (3 tests)
-   - Stub loading (3 tests)
-   - Directory creation (4 tests)
-   - File creation (4 tests)
-   - Recursive directories (4 tests)
-   - Gitkeep creation (3 tests)
-   - File existence checks (3 tests)
-   - **Total: 46 tests**
-
-4. ✅ **ExceptionsTest.php**
-   - Custom exception factories (20 tests)
-   - Error message quality validation
-   - **Total: 20 tests**
-
-5. ✅ **ContextGeneratorTest.php**
-   - Architecture guide publishing, overwrite behavior, and custom paths
-   - **Total: 12 tests**
-
-6. ✅ **SkillGeneratorTest.php**
-   - Architecture skill publishing, overwrite behavior, and custom paths
-   - **Total: 15 tests**
-
-**Outcome**: ✅ Security vulnerabilities and core workflow validated. All critical paths tested.
-
----
-
-### 📋 Phase 2: Finder Trait Edge Cases (PLANNED)
-
-**Priority**: Core infrastructure supporting all generators
-
-**Estimated Time**: 3-4 hours
-
-1. **FinderTraitTest.php** (~12 tests)
-   - `findLaravelRoot()` detection in various scenarios (6 tests)
-     - Standard Laravel project
-     - Nested package development
-     - Monorepo structure
-     - Missing composer.json/artisan error handling
-   - `serviceExists()` validation (4 tests)
-   - Edge cases: symlinks, case sensitivity (2 tests)
-
-2. **StubHandlingTest.php** (~15 tests)
-   - Loading all real stub files (13 stubs × 1 test each)
-   - Malformed stub error handling (2 tests)
-   - Stub placeholder completeness validation
-
-**Goal**: Validate infrastructure used by all 13 generators.
-
----
-
-### 🔮 Phase 3: Remaining Generators (FUTURE)
-
-**Priority**: Feature completeness for all 12 remaining generators
-
-**Estimated Time**: 8-10 hours
-
-Each generator follows the OperationGeneratorTest pattern:
-- Happy path generation
-- Suffix enforcement (where applicable)
-- Error handling
-- Edge cases
-- Directory structure validation
-
-**High Priority** (used most frequently):
-1. **ServiceGeneratorTest.php** (~24 tests)
-   - Full service scaffolding with Providers/Routes
-   - Service provider generation
-   - Route file generation
-   - Composer.json namespace integration
-   - Error handling for existing services
-
-2. **ControllerGeneratorTest.php** (~18 tests)
-   - Plain controller generation (6 tests)
-   - Resource controller generation (8 tests)
-   - Stub selection logic (4 tests)
-   - Controller stub guidance enforces Controller → UseCase (never Controller → Operation)
-
-3. **RequestGeneratorTest.php** (~20 tests)
-   - Request class generation
-   - `authorize()` method defaults
-   - `rules()` method scaffolding
-   - Integration with controllers
-
-**Medium Priority**:
-4. **UseCaseGeneratorTest.php** (~20 tests)
-   - UseCase stubs are documented as the entry point for Operation calls
-5. **ModelGeneratorTest.php** (~18 tests)
-6. **ActionGeneratorTest.php** (~20 tests)
-
-**Lower Priority** (less frequently used):
-7. **DtoGeneratorTest.php** (~15 tests)
-8. **EventGeneratorTest.php** (~15 tests)
-9. **ExceptionGeneratorTest.php** (~15 tests)
-10. **EnumGeneratorTest.php** (~15 tests)
-11. **PolicyGeneratorTest.php** (~18 tests)
-12. **QueryGeneratorTest.php** (~18 tests)
-
-**Estimated Total**: ~216 additional tests
-
----
-
-### 🚀 Phase 4: Integration & Workflow Tests (FUTURE)
-
-**Priority**: Real-world usage patterns
-
-**Estimated Time**: 4-5 hours
-
-1. **Vertical Slice Workflow** (~12 tests)
-   - Create service → create module → create controller → create use case → create operation
-   - Verify all files reference each other correctly
-   - Test namespace consistency across vertical slice
-   - Validate routes are properly registered
-
-2. **Error Recovery** (~8 tests)
-   - Partial failure rollback
-   - Duplicate file handling across generators
-   - Service not found cascading errors
-
-3. **Cross-Platform Compatibility** (~6 tests)
-   - Windows path handling
-   - macOS symlink resolution
-   - Linux permissions
-
-**Goal**: Validate real-world developer workflows, not just individual commands.
-
----
-
-### 📊 Final Coverage Goals
-
-**Current Coverage**: 
-- Lines: ~75% (core classes fully tested)
-- Methods: ~80%
-- Classes: 30% (4 of 13 generators)
-
-**Target Coverage (All Phases Complete)**:
-- Lines: 85%+
-- Methods: 90%+
-- Classes: 100% (all 13 generators + base classes)
-
-**Critical Areas** (must maintain 95%+ coverage):
-- ✅ Input validation (`validateName`, `sanitizeDirectoryName`)
-- ✅ Custom exceptions (all factory methods)
-- ✅ Stub loading and placeholder replacement
-- ✅ Base Generator file operations
-
----
-
-## Test Examples
-
-### Custom Pest Expectations
-
-```php
-// Verify generated PHP is syntactically valid
-expect($generatedCode)->toBeValidPhp();
-
-// Check namespace and class in one assertion
-expect($content)
-    ->toHaveNamespace('App\Pulsar\Services\Auth\Modules\Orders\Operations')
-    ->toHaveClass('CreateOrderOperation')
-    ->toHaveMethod('handle');
-```
-
-### Security Test Pattern
-
-```php
-it('rejects path traversal attempts', function () {
-    $generator = new TestGenerator();
-    
-    expect(fn() => $generator->testSanitizeDirectoryName('../../etc/passwd'))
-        ->toThrow(InvalidNameException::class, 'path traversal');
-});
-```
-
-### End-to-End Test Pattern
-
-```php
-it('generates operation with correct structure', function () {
-    $generator = new OperationGenerator('CreateOrder', 'Orders', 'Admin');
-    $filePath = $generator->generate();
-
-    expect($filePath)->toContain('app/Pulsar/Services/Admin/Modules/Orders/Operations');
-
-    $content = file_get_contents($this->tempDir . '/' . $filePath);
-    expect($content)
-        ->toBeValidPhp()
-        ->toHaveNamespace('App\Pulsar\Services\Admin\Modules\Orders\Operations')
-        ->toHaveClass('CreateOrderOperation');
-});
-```
-
----
-
-## Coverage Goals
-
-### Minimum Targets
-- **Lines**: 85%+
-- **Methods**: 90%+
-- **Classes**: 100% (all classes tested)
-
-### Critical Areas (Must Be 95%+)
-- Input validation (`validateName`, `sanitizeDirectoryName`)
-- Custom exceptions (all factory methods)
-- Stub loading and placeholder replacement
-- Path traversal prevention
-
-### Lower Priority (70%+ Acceptable)
-- File I/O wrapper methods (tested indirectly)
-- Cross-platform edge cases (hard to test exhaustively)
-
----
-
-## Running Tests
+Install development dependencies:
 
 ```bash
-# Install dependencies (first time)
 composer install
+```
 
-# Run all tests
+Run the complete Pest suite:
+
+```bash
 vendor/bin/pest
+```
 
-# Run with coverage report
-vendor/bin/pest --coverage --min=85
+Run the coverage gate:
 
-# Run specific test file
-vendor/bin/pest tests/Unit/InputValidationTest.php
+```bash
+composer test:coverage
+```
 
-# Run tests matching pattern
+Run static analysis and style checks:
+
+```bash
+composer analyse
+composer lint
+```
+
+Run one test file or a matching subset:
+
+```bash
+vendor/bin/pest tests/Feature/OperationGeneratorTest.php
 vendor/bin/pest --filter=validateName
-
-# Watch mode (re-run on file changes)
-vendor/bin/pest --watch
-
-# Parallel execution (faster)
-vendor/bin/pest --parallel
 ```
 
----
+## Local coverage driver
 
-## CI/CD Integration
+`composer test:coverage` requires PCOV. CI installs and enables it automatically. For a local
+PECL-based PHP installation:
 
-### GitHub Actions Workflow
-
-```yaml
-name: Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        php: [8.2, 8.3, 8.4]
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          coverage: xdebug
-      
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction
-      
-      - name: Run tests
-        run: vendor/bin/pest --coverage --min=85
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        if: matrix.php == '8.3' && matrix.os == 'ubuntu-latest'
+```bash
+pecl install pcov
 ```
 
-**Benefits**:
-- Test across PHP 8.2, 8.3, 8.4
-- Test on Linux, macOS, Windows (path compatibility)
-- Block merges if coverage drops below 85%
-- Track coverage trends over time
+Enable `extension=pcov.so` in the CLI PHP configuration, then verify it:
 
----
-
-## Maintenance Guidelines
-
-### When Adding New Generators
-
-1. **Create feature test** in `tests/Feature/{Name}GeneratorTest.php`
-2. **Test minimum**:
-   - Happy path generation
-   - Suffix enforcement (if applicable)
-   - File already exists error
-   - Invalid service/module errors
-   - Generated PHP syntax validity
-3. **Update this document** with test count
-4. **Run full suite** to catch regressions
-
-### When Modifying Validation Rules
-
-1. **Update `InputValidationTest.php`** with new rules
-2. **Add both positive and negative cases**
-3. **Document security implications** in test descriptions
-4. **Verify error messages are helpful**
-
-### When Adding Custom Exceptions
-
-1. **Add tests in `ExceptionsTest.php`**
-2. **Test all factory methods**
-3. **Verify messages include context** (file names, paths, etc.)
-4. **Check exception hierarchy** (extends correct base)
-
----
-
-## Testing Anti-Patterns to Avoid
-
-### ❌ Don't Mock Filesystem Operations
-
-**Bad**:
-```php
-// Mocking makes tests brittle and less realistic
-$filesystem = Mockery::mock(Filesystem::class);
-$filesystem->shouldReceive('put')->once();
+```bash
+php -r "var_dump(extension_loaded('pcov'));"
 ```
 
-**Good**:
-```php
-// Use real temp directories - simpler and more reliable
-$generator->generate();
-expect(file_exists($this->tempDir . '/Operation.php'))->toBeTrue();
+The verification command must print `bool(true)` before running coverage.
+
+## Test isolation
+
+`tests/Pest.php` creates a unique temporary mock Laravel project for every test and removes it
+afterward. Tests must not share generated files or depend on execution order. Build paths with
+`DIRECTORY_SEPARATOR` so the suite remains portable.
+
+Feature tests use real filesystem operations. Generated framework classes are loaded against
+test-only stand-ins where reflection is needed; this does not claim real Laravel runtime
+integration.
+
+## Static analysis
+
+PHPStan runs at level 6 over `src/` and `bin/pulsar` with no baseline. PHPStan-only annotations
+document consistent custom-exception constructors and the value types accepted by shared
+generator array parameters. New findings fail the build.
+
+## Continuous integration
+
+The real workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). It runs on pushes
+and pull requests with PHP 8.2, 8.3, and 8.4. Every matrix job installs PCOV and runs:
+
+```bash
+vendor/bin/pint --test
+vendor/bin/phpstan analyse --no-progress
+vendor/bin/pest --coverage --min=85
 ```
 
-### ❌ Don't Test Implementation Details
+The Laravel 12/13 Testbench integration matrix is intentionally not present; it belongs to
+PRD 6.
 
-**Bad**:
-```php
-// Testing private method behavior
-expect($generator->hasOperationSuffix('CreateOrder'))->toBeFalse();
-```
+## Adding or changing generators
 
-**Good**:
-```php
-// Test public API and outcomes
-expect($generator->generate())->toContain('CreateOrderOperation.php');
-```
+For each generator:
 
-### ❌ Don't Share State Between Tests
-
-**Bad**:
-```php
-// Reusing generator instance across tests
-beforeAll(fn() => $this->generator = new OperationGenerator(...));
-```
-
-**Good**:
-```php
-// Fresh instance per test
-beforeEach(fn() => $this->generator = new OperationGenerator(...));
-```
-
----
-
-## Test Data Strategy
-
-### Fixtures vs Factories
-
-**Use Fixtures For**:
-- Laravel directory structure (consistent across tests)
-- Stub file templates (rarely change)
-- Mock composer.json, artisan files
-
-**Use Factories/Builders For**:
-- Generator instances (vary by test)
-- Service/module names (randomized for isolation)
-- File content assertions (test-specific)
-
-### Temp Directory Management
-
-```php
-beforeEach(function () {
-    // Unique temp dir per test prevents cross-contamination
-    $this->tempDir = sys_get_temp_dir() . '/pulsar-tests-' . uniqid();
-    mkdir($this->tempDir, 0755, true);
-    
-    // Simulate working inside Laravel project
-    chdir($this->tempDir);
-    $this->createMockLaravelApp($this->tempDir);
-});
-
-afterEach(function () {
-    // Clean up after every test
-    chdir(dirname($this->tempDir));
-    $this->deleteDirectory($this->tempDir);
-});
-```
-
----
-
-## Future Enhancements
-
-### Performance Testing
-- Measure generation time for large codebases
-- Benchmark stub loading overhead
-- Profile directory creation depth limits
-
-### Mutation Testing
-- Install Infection PHP
-- Verify tests catch introduced bugs
-- Aim for 80%+ mutation score
-
-### Integration Testing with Real Laravel
-- Test in actual Laravel 11 project
-- Verify service provider registration
-- Test artisan command integration
-- Validate namespace autoloading
-
-### Snapshot Testing
-- Capture generated file content
-- Detect unintended template changes
-- Review diffs on stub updates
-
----
-
-## Resources
-
-### Documentation
-- [Pest PHP Docs](https://pestphp.com/)
-- [PHPUnit Best Practices](https://phpunit.de/documentation.html)
-- [Laravel Testing Guide](https://laravel.com/docs/testing)
-
-### Related Tools
-- **PHPStan**: Static analysis (level 8 recommended)
-- **Infection**: Mutation testing framework
-- **PHPCS**: Code style enforcement
-- **PHP-CS-Fixer**: Auto-formatting
-
----
-
-## Questions?
-
-For testing questions or to propose changes to this strategy:
-1. Check existing test examples in `tests/` directory
-2. Review Pest documentation for syntax questions
-3. Discuss significant changes with the team before implementing
-
-Remember: **Good tests are documentation that proves itself correct.**
+1. Add or update its dedicated feature test.
+2. Assert the exact relative path, namespace, declaration, applicable public methods, valid PHP,
+   and absence of `{{placeholder}}` remnants.
+3. Cover duplicate output and missing parent service where applicable.
+4. Add or update the corresponding `CommandTester` case, including success and failure exit
+   codes.
+5. Run Pint, PHPStan, the full Pest suite, and coverage before handing off the change.
