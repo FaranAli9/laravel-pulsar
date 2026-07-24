@@ -82,6 +82,8 @@ function createMockLaravelApp(string $root): void
     mkdir($root.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Domain', 0755, true);
 }
 
+// Generated namespaces ignore temp directories, so tests that require generated files must use
+// suite-wide unique FQCNs; requiring the same FQCN twice causes a fatal class redeclaration.
 foreach ([
     'Illuminate\Database\Eloquent\Model',
     'Illuminate\Foundation\Http\FormRequest',
