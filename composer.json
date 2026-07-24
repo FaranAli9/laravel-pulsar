@@ -53,19 +53,19 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": "^8.2",
-        "symfony/console": "^7.2|^8.0"
+        "php": "^8.3",
+        "symfony/console": "^7.4|^8.0"
     },
     "require-dev": {
-        "laravel/pint": "^1.24",
-        "pestphp/pest": "^4.4",
-        "phpstan/phpstan": "^2.1"
+        "laravel/pint": "^1.29",
+        "pestphp/pest": "^4.7",
+        "phpstan/phpstan": "^2.2"
     },
     "scripts": {
         "analyse": "phpstan analyse --no-progress",
         "lint": "pint --test",
-        "test": "pest",
-        "test:coverage": "pest --coverage --min=85"
+        "test": "pest --configuration=phpunit.xml.dist",
+        "test:coverage": "pest --configuration=phpunit.xml.dist --coverage --min=85"
     },
     "suggest": {
         "ext-pcov": "Required to run the test:coverage script locally."
@@ -73,6 +73,9 @@
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.3.0"
         }
     }
 }
