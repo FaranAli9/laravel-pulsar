@@ -22,8 +22,8 @@
 ## Goal
 
 A green, enforced safety net: coverage works and gates, every existing generator has feature +
-CLI tests, and CI separately validates the PHP 8.4 dev toolchain and the advertised PHP 8.2+
-runtime range. Zero changes to `src/` behavior.
+CLI tests, and CI validates the full suite across the supported PHP 8.3, 8.4, and 8.5 range.
+Zero changes to `src/` behavior.
 
 ## Scope
 
@@ -62,11 +62,11 @@ One file per generator, mirroring `OperationGeneratorTest.php`'s structure. Each
   `lint`.
 
 ### 5. CI (`.github/workflows/ci.yml`)
-- Test and quality: PHP 8.4 (the dev-toolchain floor); run `composer install`, Pint `--test`,
-  PHPStan, and Pest with pcov + `--min=85`.
-- Runtime compatibility: PHP 8.2 and 8.3; resolve lowest supported runtime dependencies with
-  `composer update --prefer-lowest --prefer-stable --no-dev`, parse every package source file
-  with the target PHP, and smoke-test the CLI.
+- Test and quality on PHP 8.3, 8.4, and 8.5; resolve the lockfile against the PHP 8.3 platform
+  floor, then run `composer install`, smoke-test the CLI, Pint `--test`, PHPStan, and Pest with
+  pcov + `--min=85`.
+- Commit `phpunit.xml.dist` and pass it explicitly to Pest so local and hosted runs use the same
+  test and coverage configuration.
 - Laravel 12/13 integration remains PRD 6 and is not part of this CI work item.
 
 ### 6. TESTING.md truth-up
@@ -79,8 +79,7 @@ One file per generator, mirroring `OperationGeneratorTest.php`'s structure. Each
 - `vendor/bin/pest` green; total grows from 249 with the new suites.
 - `composer test:coverage` **runs and passes** its `--min` gate.
 - Every generator has ≥1 feature test and ≥1 CLI test.
-- Test and quality CI green on PHP 8.4; runtime compatibility CI green on PHP 8.2 and 8.3;
-  PHPStan + Pint green.
+- Full test and quality CI green on PHP 8.3, 8.4, and 8.5; PHPStan + Pint green.
 - TESTING.md contains no self-contradiction and matches the repo.
 
 ## Hardening notes

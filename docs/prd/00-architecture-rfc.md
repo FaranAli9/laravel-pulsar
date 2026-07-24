@@ -128,18 +128,18 @@ replacing Laravel discovery with something Laravel tooling cannot see; being a r
 
 ### 3.1 What Pulsar actually is (confirmed)
 
-A standalone **Symfony Console** CLI. `composer.json` runtime require is only `php ^8.2` +
-`symfony/console ^7.2|^8.0`; require-dev is only `pestphp/pest ^4.4`. **No `laravel/framework`,
-no `illuminate/*`, no `orchestra/testbench`** in Pulsar's own dependencies (confirmed against
-`composer.lock`). There is no `extra.laravel.providers` block — Pulsar is never registered as a
-Laravel provider. Version `0.2.0` is hardcoded in exactly one place (`bin/pulsar:38`) and in the
-git tag; `composer.json` has no `version` field. Package namespace is `Faran\Pulsar\`.
+A standalone **Symfony Console** CLI. `composer.json` runtime require is only `php ^8.3` +
+`symfony/console ^7.4|^8.0`; require-dev contains Pint, Pest, and PHPStan. **No
+`laravel/framework`, no `illuminate/*`, no `orchestra/testbench`** in Pulsar's own dependencies
+(confirmed against `composer.lock`). There is no `extra.laravel.providers` block — Pulsar is
+never registered as a Laravel provider. Version `0.2.0` is hardcoded in exactly one place
+(`bin/pulsar:38`) and in the git tag; `composer.json` has no `version` field. Package namespace
+is `Faran\Pulsar\`.
 
-**Runtime PHP vs dev PHP.** Pulsar's end-user runtime support remains `php ^8.2`, verified by
-the runtime compatibility job on PHP 8.2 and 8.3 using lowest supported runtime dependencies.
-The dev/CI toolchain floor is PHP 8.4 because Pest 4 and the locked Symfony Console v8 require
-a newer PHP. A library's lockfile is not consumed by downstream installations, so this modern
-dev lock does not narrow the package's advertised runtime support.
+**Runtime and development PHP.** Pulsar requires `php ^8.3`. Composer resolves the contributor
+lockfile against a PHP 8.3 platform so every supported runtime can install the same dependency
+set, while downstream consumers on newer PHP versions may still resolve Symfony Console 8.
+CI runs the complete quality and coverage suite on PHP 8.3, 8.4, and 8.5.
 
 ### 3.2 Generators that exist today (16 commands, `bin/pulsar:41-62`)
 
@@ -815,11 +815,10 @@ generator classes) to cover argument wiring (catches D10-class bugs) and output 
 enable on generated code (Domain must not import Services; Infrastructure must not import
 UseCases; Controllers depend only on UseCases).
 
-**E. CI + tooling (NEW)** — split GitHub Actions by audience. The test-and-quality job runs
-the full Pest suite with `pcov` coverage, PHPStan, and Pint on the PHP 8.4 dev-toolchain floor.
-The runtime compatibility job runs on PHP 8.2 and 8.3, resolves lowest supported runtime
-dependencies with `composer update --prefer-lowest --prefer-stable --no-dev`, parses every
-source file with the target PHP, and smoke-tests the CLI. Make TESTING.md match what exists.
+**E. CI + tooling (NEW)** — GitHub Actions runs the full Pest suite with `pcov` coverage,
+PHPStan, Pint, and CLI smoke tests on PHP 8.3, 8.4, and 8.5. The contributor lockfile is
+resolved against the PHP 8.3 platform floor, and Pest uses a committed `phpunit.xml.dist`
+explicitly so local and hosted runs share one configuration. Make TESTING.md match what exists.
 
 Acceptance: full suite green on 12 and 13; coverage driver present so `--min` is enforced;
 consistency test (§11.7) green.
@@ -863,10 +862,10 @@ Each phase ships tests + docs in the same phase. TDD per the project's skills.
 
 **Phase 1 — Backfill generator tests + CLI tests + CI.**
 - Add feature tests for the 12 untested generators; add `CommandTester` CLI tests.
-- Add the split test-and-quality/runtime-compatibility GitHub Actions jobs, `pcov`, PHPStan,
-  and Pint; fix TESTING.md to match.
-- Acceptance: coverage driver works, `--min=85` passes, the test-and-quality job is green on
-  PHP 8.4, and the runtime compatibility job is green on PHP 8.2 and 8.3.
+- Add the PHP 8.3/8.4/8.5 GitHub Actions matrix, `pcov`, PHPStan, Pint, and an explicit
+  `phpunit.xml.dist`; fix TESTING.md to match.
+- Acceptance: coverage driver works, `--min=85` passes, and every quality gate is green on
+  PHP 8.3, 8.4, and 8.5.
 
 **Phase 2 — Stub corrections (the breaking Operation rename lives here).**
 - `operation.stub` `execute()`; `event.stub` readonly + `ShouldDispatchAfterCommit` + `VERSION`;

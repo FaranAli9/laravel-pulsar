@@ -23,6 +23,8 @@ It defines the **architectural contract**, not a tutorial.
 
 ## Installation
 
+Pulsar requires PHP 8.3 or newer.
+
 ```bash
 composer require faran/pulsar --dev
 ```

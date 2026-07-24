@@ -11,10 +11,10 @@ The latest local run on July 24, 2026 produced:
 
 ```text
 Tests:    304 passed (538 assertions)
-Coverage: 90.5%
+Coverage: 91.5%
 ```
 
-The measured line-coverage figure is **90.5%**. The enforced minimum remains **85%**.
+The measured line-coverage figure is **91.5%**. The enforced minimum remains **85%**.
 
 All 15 existing generators have dedicated feature coverage:
 
@@ -101,13 +101,20 @@ generator array parameters. New findings fail the build.
 ## Continuous integration
 
 The real workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). It runs on pushes
-and pull requests with PHP 8.2, 8.3, and 8.4. Every matrix job installs PCOV and runs:
+to `main` and on pull requests with PHP 8.3, 8.4, and 8.5. The lockfile is resolved against
+PHP 8.3, so every job installs the same dependencies supported by Pulsar's minimum runtime.
+Every matrix job installs PCOV and runs:
 
 ```bash
+php bin/pulsar --version
+php bin/pulsar ping
 vendor/bin/pint --test
 vendor/bin/phpstan analyse --no-progress
-vendor/bin/pest --coverage --min=85
+vendor/bin/pest --configuration=phpunit.xml.dist --coverage --min=85
 ```
+
+The committed `phpunit.xml.dist` keeps local and hosted Pest runs on the same explicit
+configuration.
 
 The Laravel 12/13 Testbench integration matrix is intentionally not present; it belongs to
 PRD 6.
