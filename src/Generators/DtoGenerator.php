@@ -18,9 +18,6 @@ class DtoGenerator extends Generator
 
     /**
      * Create a new DtoGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class DtoGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $dtosPath = $domainPath . DIRECTORY_SEPARATOR . 'DTOs';
+        $dtosPath = $domainPath.DIRECTORY_SEPARATOR.'DTOs';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($dtosPath);
@@ -66,7 +63,7 @@ class DtoGenerator extends Generator
      */
     protected function getDtoPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'DTOs' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'DTOs'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class DtoGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class DtoGenerator extends Generator
      */
     protected function getDtoContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\DTOs";
+        $namespace = $this->findDomainNamespace($this->domain).'\\DTOs';
         $stubPath = $this->getStubPath('dto');
         $stub = $this->loadStub($stubPath);
 
@@ -91,6 +88,4 @@ class DtoGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }
-

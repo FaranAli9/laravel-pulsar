@@ -16,8 +16,6 @@ class MakeUseCaseCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -30,7 +28,7 @@ class MakeUseCaseCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success("UseCase created successfully!");
+            $this->success('UseCase created successfully!');
             $this->info("Location: {$filePath}");
             $this->line();
 
@@ -46,8 +44,6 @@ class MakeUseCaseCommand extends PulsarCommand
 
     /**
      * Configure the command arguments.
-     *
-     * @return void
      */
     protected function configure(): void
     {

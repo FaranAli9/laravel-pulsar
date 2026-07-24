@@ -24,10 +24,6 @@ class UseCaseGenerator extends Generator
 
     /**
      * Create a new UseCaseGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $module
-     * @param  string  $service
      */
     public function __construct(string $name, string $module, string $service)
     {
@@ -65,7 +61,7 @@ class UseCaseGenerator extends Generator
      */
     protected function validateServiceExists(): void
     {
-        if (!$this->serviceExists($this->service)) {
+        if (! $this->serviceExists($this->service)) {
             throw ServiceDoesNotExistException::make($this->service);
         }
     }
@@ -76,7 +72,7 @@ class UseCaseGenerator extends Generator
     protected function createModuleDirectories(): void
     {
         $modulePath = $this->getModulePath();
-        $useCasesPath = $modulePath . DIRECTORY_SEPARATOR . 'UseCases';
+        $useCasesPath = $modulePath.DIRECTORY_SEPARATOR.'UseCases';
 
         $this->createDirectory($modulePath);
         $this->createDirectory($useCasesPath);
@@ -87,7 +83,7 @@ class UseCaseGenerator extends Generator
      */
     protected function getUseCasePath(): string
     {
-        return $this->getModulePath() . DIRECTORY_SEPARATOR . 'UseCases' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getModulePath().DIRECTORY_SEPARATOR.'UseCases'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -95,13 +91,12 @@ class UseCaseGenerator extends Generator
      */
     protected function getModulePath(): string
     {
-        return $this->findServicesRootPath() . DIRECTORY_SEPARATOR . $this->service . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $this->module;
+        return $this->findServicesRootPath().DIRECTORY_SEPARATOR.$this->service.DIRECTORY_SEPARATOR.'Modules'.DIRECTORY_SEPARATOR.$this->module;
     }
 
     /**
      * Get the use case content from stub.
      *
-     * @return string
      * @throws Exception
      */
     protected function getUseCaseContent(): string
@@ -110,6 +105,7 @@ class UseCaseGenerator extends Generator
 
         if ($this->fileExists($stubPath)) {
             $stub = $this->loadStub($stubPath);
+
             return $this->replaceStubPlaceholders($stub, [
                 'namespace' => $this->getNamespace(),
                 'name' => $this->name,
@@ -124,11 +120,10 @@ class UseCaseGenerator extends Generator
     /**
      * Get the use case namespace.
      *
-     * @return string
      * @throws Exception
      */
     protected function getNamespace(): string
     {
-        return $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\UseCases";
+        return $this->findServiceNamespace($this->service)."\\Modules\\{$this->module}\\UseCases";
     }
 }

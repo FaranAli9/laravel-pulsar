@@ -8,7 +8,7 @@ use Faran\Pulsar\Traits\Finder;
 
 /**
  * Base generator class for Pulsar code generation.
- * 
+ *
  * Provides common functionality for creating directories and files.
  */
 abstract class Generator
@@ -17,25 +17,16 @@ abstract class Generator
 
     /**
      * Create a directory if it doesn't exist.
-     *
-     * @param  string  $path
-     * @param  int  $mode
-     * @param  bool  $recursive
-     * @return void
      */
     protected function createDirectory(string $path, int $mode = 0755, bool $recursive = true): void
     {
-        if (!is_dir($path)) {
+        if (! is_dir($path)) {
             mkdir($path, $mode, $recursive);
         }
     }
 
     /**
      * Create a file with the given contents.
-     *
-     * @param  string  $path
-     * @param  string  $contents
-     * @return void
      */
     protected function createFile(string $path, string $contents): void
     {
@@ -45,8 +36,7 @@ abstract class Generator
     /**
      * Create nested directories from an array of path elements.
      *
-     * @param  string  $root
-     * @param  array  $elements
+     * @param  list<string>  $elements
      * @return string The full path created
      */
     protected function createRecursiveDirectories(string $root, array $elements): string
@@ -54,7 +44,7 @@ abstract class Generator
         $path = $root;
 
         foreach ($elements as $element) {
-            $path .= DIRECTORY_SEPARATOR . $element;
+            $path .= DIRECTORY_SEPARATOR.$element;
             $this->createDirectory($path);
         }
 
@@ -63,24 +53,18 @@ abstract class Generator
 
     /**
      * Create a .gitkeep file in the given directory.
-     *
-     * @param  string  $directory
-     * @return void
      */
     protected function createGitkeep(string $directory): void
     {
-        $gitkeepPath = $directory . DIRECTORY_SEPARATOR . '.gitkeep';
-        
-        if (!file_exists($gitkeepPath)) {
+        $gitkeepPath = $directory.DIRECTORY_SEPARATOR.'.gitkeep';
+
+        if (! file_exists($gitkeepPath)) {
             $this->createFile($gitkeepPath, '');
         }
     }
 
     /**
      * Check if a file exists.
-     *
-     * @param  string  $path
-     * @return bool
      */
     protected function fileExists(string $path): bool
     {
@@ -89,9 +73,6 @@ abstract class Generator
 
     /**
      * Generate a URL-friendly slug from a string.
-     *
-     * @param  string  $name
-     * @return string
      */
     protected function generateSlug(string $name): string
     {
@@ -101,14 +82,12 @@ abstract class Generator
     /**
      * Replace placeholders in stub content.
      *
-     * @param  string  $stub
-     * @param  array  $replacements
-     * @return string
+     * @param  array<string, string>  $replacements
      */
     protected function replaceStubPlaceholders(string $stub, array $replacements): string
     {
         foreach ($replacements as $search => $replace) {
-            $stub = str_replace("{{" . $search . "}}", $replace, $stub);
+            $stub = str_replace('{{'.$search.'}}', $replace, $stub);
         }
 
         return $stub;
@@ -117,13 +96,11 @@ abstract class Generator
     /**
      * Load stub file contents.
      *
-     * @param  string  $stubPath
-     * @return string
      * @throws StubNotFoundException
      */
     protected function loadStub(string $stubPath): string
     {
-        if (!file_exists($stubPath)) {
+        if (! file_exists($stubPath)) {
             throw StubNotFoundException::make($stubPath);
         }
 
@@ -132,21 +109,15 @@ abstract class Generator
 
     /**
      * Get the path to a stub file.
-     *
-     * @param  string  $stubName
-     * @return string
      */
     protected function getStubPath(string $stubName): string
     {
-        return __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . $stubName . '.stub';
+        return __DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.$stubName.'.stub';
     }
 
     /**
      * Validate and sanitize input name.
      *
-     * @param  string  $name
-     * @param  string  $type
-     * @return void
      * @throws InvalidNameException
      */
     protected function validateName(string $name, string $type = 'class'): void
@@ -162,20 +133,20 @@ abstract class Generator
         }
 
         // Check for valid PHP class name characters (letters, numbers, underscores, backslashes for namespaces)
-        if (!preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff\\\\]*$/', $name)) {
+        if (! preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff\\\\]*$/', $name)) {
             throw InvalidNameException::invalidCharacters($name, $type);
         }
 
         // Check for reserved PHP keywords
         $reservedWords = [
-            'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 
+            'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone',
             'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty',
             'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit',
             'extends', 'final', 'finally', 'fn', 'for', 'foreach', 'function', 'global', 'goto', 'if',
             'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset',
             'list', 'match', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public',
             'readonly', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait',
-            'try', 'unset', 'use', 'var', 'while', 'xor', 'yield'
+            'try', 'unset', 'use', 'var', 'while', 'xor', 'yield',
         ];
 
         $nameParts = explode('\\', $name);
@@ -190,19 +161,16 @@ abstract class Generator
     /**
      * Sanitize service/module names to prevent path traversal.
      *
-     * @param  string  $name
-     * @param  string  $type
-     * @return string
      * @throws InvalidNameException
      */
     protected function sanitizeDirectoryName(string $name, string $type = 'directory'): string
     {
         // Remove any path traversal attempts
         $sanitized = str_replace(['..', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '', $name);
-        
+
         // Remove leading/trailing whitespace and dots
         $sanitized = trim($sanitized, " \t\n\r\0\x0B.");
-        
+
         if ($sanitized !== $name) {
             throw InvalidNameException::make($name, 'Contains forbidden characters or path traversal attempts');
         }
@@ -216,12 +184,9 @@ abstract class Generator
 
     /**
      * Get the relative path from the Laravel root.
-     *
-     * @param  string  $filePath
-     * @return string
      */
     protected function getRelativePath(string $filePath): string
     {
-        return str_replace($this->findLaravelRoot() . DIRECTORY_SEPARATOR, '', $filePath);
+        return str_replace($this->findLaravelRoot().DIRECTORY_SEPARATOR, '', $filePath);
     }
 }

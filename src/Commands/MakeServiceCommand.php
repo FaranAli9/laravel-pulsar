@@ -16,8 +16,6 @@ class MakeServiceCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -44,8 +42,6 @@ class MakeServiceCommand extends PulsarCommand
 
     /**
      * Configure the command arguments.
-     *
-     * @return void
      */
     protected function configure(): void
     {

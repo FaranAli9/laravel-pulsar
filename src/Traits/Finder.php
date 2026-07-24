@@ -13,8 +13,8 @@ trait Finder
     {
         // If running from a Laravel project, find the app directory
         $laravelRoot = $this->findLaravelRoot();
-        
-        return $laravelRoot . DIRECTORY_SEPARATOR . $this->getSourceDirectoryName();
+
+        return $laravelRoot.DIRECTORY_SEPARATOR.$this->getSourceDirectoryName();
     }
 
     /**
@@ -24,16 +24,16 @@ trait Finder
     {
         // Start from current working directory
         $dir = getcwd();
-        
+
         // Look for composer.json to identify Laravel root
         while ($dir !== dirname($dir)) {
-            if (file_exists($dir . DIRECTORY_SEPARATOR . 'composer.json') && 
-                file_exists($dir . DIRECTORY_SEPARATOR . 'artisan')) {
+            if (file_exists($dir.DIRECTORY_SEPARATOR.'composer.json') &&
+                file_exists($dir.DIRECTORY_SEPARATOR.'artisan')) {
                 return $dir;
             }
             $dir = dirname($dir);
         }
-        
+
         throw new Exception('Could not find Laravel project root. Make sure you are running this command from within a Laravel project.');
     }
 
@@ -42,7 +42,7 @@ trait Finder
      */
     public function serviceExists(string $name): bool
     {
-        return file_exists($this->findServicesRootPath() . DIRECTORY_SEPARATOR . $name);
+        return file_exists($this->findServicesRootPath().DIRECTORY_SEPARATOR.$name);
     }
 
     /**
@@ -50,7 +50,7 @@ trait Finder
      */
     public function findPulsarRootPath(): string
     {
-        return $this->findSourceRoot() . DIRECTORY_SEPARATOR . 'Pulsar';
+        return $this->findSourceRoot().DIRECTORY_SEPARATOR.'Pulsar';
     }
 
     /**
@@ -58,7 +58,7 @@ trait Finder
      */
     public function findServicesRootPath(): string
     {
-        return $this->findPulsarRootPath() . DIRECTORY_SEPARATOR . 'Services';
+        return $this->findPulsarRootPath().DIRECTORY_SEPARATOR.'Services';
     }
 
     /**
@@ -66,7 +66,7 @@ trait Finder
      */
     public function findDomainRootPath(): string
     {
-        return $this->findPulsarRootPath() . DIRECTORY_SEPARATOR . 'Domain';
+        return $this->findPulsarRootPath().DIRECTORY_SEPARATOR.'Domain';
     }
 
     /**
@@ -80,18 +80,18 @@ trait Finder
 
         // Read composer.json file contents to determine the namespace
         $laravelRoot = $this->findLaravelRoot();
-        $composerPath = $laravelRoot . DIRECTORY_SEPARATOR . 'composer.json';
-        
-        if (!file_exists($composerPath)) {
+        $composerPath = $laravelRoot.DIRECTORY_SEPARATOR.'composer.json';
+
+        if (! file_exists($composerPath)) {
             throw new Exception('composer.json not found in Laravel project root');
         }
-        
+
         $composer = json_decode(file_get_contents($composerPath), true);
 
         // See which one refers to the directory
         foreach ($composer['autoload']['psr-4'] as $namespace => $directory) {
             $directory = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $directory);
-            if ($directory === $dir . DIRECTORY_SEPARATOR) {
+            if ($directory === $dir.DIRECTORY_SEPARATOR) {
                 return trim($namespace, '\\');
             }
         }
@@ -130,7 +130,7 @@ trait Finder
      */
     public function findPulsarRootNamespace(): string
     {
-        return $this->findRootNamespace() . '\\Pulsar';
+        return $this->findRootNamespace().'\\Pulsar';
     }
 
     /**
@@ -156,8 +156,8 @@ trait Finder
      */
     protected function relativeFromReal(string $path, string $needle = ''): string
     {
-        if (!$needle) {
-            $needle = $this->getSourceDirectoryName() . DIRECTORY_SEPARATOR;
+        if (! $needle) {
+            $needle = $this->getSourceDirectoryName().DIRECTORY_SEPARATOR;
         }
 
         return strstr($path, $needle);

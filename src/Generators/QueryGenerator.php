@@ -18,9 +18,6 @@ class QueryGenerator extends Generator
 
     /**
      * Create a new QueryGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $domain
      */
     public function __construct(string $name, string $domain)
     {
@@ -55,7 +52,7 @@ class QueryGenerator extends Generator
     protected function createDomainDirectories(): void
     {
         $domainPath = $this->getDomainPath();
-        $queriesPath = $domainPath . DIRECTORY_SEPARATOR . 'Queries';
+        $queriesPath = $domainPath.DIRECTORY_SEPARATOR.'Queries';
 
         $this->createDirectory($domainPath);
         $this->createDirectory($queriesPath);
@@ -66,7 +63,7 @@ class QueryGenerator extends Generator
      */
     protected function getQueryPath(): string
     {
-        return $this->getDomainPath() . DIRECTORY_SEPARATOR . 'Queries' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getDomainPath().DIRECTORY_SEPARATOR.'Queries'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -74,7 +71,7 @@ class QueryGenerator extends Generator
      */
     protected function getDomainPath(): string
     {
-        return $this->findDomainRootPath() . DIRECTORY_SEPARATOR . $this->domain;
+        return $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
     }
 
     /**
@@ -82,7 +79,7 @@ class QueryGenerator extends Generator
      */
     protected function getQueryContent(): string
     {
-        $namespace = $this->findDomainNamespace($this->domain) . "\\Queries";
+        $namespace = $this->findDomainNamespace($this->domain).'\\Queries';
         $stubPath = $this->getStubPath('query');
         $stub = $this->loadStub($stubPath);
 
@@ -91,5 +88,4 @@ class QueryGenerator extends Generator
             'name' => $this->name,
         ]);
     }
-
 }

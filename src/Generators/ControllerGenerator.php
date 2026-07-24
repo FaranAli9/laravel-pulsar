@@ -29,11 +29,6 @@ class ControllerGenerator extends Generator
 
     /**
      * Create a new ControllerGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $service
-     * @param  string  $module
-     * @param  bool  $resource
      */
     public function __construct(string $name, string $service, string $module, bool $resource = false)
     {
@@ -52,9 +47,9 @@ class ControllerGenerator extends Generator
     {
         $this->validateServiceExists();
         $this->createModuleDirectories();
-        
+
         $filePath = $this->getControllerPath();
-        
+
         if ($this->fileExists($filePath)) {
             throw new Exception("Controller [{$this->name}] already exists in {$this->service}/{$this->module}!");
         }
@@ -72,7 +67,7 @@ class ControllerGenerator extends Generator
      */
     protected function validateServiceExists(): void
     {
-        if (!$this->serviceExists($this->service)) {
+        if (! $this->serviceExists($this->service)) {
             throw ServiceDoesNotExistException::make($this->service);
         }
     }
@@ -83,7 +78,7 @@ class ControllerGenerator extends Generator
     protected function createModuleDirectories(): void
     {
         $modulePath = $this->getModulePath();
-        $controllersPath = $modulePath . DIRECTORY_SEPARATOR . 'Controllers';
+        $controllersPath = $modulePath.DIRECTORY_SEPARATOR.'Controllers';
 
         $this->createDirectory($modulePath);
         $this->createDirectory($controllersPath);
@@ -94,7 +89,7 @@ class ControllerGenerator extends Generator
      */
     protected function getControllerPath(): string
     {
-        return $this->getModulePath() . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getModulePath().DIRECTORY_SEPARATOR.'Controllers'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -102,13 +97,12 @@ class ControllerGenerator extends Generator
      */
     protected function getModulePath(): string
     {
-        return $this->findServicesRootPath() . DIRECTORY_SEPARATOR . $this->service . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $this->module;
+        return $this->findServicesRootPath().DIRECTORY_SEPARATOR.$this->service.DIRECTORY_SEPARATOR.'Modules'.DIRECTORY_SEPARATOR.$this->module;
     }
 
     /**
      * Get the controller content from stub.
      *
-     * @return string
      * @throws Exception
      */
     protected function getControllerContent(): string
@@ -118,6 +112,7 @@ class ControllerGenerator extends Generator
 
         if ($this->fileExists($stubPath)) {
             $stub = $this->loadStub($stubPath);
+
             return $this->replaceStubPlaceholders($stub, [
                 'namespace' => $this->getNamespace(),
                 'name' => $this->name,
@@ -132,11 +127,10 @@ class ControllerGenerator extends Generator
     /**
      * Get the controller namespace.
      *
-     * @return string
      * @throws Exception
      */
     protected function getNamespace(): string
     {
-        return $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\Controllers";
+        return $this->findServiceNamespace($this->service)."\\Modules\\{$this->module}\\Controllers";
     }
 }

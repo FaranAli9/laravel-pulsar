@@ -6,14 +6,13 @@ use Exception;
 
 /**
  * Exception thrown when attempting to access a service that doesn't exist.
+ *
+ * @phpstan-consistent-constructor
  */
 class ServiceDoesNotExistException extends Exception
 {
     /**
      * Create a new exception instance.
-     *
-     * @param  string  $serviceName
-     * @return static
      */
     public static function make(string $serviceName): static
     {

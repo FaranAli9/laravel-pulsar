@@ -24,10 +24,6 @@ class RequestGenerator extends Generator
 
     /**
      * Create a new RequestGenerator instance.
-     *
-     * @param  string  $name
-     * @param  string  $module
-     * @param  string  $service
      */
     public function __construct(string $name, string $module, string $service)
     {
@@ -65,7 +61,7 @@ class RequestGenerator extends Generator
      */
     protected function validateServiceExists(): void
     {
-        if (!$this->serviceExists($this->service)) {
+        if (! $this->serviceExists($this->service)) {
             throw ServiceDoesNotExistException::make($this->service);
         }
     }
@@ -76,7 +72,7 @@ class RequestGenerator extends Generator
     protected function createModuleDirectories(): void
     {
         $modulePath = $this->getModulePath();
-        $requestsPath = $modulePath . DIRECTORY_SEPARATOR . 'Requests';
+        $requestsPath = $modulePath.DIRECTORY_SEPARATOR.'Requests';
 
         $this->createDirectory($modulePath);
         $this->createDirectory($requestsPath);
@@ -87,7 +83,7 @@ class RequestGenerator extends Generator
      */
     protected function getRequestPath(): string
     {
-        return $this->getModulePath() . DIRECTORY_SEPARATOR . 'Requests' . DIRECTORY_SEPARATOR . $this->name . '.php';
+        return $this->getModulePath().DIRECTORY_SEPARATOR.'Requests'.DIRECTORY_SEPARATOR.$this->name.'.php';
     }
 
     /**
@@ -95,13 +91,12 @@ class RequestGenerator extends Generator
      */
     protected function getModulePath(): string
     {
-        return $this->findServicesRootPath() . DIRECTORY_SEPARATOR . $this->service . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $this->module;
+        return $this->findServicesRootPath().DIRECTORY_SEPARATOR.$this->service.DIRECTORY_SEPARATOR.'Modules'.DIRECTORY_SEPARATOR.$this->module;
     }
 
     /**
      * Get the request content from stub.
      *
-     * @return string
      * @throws Exception
      */
     protected function getRequestContent(): string
@@ -110,6 +105,7 @@ class RequestGenerator extends Generator
 
         if ($this->fileExists($stubPath)) {
             $stub = $this->loadStub($stubPath);
+
             return $this->replaceStubPlaceholders($stub, [
                 'namespace' => $this->getNamespace(),
                 'name' => $this->name,
@@ -124,12 +120,10 @@ class RequestGenerator extends Generator
     /**
      * Get the request namespace.
      *
-     * @return string
      * @throws Exception
      */
     protected function getNamespace(): string
     {
-        return $this->findServiceNamespace($this->service) . "\\Modules\\{$this->module}\\Requests";
+        return $this->findServiceNamespace($this->service)."\\Modules\\{$this->module}\\Requests";
     }
-
 }

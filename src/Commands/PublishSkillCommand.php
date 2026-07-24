@@ -17,8 +17,6 @@ class PublishSkillCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -30,12 +28,12 @@ class PublishSkillCommand extends PulsarCommand
             $filePath = $generator->generate();
 
             $this->success("Pulsar skill published to {$filePath}!");
-            $this->info("Claude Code will auto-detect this skill and enforce Pulsar architecture rules");
+            $this->info('Claude Code will auto-detect this skill and enforce Pulsar architecture rules');
 
             return Command::SUCCESS;
         } catch (FileAlreadyExistsException $e) {
             $this->error($e->getMessage());
-            $this->info("  Use --force to overwrite or --path to specify a different location");
+            $this->info('  Use --force to overwrite or --path to specify a different location');
 
             return Command::FAILURE;
         } catch (Exception $e) {
@@ -47,8 +45,6 @@ class PublishSkillCommand extends PulsarCommand
 
     /**
      * Configure the command options.
-     *
-     * @return void
      */
     protected function configure(): void
     {

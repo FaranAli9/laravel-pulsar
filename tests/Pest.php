@@ -1,5 +1,7 @@
 <?php
 
+use Tests\Helpers\FrameworkClass;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -30,24 +32,21 @@ expect()->extend('toBeValidPhp', function () {
     file_put_contents($temp, $this->value);
     exec("php -l {$temp} 2>&1", $output, $code);
     unlink($temp);
-    
-    expect($code)->toBe(0, "PHP syntax error: " . implode("\n", $output));
-    
+
+    expect($code)->toBe(0, 'PHP syntax error: '.implode("\n", $output));
+
     return $this;
 });
 
 expect()->extend('toHaveNamespace', function (string $namespace) {
     expect($this->value)->toContain("namespace {$namespace};");
+
     return $this;
 });
 
 expect()->extend('toHaveClass', function (string $class) {
     expect($this->value)->toContain("class {$class}");
-    return $this;
-});
 
-expect()->extend('toHaveMethod', function (string $method) {
-    expect($this->value)->toMatch("/function\s+{$method}\s*\(/");
     return $this;
 });
 
@@ -65,30 +64,41 @@ expect()->extend('toHaveMethod', function (string $method) {
 function createMockLaravelApp(string $root): void
 {
     // Create composer.json
-    file_put_contents($root . DIRECTORY_SEPARATOR . 'composer.json', json_encode([
+    file_put_contents($root.DIRECTORY_SEPARATOR.'composer.json', json_encode([
         'name' => 'laravel/laravel',
         'type' => 'project',
         'autoload' => [
             'psr-4' => [
                 'App\\' => 'app/',
-            ]
-        ]
+            ],
+        ],
     ], JSON_PRETTY_PRINT));
-    
+
     // Create artisan
-    file_put_contents($root . DIRECTORY_SEPARATOR . 'artisan', "<?php\n// Laravel artisan\n");
-    
+    file_put_contents($root.DIRECTORY_SEPARATOR.'artisan', "<?php\n// Laravel artisan\n");
+
     // Create directory structure
-    mkdir($root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services', 0755, true);
-    mkdir($root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Domain', 0755, true);
+    mkdir($root.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Services', 0755, true);
+    mkdir($root.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Domain', 0755, true);
+}
+
+foreach ([
+    'Illuminate\Database\Eloquent\Model',
+    'Illuminate\Foundation\Http\FormRequest',
+    'Illuminate\Routing\Controller',
+    'Illuminate\Support\ServiceProvider',
+] as $frameworkClass) {
+    if (! class_exists($frameworkClass)) {
+        class_alias(FrameworkClass::class, $frameworkClass);
+    }
 }
 
 function createService(string $root, string $name): void
 {
-    $path = $root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Pulsar' . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . $name;
-    mkdir($path . DIRECTORY_SEPARATOR . 'Providers', 0755, true);
-    mkdir($path . DIRECTORY_SEPARATOR . 'Routes', 0755, true);
-    
+    $path = $root.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Services'.DIRECTORY_SEPARATOR.$name;
+    mkdir($path.DIRECTORY_SEPARATOR.'Providers', 0755, true);
+    mkdir($path.DIRECTORY_SEPARATOR.'Routes', 0755, true);
+
     // Create basic service provider
     $providerContent = <<<PHP
 <?php
@@ -110,26 +120,26 @@ class {$name}ServiceProvider extends ServiceProvider
     }
 }
 PHP;
-    
+
     file_put_contents(
-        $path . DIRECTORY_SEPARATOR . 'Providers' . DIRECTORY_SEPARATOR . $name . 'ServiceProvider.php',
+        $path.DIRECTORY_SEPARATOR.'Providers'.DIRECTORY_SEPARATOR.$name.'ServiceProvider.php',
         $providerContent
     );
 }
 
 function deleteDirectory(string $dir): void
 {
-    if (!is_dir($dir)) {
+    if (! is_dir($dir)) {
         return;
     }
-    
+
     $files = array_diff(scandir($dir), ['.', '..']);
-    
+
     foreach ($files as $file) {
-        $path = $dir . DIRECTORY_SEPARATOR . $file;
+        $path = $dir.DIRECTORY_SEPARATOR.$file;
         is_dir($path) ? deleteDirectory($path) : unlink($path);
     }
-    
+
     rmdir($dir);
 }
 
@@ -144,18 +154,18 @@ function deleteDirectory(string $dir): void
 
 uses()->beforeEach(function () {
     // Set up temp directory for all tests
-    $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pulsar-tests-' . uniqid();
+    $this->tempDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'pulsar-tests-'.uniqid();
     mkdir($this->tempDir, 0755, true);
-    
+
     // Resolve symlinks (important for macOS where /var -> /private/var)
     $this->tempDir = realpath($this->tempDir);
-    
+
     // Save original working directory
     $this->originalCwd = getcwd();
-    
+
     // Create mock Laravel structure
     createMockLaravelApp($this->tempDir);
-    
+
     // Change to temp directory
     chdir($this->tempDir);
 })->afterEach(function () {
@@ -163,7 +173,7 @@ uses()->beforeEach(function () {
     if (isset($this->tempDir) && is_dir($this->tempDir)) {
         // Restore original working directory
         chdir($this->originalCwd);
-        
+
         // Clean up temp directory
         deleteDirectory($this->tempDir);
     }
