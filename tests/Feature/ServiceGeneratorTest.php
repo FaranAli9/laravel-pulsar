@@ -4,7 +4,7 @@ use Faran\Pulsar\Exceptions\ServiceAlreadyExistsException;
 use Faran\Pulsar\Generators\ServiceGenerator;
 
 describe('Service Generator', function () {
-    it('generates the current service structure and inline provider content', function () {
+    it('generates the current service structure from the service stubs', function () {
         $result = (new ServiceGenerator('Admin'))->generate();
         $servicePath = $this->tempDir.DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR, [
             'app', 'Pulsar', 'Services', 'Admin',
@@ -32,6 +32,7 @@ describe('Service Generator', function () {
             ->toBeValidPhp()
             ->toHaveNamespace('App\Pulsar\Services\Admin\Providers')
             ->toHaveClass('AdminServiceProvider')
+            ->toContain('Responsible for registering and bootstrapping the Admin service.')
             ->toContain('$this->app->register(RouteServiceProvider::class);')
             ->not->toContain('{{');
 
@@ -43,6 +44,7 @@ describe('Service Generator', function () {
             ->toBeValidPhp()
             ->toHaveNamespace('App\Pulsar\Services\Admin\Providers')
             ->toHaveClass('RouteServiceProvider')
+            ->toContain('Registers API routes with automatic prefix: /api/admin')
             ->toContain("Route::prefix('api/admin')")
             ->not->toContain('{{');
 
@@ -53,6 +55,8 @@ describe('Service Generator', function () {
             ->toBeValidPhp()
             ->toContain('Admin Service Routes')
             ->toContain('Prefix: /api/admin')
+            ->toContain('Named Routes: admin.*')
+            ->toContain('Middleware: api')
             ->not->toContain('{{');
     });
 

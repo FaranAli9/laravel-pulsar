@@ -25,6 +25,7 @@ class MakeModelCommand extends PulsarCommand
         try {
             $generator = new ModelGenerator($name, $domain);
             $filePath = $generator->generate();
+            $this->warnIfDomainCreated($generator, $domain);
 
             $this->line();
             $this->success('Model created successfully');

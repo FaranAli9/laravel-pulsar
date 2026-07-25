@@ -20,6 +20,22 @@ beforeEach(function () {
     createService($this->tempDir, 'Admin');
 });
 
+dataset('make command validation cases', [
+    'make:action' => [MakeActionCommand::class, ['name' => 'CreateOrder', 'domain' => 'Orders']],
+    'make:controller' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin']],
+    'make:dto' => [MakeDtoCommand::class, ['name' => 'OrderData', 'domain' => 'Orders']],
+    'make:enum' => [MakeEnumCommand::class, ['name' => 'OrderStatus', 'domain' => 'Orders']],
+    'make:event' => [MakeEventCommand::class, ['name' => 'OrderPlaced', 'domain' => 'Orders']],
+    'make:exception' => [MakeExceptionCommand::class, ['name' => 'OrderNotFound', 'domain' => 'Orders']],
+    'make:model' => [MakeModelCommand::class, ['name' => 'Order', 'domain' => 'Orders']],
+    'make:operation' => [MakeOperationCommand::class, ['name' => 'PersistOrder', 'module' => 'Orders', 'service' => 'Admin']],
+    'make:policy' => [MakePolicyCommand::class, ['name' => 'OrderPolicy', 'domain' => 'Orders']],
+    'make:query' => [MakeQueryCommand::class, ['name' => 'FindOrder', 'domain' => 'Orders']],
+    'make:request' => [MakeRequestCommand::class, ['name' => 'StoreOrderRequest', 'module' => 'Orders', 'service' => 'Admin']],
+    'make:service' => [MakeServiceCommand::class, ['name' => 'Internal']],
+    'make:use-case' => [MakeUseCaseCommand::class, ['name' => 'CreateOrder', 'module' => 'Orders', 'service' => 'Admin']],
+]);
+
 it('runs each Make command successfully with the documented output and exit code', function (
     string $commandClass,
     array $arguments,
@@ -161,4 +177,97 @@ it('maps Controller arguments from name module service to name service module', 
         ->and($content)
         ->toHaveNamespace('App\Pulsar\Services\Admin\Modules\Billing\Controllers')
         ->not->toContain('Services\Billing\Modules\Admin');
+});
+
+it('rejects reserved, invalid, and traversal class names before writing through every Make command', function (
+    string $commandClass,
+    array $arguments,
+) {
+    $snapshot = static function (string $root): array {
+        $paths = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            $paths[] = $item->getPathname();
+        }
+
+        sort($paths);
+
+        return $paths;
+    };
+
+    foreach (['class', 'Invalid-Name', '../evil'] as $invalidName) {
+        $invalidArguments = $arguments;
+        $invalidArguments['name'] = $invalidName;
+        $before = $snapshot($this->tempDir);
+        $tester = new CommandTester(new $commandClass);
+
+        expect($tester->execute($invalidArguments))->toBe(Command::FAILURE)
+            ->and($tester->getDisplay())->toContain($invalidName)
+            ->and($snapshot($this->tempDir))->toBe($before);
+    }
+})->with('make command validation cases');
+
+it('rejects invalid and traversing path segments before writing through applicable Make commands', function (
+    string $commandClass,
+    array $arguments,
+    string $segment,
+) {
+    $snapshot = static function (string $root): array {
+        $paths = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            $paths[] = $item->getPathname();
+        }
+
+        sort($paths);
+
+        return $paths;
+    };
+
+    foreach (['../evil', 'Bad|Segment'] as $invalidSegment) {
+        $invalidArguments = $arguments;
+        $invalidArguments[$segment] = $invalidSegment;
+        $before = $snapshot($this->tempDir);
+        $tester = new CommandTester(new $commandClass);
+
+        expect($tester->execute($invalidArguments))->toBe(Command::FAILURE)
+            ->and($tester->getDisplay())->toContain($invalidSegment)
+            ->and($snapshot($this->tempDir))->toBe($before);
+    }
+})->with([
+    'make:action domain' => [MakeActionCommand::class, ['name' => 'CreateOrder', 'domain' => 'Orders'], 'domain'],
+    'make:controller service' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin'], 'service'],
+    'make:controller module' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin'], 'module'],
+    'make:dto domain' => [MakeDtoCommand::class, ['name' => 'OrderData', 'domain' => 'Orders'], 'domain'],
+    'make:enum domain' => [MakeEnumCommand::class, ['name' => 'OrderStatus', 'domain' => 'Orders'], 'domain'],
+    'make:event domain' => [MakeEventCommand::class, ['name' => 'OrderPlaced', 'domain' => 'Orders'], 'domain'],
+    'make:exception domain' => [MakeExceptionCommand::class, ['name' => 'OrderNotFound', 'domain' => 'Orders'], 'domain'],
+    'make:model domain' => [MakeModelCommand::class, ['name' => 'Order', 'domain' => 'Orders'], 'domain'],
+    'make:operation service' => [MakeOperationCommand::class, ['name' => 'PersistOrder', 'module' => 'Orders', 'service' => 'Admin'], 'service'],
+    'make:operation module' => [MakeOperationCommand::class, ['name' => 'PersistOrder', 'module' => 'Orders', 'service' => 'Admin'], 'module'],
+    'make:policy domain' => [MakePolicyCommand::class, ['name' => 'OrderPolicy', 'domain' => 'Orders'], 'domain'],
+    'make:query domain' => [MakeQueryCommand::class, ['name' => 'FindOrder', 'domain' => 'Orders'], 'domain'],
+    'make:request service' => [MakeRequestCommand::class, ['name' => 'StoreOrderRequest', 'module' => 'Orders', 'service' => 'Admin'], 'service'],
+    'make:request module' => [MakeRequestCommand::class, ['name' => 'StoreOrderRequest', 'module' => 'Orders', 'service' => 'Admin'], 'module'],
+    'make:service name' => [MakeServiceCommand::class, ['name' => 'Internal'], 'name'],
+    'make:use-case service' => [MakeUseCaseCommand::class, ['name' => 'CreateOrder', 'module' => 'Orders', 'service' => 'Admin'], 'service'],
+    'make:use-case module' => [MakeUseCaseCommand::class, ['name' => 'CreateOrder', 'module' => 'Orders', 'service' => 'Admin'], 'module'],
+]);
+
+it('warns only when a domain is created for the first time', function () {
+    $first = new CommandTester(new MakeActionCommand);
+    $second = new CommandTester(new MakeDtoCommand);
+
+    expect($first->execute(['name' => 'CreateOrder', 'domain' => 'Orders']))->toBe(Command::SUCCESS)
+        ->and($first->getDisplay())->toContain('Domain [Orders] did not exist and was created.')
+        ->and($second->execute(['name' => 'OrderData', 'domain' => 'Orders']))->toBe(Command::SUCCESS)
+        ->and($second->getDisplay())->not->toContain('did not exist and was created.');
 });

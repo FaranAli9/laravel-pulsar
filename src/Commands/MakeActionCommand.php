@@ -25,6 +25,7 @@ class MakeActionCommand extends PulsarCommand
         try {
             $generator = new ActionGenerator($name, $domain);
             $filePath = $generator->generate();
+            $this->warnIfDomainCreated($generator, $domain);
 
             $this->line();
             $this->success('Action created successfully');

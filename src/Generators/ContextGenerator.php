@@ -37,6 +37,7 @@ class ContextGenerator extends Generator
      */
     public function generate(): string
     {
+        $this->validateInputs();
         $filePath = $this->getContextPath();
 
         if (! $this->force && $this->fileExists($filePath)) {

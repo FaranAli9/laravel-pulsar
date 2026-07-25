@@ -46,6 +46,14 @@ trait Finder
     }
 
     /**
+     * Check if a domain exists.
+     */
+    public function domainExists(string $domain): bool
+    {
+        return file_exists($this->findDomainRootPath().DIRECTORY_SEPARATOR.$domain);
+    }
+
+    /**
      * Find the root path of the Pulsar architecture.
      */
     public function findPulsarRootPath(): string
@@ -149,17 +157,5 @@ trait Finder
     public function getSourceDirectoryName(): string
     {
         return 'app';
-    }
-
-    /**
-     * Get the relative version of the given real path.
-     */
-    protected function relativeFromReal(string $path, string $needle = ''): string
-    {
-        if (! $needle) {
-            $needle = $this->getSourceDirectoryName().DIRECTORY_SEPARATOR;
-        }
-
-        return strstr($path, $needle);
     }
 }

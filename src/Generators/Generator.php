@@ -16,6 +16,11 @@ abstract class Generator
     use Finder;
 
     /**
+     * Whether this generator created a new domain directory.
+     */
+    protected bool $domainCreated = false;
+
+    /**
      * Create a directory if it doesn't exist.
      */
     protected function createDirectory(string $path, int $mode = 0755, bool $recursive = true): void
@@ -31,24 +36,6 @@ abstract class Generator
     protected function createFile(string $path, string $contents): void
     {
         file_put_contents($path, $contents);
-    }
-
-    /**
-     * Create nested directories from an array of path elements.
-     *
-     * @param  list<string>  $elements
-     * @return string The full path created
-     */
-    protected function createRecursiveDirectories(string $root, array $elements): string
-    {
-        $path = $root;
-
-        foreach ($elements as $element) {
-            $path .= DIRECTORY_SEPARATOR.$element;
-            $this->createDirectory($path);
-        }
-
-        return $path;
     }
 
     /**
@@ -116,6 +103,23 @@ abstract class Generator
     }
 
     /**
+     * Validate class identifiers and path segments before generation starts.
+     *
+     * @param  list<string>  $names
+     * @param  list<string>  $segments
+     */
+    protected function validateInputs(array $names = [], array $segments = []): void
+    {
+        foreach ($names as $name) {
+            $this->validateName($name);
+        }
+
+        foreach ($segments as $segment) {
+            $this->sanitizeDirectoryName($segment);
+        }
+    }
+
+    /**
      * Validate and sanitize input name.
      *
      * @throws InvalidNameException
@@ -180,6 +184,28 @@ abstract class Generator
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Create a domain directory and remember whether it was newly created.
+     */
+    protected function createDomainDirectory(string $domain): string
+    {
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$domain;
+
+        $this->domainCreated = ! $this->domainExists($domain);
+
+        $this->createDirectory($domainPath);
+
+        return $domainPath;
+    }
+
+    /**
+     * Determine whether this generator created a new domain directory.
+     */
+    public function didCreateDomain(): bool
+    {
+        return $this->domainCreated;
     }
 
     /**

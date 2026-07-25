@@ -39,6 +39,7 @@ class UseCaseGenerator extends Generator
      */
     public function generate(): string
     {
+        $this->validateInputs([$this->name], [$this->service, $this->module]);
         $this->validateServiceExists();
         $this->createModuleDirectories();
 

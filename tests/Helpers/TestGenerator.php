@@ -91,14 +91,6 @@ class TestGenerator extends Generator
     }
 
     /**
-     * Expose createRecursiveDirectories for testing.
-     */
-    public function testCreateRecursiveDirectories(string $root, array $elements): string
-    {
-        return $this->createRecursiveDirectories($root, $elements);
-    }
-
-    /**
      * Expose createGitkeep for testing.
      */
     public function testCreateGitkeep(string $directory): void

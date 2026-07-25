@@ -25,6 +25,7 @@ class MakeQueryCommand extends PulsarCommand
         try {
             $generator = new QueryGenerator($name, $domain);
             $filePath = $generator->generate();
+            $this->warnIfDomainCreated($generator, $domain);
 
             $this->line();
             $this->success('Query created successfully');

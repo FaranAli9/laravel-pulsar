@@ -25,6 +25,7 @@ class MakeEventCommand extends PulsarCommand
         try {
             $generator = new EventGenerator($name, $domain);
             $filePath = $generator->generate();
+            $this->warnIfDomainCreated($generator, $domain);
 
             $this->line();
             $this->success('Event created successfully');
