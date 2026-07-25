@@ -2,6 +2,7 @@
 
 describe('Documentation consistency', function () {
     $expectedCommands = [
+        'install',
         'make:action',
         'make:adapter',
         'make:command',
@@ -57,7 +58,7 @@ describe('Documentation consistency', function () {
 
     $readDocumentedCommands = static function (string $path, string $heading) use ($readSection): array {
         $section = $readSection($path, $heading);
-        preg_match_all('/\|\s*`((?:make|publish):[a-z-]+|ping)`\s*\|/', $section, $matches);
+        preg_match_all('/\|\s*`((?:make|publish):[a-z-]+|install|ping)`\s*\|/', $section, $matches);
         $commands = array_values(array_unique($matches[1]));
         sort($commands);
 

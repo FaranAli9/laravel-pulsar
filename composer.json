@@ -41,6 +41,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "App\\": "tests/Integration/fixture/app/",
             "Tests\\": "tests/"
         }
     },
@@ -58,14 +59,16 @@
     },
     "require-dev": {
         "laravel/pint": "^1.29",
+        "orchestra/testbench": "^10.0|^11.0",
         "pestphp/pest": "^4.7",
         "phpstan/phpstan": "^2.2"
     },
     "scripts": {
         "analyse": "phpstan analyse --no-progress",
         "lint": "pint --test",
-        "test": "pest --configuration=phpunit.xml.dist",
-        "test:coverage": "pest --configuration=phpunit.xml.dist --coverage --min=85"
+        "test": "pest --configuration=phpunit.xml.dist --testsuite=Pulsar",
+        "test:coverage": "pest --configuration=phpunit.xml.dist --testsuite=Pulsar --coverage --min=85",
+        "test:integration": "pest --configuration=phpunit.xml.dist --testsuite=Integration"
     },
     "suggest": {
         "ext-pcov": "Required to run the test:coverage script locally."

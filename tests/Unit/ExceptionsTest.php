@@ -4,6 +4,7 @@ use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
 use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 use Faran\Pulsar\Exceptions\InvalidNameException;
 use Faran\Pulsar\Exceptions\StubNotFoundException;
+use Faran\Pulsar\Exceptions\UnexpectedBootstrapFileException;
 
 describe('Custom Exceptions', function () {
     describe('DomainDoesNotExistException', function () {
@@ -136,6 +137,22 @@ describe('Custom Exceptions', function () {
             $exception = StubNotFoundException::make('../../stubs/test.stub');
 
             expect($exception->getMessage())->toContain('../../stubs/test.stub');
+        });
+    });
+
+    describe('UnexpectedBootstrapFileException', function () {
+        it('includes the safe manual fallback', function () {
+            $exception = UnexpectedBootstrapFileException::make(
+                'bootstrap/app.php',
+                'unexpected shape',
+            );
+
+            expect($exception->getMessage())
+                ->toContain('unexpected shape')
+                ->toContain('No files were changed.')
+                ->toContain('withEvents')
+                ->toContain('withCommands')
+                ->toContain('PulsarServiceProvider');
         });
     });
 

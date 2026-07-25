@@ -8,7 +8,11 @@
 >
     <testsuites>
         <testsuite name="Pulsar">
-            <directory>tests</directory>
+            <directory>tests/Feature</directory>
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
 
