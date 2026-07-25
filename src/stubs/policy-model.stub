@@ -1,0 +1,34 @@
+<?php
+
+namespace {{namespace}};
+
+use App\Models\User as AuthUser;
+use {{modelFqcn}};
+
+class {{name}}
+{
+    public function before(AuthUser $user, string $ability): ?bool
+    {
+        return $user->isAdmin() ? true : null;
+    }
+
+    public function view(AuthUser $user, {{model}} $model): bool
+    {
+        return false;
+    }
+
+    public function create(AuthUser $user): bool
+    {
+        return false;
+    }
+
+    public function update(AuthUser $user, {{model}} $model): bool
+    {
+        return false;
+    }
+
+    public function delete(AuthUser $user, {{model}} $model): bool
+    {
+        return false;
+    }
+}

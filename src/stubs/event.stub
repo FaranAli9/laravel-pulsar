@@ -2,9 +2,13 @@
 
 namespace {{namespace}};
 
-class {{name}}
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+
+final readonly class {{name}} implements ShouldDispatchAfterCommit
 {
+    public const int VERSION = 1;
+
     public function __construct(
-        //
+        // Immutable facts only — IDs, scalars, DTOs, Value Objects. Never Eloquent models.
     ) {}
 }

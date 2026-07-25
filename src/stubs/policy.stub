@@ -2,7 +2,12 @@
 
 namespace {{namespace}};
 
+use App\Models\User;
+
 class {{name}}
 {
-    //
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->isAdmin() ? true : null;
+    }
 }

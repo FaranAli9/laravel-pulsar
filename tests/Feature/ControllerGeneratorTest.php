@@ -9,7 +9,7 @@ describe('Controller Generator', function () {
     });
 
     it('generates the current resource controller contract', function () {
-        $generator = new ControllerGenerator('OrderController', 'Admin', 'Orders', true);
+        $generator = new ControllerGenerator('OrderController', 'Orders', 'Admin', true);
         $relativePath = $generator->generate();
         $expectedPath = implode(DIRECTORY_SEPARATOR, [
             'app', 'Pulsar', 'Services', 'Admin', 'Modules', 'Orders', 'Controllers', 'OrderController.php',
@@ -36,7 +36,7 @@ describe('Controller Generator', function () {
     });
 
     it('generates the current plain controller contract', function () {
-        $relativePath = (new ControllerGenerator('HealthController', 'Admin', 'System'))->generate();
+        $relativePath = (new ControllerGenerator('HealthController', 'System', 'Admin'))->generate();
         $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
         expect($content)
@@ -47,14 +47,14 @@ describe('Controller Generator', function () {
     });
 
     it('rejects a duplicate controller', function () {
-        (new ControllerGenerator('OrderController', 'Admin', 'Orders'))->generate();
+        (new ControllerGenerator('OrderController', 'Orders', 'Admin'))->generate();
 
-        expect(fn () => (new ControllerGenerator('OrderController', 'Admin', 'Orders'))->generate())
+        expect(fn () => (new ControllerGenerator('OrderController', 'Orders', 'Admin'))->generate())
             ->toThrow(Exception::class, 'already exists');
     });
 
     it('rejects a missing service', function () {
-        expect(fn () => (new ControllerGenerator('OrderController', 'Missing', 'Orders'))->generate())
+        expect(fn () => (new ControllerGenerator('OrderController', 'Orders', 'Missing'))->generate())
             ->toThrow(ServiceDoesNotExistException::class);
     });
 });

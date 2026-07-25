@@ -30,11 +30,11 @@ class ControllerGenerator extends Generator
     /**
      * Create a new ControllerGenerator instance.
      */
-    public function __construct(string $name, string $service, string $module, bool $resource = false)
+    public function __construct(string $name, string $module, string $service, bool $resource = false)
     {
         $this->name = $name;
-        $this->service = $service;
         $this->module = $module;
+        $this->service = $service;
         $this->resource = $resource;
     }
 

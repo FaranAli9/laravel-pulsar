@@ -113,13 +113,15 @@ Domain Layer:
 
 **DTO** — `readonly` class, constructor promotion, static `from(array $data)`. No logic.
 
-**Event** — Readonly properties. No logic. Emitted by UseCases only.
+**Event** — Final readonly fact with a `VERSION` constant. Implements `ShouldDispatchAfterCommit` by default. Carries IDs, scalars, DTOs, or Value Objects, never Eloquent models across queued or durable boundaries. Emitted by UseCases only.
 
 **Enum** — Backed enum only (`string` or `int`).
 
 **Exception** — Extends `Exception`. Descriptive name communicating the business rule violated.
 
-**Policy** — Returns `bool`. Standard Laravel policy.
+**Policy** — `--model` generates `view`, `create`, `update`, and `delete` methods typed to the domain model. Methods return `bool` and default deny. `before()` may return `true` for an admin bypass or `null` to defer.
+
+Generated policies assume the authenticatable is `App\Models\User`. If your application uses a different user model, update the generated import.
 
 ---
 
@@ -146,6 +148,7 @@ Query      -> Query or Action
 Operation  -> Operation or UseCase
 Domain     -> Service (any direction)
 Service A  -> Service B
+Events emitted by UseCases only; Actions/Operations never emit
 ```
 
 ---
@@ -166,6 +169,17 @@ Actions and Queries return domain types (models, collections, primitives, void).
 
 ---
 
+## Generated Method Conventions
+
+| Type | Public workflow method |
+|------|------------------------|
+| Action | `execute` |
+| Operation | `execute` |
+| Query | `execute` |
+| UseCase | `execute` |
+
+---
+
 ## Cross-Domain Coordination
 
 When a workflow spans multiple domains (e.g., Order + Inventory + Payment), the UseCase coordinates. Actions stay within their own domain. Never have an Action call an Action from another domain.
@@ -174,9 +188,34 @@ When a workflow spans multiple domains (e.g., Order + Inventory + Payment), the 
 
 ## Event Side Effects
 
-UseCases emit Events.
-Listeners handle infrastructure (email, notifications, external APIs).
-Never call mail, notification, or external services directly inside UseCase or Action.
+Events are created and dispatched by UseCases only. Actions and Operations never emit them.
+Listeners handle infrastructure (email, notifications, external APIs). Never call mail,
+notification, or external services directly inside a UseCase or Action.
+
+Use this four-tier rule:
+
+| Tier | Mechanism | Guarantee | Use when |
+|------|-----------|-----------|----------|
+| 1. Sync in-process | Plain `event()` in the current request | Runs immediately and fires before commit if called inside a transaction | Pure in-memory reactions only; never committed-fact side effects |
+| 2. After-commit | Event implements `ShouldDispatchAfterCommit` | Discarded on rollback and dispatched after commit; an in-memory event can still be lost if the process crashes between commit and dispatch | Default for domain events |
+| 3. Queued after-commit | Queued listener uses `ShouldQueue` + `ShouldQueueAfterCommit`, or a Job uses `afterCommit()` | Runs on a worker after commit with at-least-once delivery; handlers must be idempotent, and enqueueing is still not atomic with the database write | External calls, expensive side effects, cross-aggregate work |
+| 4. Outbox/inbox | Write an outbox row in the same transaction and publish it with a relay | Durable across crashes; consumers use inbox/idempotency for effectively-once effects | Integration events that require guaranteed external delivery |
+
+Tier 2 prevents rollback leaks and read-before-commit races, but it does not close the
+crash-between-commit-and-dispatch durability gap. Use tier 4 when that guarantee matters.
+
+Generated Events use tier 2:
+
+```php
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+
+final readonly class OrderCreated implements ShouldDispatchAfterCommit
+{
+    public const int VERSION = 1;
+
+    public function __construct(public int $orderId) {}
+}
+```
 
 ---
 
@@ -234,12 +273,16 @@ class CreateOrderUseCase
 
     public function execute(OrderData $data): Order
     {
-        return DB::transaction(function () use ($data) {
+        $order = DB::transaction(function () use ($data) {
             $order = $this->createOrder->execute($data);
             $this->reserveStock->execute($order->items);
-            event(new OrderCreated($order));
+
             return $order;
         });
+
+        event(new OrderCreated($order->id));
+
+        return $order;
     }
 }
 ```
@@ -274,6 +317,7 @@ This example also demonstrates cross-domain coordination: the UseCase imports fr
 - Actions calling other Actions
 - Actions calling Queries (pass the data in instead)
 - Operations emitting domain events
+- Events emitted by UseCases only; Actions/Operations never emit
 - Transactions inside Actions or Operations
 - UseCases calling other UseCases
 - Request objects leaking past Controller
@@ -283,25 +327,28 @@ If you feel tempted to do any of the above, the architecture is being violated.
 
 ---
 
-## Scaffolding
+## Commands Reference
 
 Use Pulsar CLI to generate files to ensure correct namespace and location.
 
-```bash
-# Service Layer
-pulsar make:service Admin
-pulsar make:controller OrderController Orders Admin --resource
-pulsar make:request CreateOrderRequest Orders Admin
-pulsar make:use-case CreateOrderUseCase Orders Admin
-pulsar make:operation PriceOrderOperation Orders Admin
-
-# Domain Layer
-pulsar make:model Order Order
-pulsar make:action CreateOrderAction Order
-pulsar make:dto OrderData Order
-pulsar make:event OrderCreated Order
-pulsar make:query FindActiveOrdersQuery Order
-```
+| Command | Arguments and options |
+|---------|-----------------------|
+| `make:service` | `{name}` |
+| `make:controller` | `{name} {module} {service} [--resource]` |
+| `make:request` | `{name} {module} {service}` |
+| `make:use-case` | `{name} {module} {service}` |
+| `make:operation` | `{name} {module} {service}` |
+| `make:model` | `{name} {domain}` |
+| `make:action` | `{name} {domain}` |
+| `make:dto` | `{name} {domain}` |
+| `make:policy` | `{name} {domain} [--model={model}]` |
+| `make:event` | `{name} {domain}` |
+| `make:enum` | `{name} {domain}` |
+| `make:exception` | `{name} {domain}` |
+| `make:query` | `{name} {domain}` |
+| `publish:context` | `[--force] [--path={path}]` |
+| `publish:skill` | `[--force] [--path={path}]` |
+| `ping` | — |
 
 ---
 

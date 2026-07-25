@@ -7,6 +7,7 @@ use Faran\Pulsar\Generators\PolicyGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand(
     name: 'make:policy',
@@ -21,9 +22,11 @@ class MakePolicyCommand extends PulsarCommand
     {
         $name = $this->argument('name');
         $domain = $this->argument('domain');
+        $modelOption = $this->option('model');
+        $model = is_string($modelOption) ? $modelOption : null;
 
         try {
-            $generator = new PolicyGenerator($name, $domain);
+            $generator = new PolicyGenerator($name, $domain, $model);
             $filePath = $generator->generate();
             $this->warnIfDomainCreated($generator, $domain);
 
@@ -50,5 +53,6 @@ class MakePolicyCommand extends PulsarCommand
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The name of the policy');
         $this->addArgument('domain', InputArgument::REQUIRED, 'The name of the domain');
+        $this->addOption('model', null, InputOption::VALUE_REQUIRED, 'The domain model protected by the policy');
     }
 }

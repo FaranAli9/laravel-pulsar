@@ -50,6 +50,11 @@ app/Pulsar/Domain/{Domain}/
 | **Operation** | Reusable workflow fragment across UseCases (conditional branching allowed) | No transactions, no event emission, never called by Controllers |
 | **Query** | Complex read operations, reports | Never mutate state |
 | **Model** | Data persistence, relationships | Keep thin, no business logic |
+| **Policy** | Authorize model abilities with `bool` results and an optional admin `before()` bypass | Default deny; never mutate or start transactions |
+| **Event** | Immutable, versioned fact dispatched after commit by default | UseCases emit only; never carry Eloquent models across queued/durable boundaries |
+
+Generated policies assume the authenticatable is `App\Models\User`. If your application uses a
+different user model, update the generated import.
 
 ## Code Examples
 
@@ -108,7 +113,7 @@ class PlaceOrderUseCase
 
     public function execute(OrderData $data): Order
     {
-        return DB::transaction(function () use ($data) {
+        [$order, $outOfStockProductIds] = DB::transaction(function () use ($data) {
             // 1. Reserve inventory
             $this->reserveInventory->execute($data->items);
 
@@ -116,18 +121,31 @@ class PlaceOrderUseCase
             $order = $this->createOrder->execute($data);
 
             // 3. Decrement stock
+            $outOfStockProductIds = [];
+
             foreach ($data->items as $item) {
-                $this->updateStock->execute(
+                $product = $this->updateStock->execute(
                     $item['product_id'],
                     -$item['quantity']
                 );
+
+                if ($product->stock === 0) {
+                    $outOfStockProductIds[] = $product->id;
+                }
             }
 
-            // 4. Emit event for side effects
-            event(new OrderPlaced($order));
-
-            return $order;
+            return [$order, $outOfStockProductIds];
         });
+
+        // Events are immutable facts emitted by the UseCase only.
+        // These Event classes implement ShouldDispatchAfterCommit (tier 2).
+        event(new OrderPlaced($order->id));
+
+        foreach ($outOfStockProductIds as $productId) {
+            event(new ProductOutOfStock($productId));
+        }
+
+        return $order;
     }
 }
 ```
@@ -146,11 +164,6 @@ class UpdateStockAction
 
         // State mutation
         $product->update(['stock' => $product->stock + $quantity]);
-
-        // Domain event
-        if ($product->stock === 0) {
-            event(new ProductOutOfStock($product));
-        }
 
         return $product->fresh();
     }
@@ -313,6 +326,17 @@ class PlaceOrderUseCase
 public function __construct(private OrderData $data) {}
 ```
 
+## Generated Method Conventions
+
+Generated workflow types expose one consistent public method:
+
+| Type | Public workflow method |
+|------|------------------------|
+| Action | `execute` |
+| Operation | `execute` |
+| Query | `execute` |
+| UseCase | `execute` |
+
 ## Transaction Boundaries
 
 **UseCases own transactions** (they see the full workflow):
@@ -320,15 +344,17 @@ public function __construct(private OrderData $data) {}
 ```php
 public function execute(OrderData $data): Order
 {
-    return DB::transaction(function () use ($data) {
+    $order = DB::transaction(function () use ($data) {
         $order = $this->createOrder->execute($data);
         $this->updateInventory->execute($data->items);
         $this->recordPayment->execute($order);
 
-        event(new OrderPlaced($order));
-
         return $order;
     });
+
+    event(new OrderPlaced($order->id));
+
+    return $order;
 }
 ```
 
@@ -347,7 +373,36 @@ class CreateOrderAction
 
 ## Event-Driven Side Effects
 
-**✅ Decouple side effects with events:**
+Events are immutable facts. They carry IDs, scalars, DTOs, or Value Objects, never Eloquent
+models across a queued or durable boundary. Events are created and dispatched by UseCases only;
+Actions and Operations never emit them.
+
+Pulsar uses this four-tier rule:
+
+| Tier | Mechanism | Guarantee | Use when |
+|------|-----------|-----------|----------|
+| 1. Sync in-process | Plain `event()` in the current request | Runs immediately and fires before commit if called inside a transaction | Pure in-memory reactions only; never committed-fact side effects |
+| 2. After-commit | Event implements `ShouldDispatchAfterCommit` | Discarded on rollback and dispatched after commit; an in-memory event can still be lost if the process crashes between commit and dispatch | Default for domain events |
+| 3. Queued after-commit | Queued listener uses `ShouldQueue` + `ShouldQueueAfterCommit`, or a Job uses `afterCommit()` | Runs on a worker after commit with at-least-once delivery; handlers must be idempotent, and enqueueing is still not atomic with the database write | External calls, expensive side effects, cross-aggregate work |
+| 4. Outbox/inbox | Write an outbox row in the same transaction and publish it with a relay | Durable across crashes; consumers use inbox/idempotency for effectively-once effects | Integration events that require guaranteed external delivery |
+
+Tier 2 prevents rollback leaks and read-before-commit races, but it does not close the
+crash-between-commit-and-dispatch durability gap. Use tier 4 when that guarantee matters.
+
+The generated Event shape makes tier 2 the default:
+
+```php
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+
+final readonly class OrderPlaced implements ShouldDispatchAfterCommit
+{
+    public const int VERSION = 1;
+
+    public function __construct(public int $orderId) {}
+}
+```
+
+**✅ Decouple side effects with events emitted by a UseCase:**
 
 ```php
 class PlaceOrderUseCase
@@ -360,8 +415,8 @@ class PlaceOrderUseCase
             return $order;
         });
 
-        // Side effects handled by listeners (async/queued)
-        event(new OrderPlaced($order));
+        // The generated Event defers dispatch until commit (tier 2).
+        event(new OrderPlaced($order->id));
 
         return $order;
     }
@@ -380,11 +435,20 @@ $this->smsService->sendNotification($order);
 
 Services are delivery slices scoped to a consumer audience (Admin, Client). They share the Domain layer but should not call each other directly.
 
-**✅ Event-based communication:**
+**✅ Event-based communication from a UseCase:**
 
 ```php
-// Admin service emits event when order status changes
-event(new OrderStatusUpdated($order));
+class UpdateOrderStatusUseCase
+{
+    public function execute(int $orderId, OrderStatus $status): void
+    {
+        $order = DB::transaction(
+            fn () => $this->updateStatus->execute($orderId, $status)
+        );
+
+        event(new OrderStatusUpdated($order->id));
+    }
+}
 
 // Client service listens to notify customer
 class NotifyCustomerOnStatusChange
@@ -436,6 +500,18 @@ Actions can return:
 8. **Business state?** → Enum
 9. **Business rule violation?** → Exception
 10. **State change notification?** → Event
+
+## Forbidden Patterns
+
+- Fat Controllers containing business logic
+- Controllers calling Operations directly
+- Actions calling other Actions or Queries
+- Operations calling other Operations or UseCases
+- Events emitted by UseCases only; Actions/Operations never emit
+- Transactions inside Actions or Operations
+- UseCases calling other UseCases
+- Request objects leaking past Controllers
+- Business logic in Models beyond accessors and scopes
 
 ## Testing Strategy
 
@@ -490,6 +566,27 @@ test('creates order via API', function () {
         ->assertJsonStructure(['id', 'total', 'status']);
 });
 ```
+
+## Commands Reference
+
+| Command | Arguments and options |
+|---------|-----------------------|
+| `make:service` | `{name}` |
+| `make:controller` | `{name} {module} {service} [--resource]` |
+| `make:request` | `{name} {module} {service}` |
+| `make:use-case` | `{name} {module} {service}` |
+| `make:operation` | `{name} {module} {service}` |
+| `make:model` | `{name} {domain}` |
+| `make:action` | `{name} {domain}` |
+| `make:dto` | `{name} {domain}` |
+| `make:policy` | `{name} {domain} [--model={model}]` |
+| `make:event` | `{name} {domain}` |
+| `make:enum` | `{name} {domain}` |
+| `make:exception` | `{name} {domain}` |
+| `make:query` | `{name} {domain}` |
+| `publish:context` | `[--force] [--path={path}]` |
+| `publish:skill` | `[--force] [--path={path}]` |
+| `ping` | — |
 
 ## Additional Resources
 

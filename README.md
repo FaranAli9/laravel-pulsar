@@ -155,6 +155,15 @@ Cross-domain coordination belongs in **UseCases**, never in Actions.
 
 Actions and Operations must never manage transactions.
 
+### Generated Method Conventions
+
+| Type | Public workflow method |
+|------|------------------------|
+| Action | `execute` |
+| Operation | `execute` |
+| Query | `execute` |
+| UseCase | `execute` |
+
 ---
 
 ### Return Types
@@ -169,7 +178,7 @@ They must never return HTTP or framework response objects.
 - Fat Controllers containing business logic
 - Controllers calling Operations directly
 - Actions calling other Actions
-- Operations emitting domain events
+- Events emitted outside UseCases; Actions and Operations never emit events
 - Transactions inside Actions or Operations
 - UseCases calling other UseCases
 
@@ -210,7 +219,8 @@ Flexibility is traded for consistency — deliberately.
 | Model     | Domain entity (Eloquent)  |
 | Action    | Atomic business operation |
 | DTO       | Data transfer             |
-| Event     | Domain event              |
+| Policy    | Model-aware authorization with default-deny methods |
+| Event     | Immutable, versioned domain fact dispatched after commit by default |
 | Enum      | Domain state              |
 | Exception | Business rule violation   |
 | Query     | Read-only domain query    |
@@ -219,24 +229,24 @@ Flexibility is traded for consistency — deliberately.
 
 ## Commands Reference
 
-### Service Layer
-
-- `make:service {name}`
-- `make:controller {name} {module} {service} --resource`
-- `make:request {name} {module} {service}`
-- `make:use-case {name} {module} {service}`
-- `make:operation {name} {module} {service}`
-
-### Domain Layer
-
-- `make:model {name} {domain}`
-- `make:action {name} {domain}`
-- `make:dto {name} {domain}`
-- `make:policy {name} {domain}`
-- `make:event {name} {domain}`
-- `make:enum {name} {domain}`
-- `make:exception {name} {domain}`
-- `make:query {name} {domain}`
+| Command | Arguments and options |
+|---------|-----------------------|
+| `make:service` | `{name}` |
+| `make:controller` | `{name} {module} {service} [--resource]` |
+| `make:request` | `{name} {module} {service}` |
+| `make:use-case` | `{name} {module} {service}` |
+| `make:operation` | `{name} {module} {service}` |
+| `make:model` | `{name} {domain}` |
+| `make:action` | `{name} {domain}` |
+| `make:dto` | `{name} {domain}` |
+| `make:policy` | `{name} {domain} [--model={model}]` |
+| `make:event` | `{name} {domain}` |
+| `make:enum` | `{name} {domain}` |
+| `make:exception` | `{name} {domain}` |
+| `make:query` | `{name} {domain}` |
+| `publish:context` | `[--force] [--path={path}]` |
+| `publish:skill` | `[--force] [--path={path}]` |
+| `ping` | — |
 
 ---
 
