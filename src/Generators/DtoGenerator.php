@@ -32,6 +32,7 @@ class DtoGenerator extends Generator
      */
     public function generate(): string
     {
+        $this->validateInputs([$this->name], [$this->domain]);
         $this->createDomainDirectories();
 
         $filePath = $this->getDtoPath();
@@ -51,10 +52,9 @@ class DtoGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->getDomainPath();
+        $domainPath = $this->createDomainDirectory($this->domain);
         $dtosPath = $domainPath.DIRECTORY_SEPARATOR.'DTOs';
 
-        $this->createDirectory($domainPath);
         $this->createDirectory($dtosPath);
     }
 

@@ -25,6 +25,7 @@ class MakePolicyCommand extends PulsarCommand
         try {
             $generator = new PolicyGenerator($name, $domain);
             $filePath = $generator->generate();
+            $this->warnIfDomainCreated($generator, $domain);
 
             $this->line();
             $this->success('Policy created successfully');

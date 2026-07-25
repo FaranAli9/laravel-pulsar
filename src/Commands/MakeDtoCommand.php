@@ -25,6 +25,7 @@ class MakeDtoCommand extends PulsarCommand
         try {
             $generator = new DtoGenerator($name, $domain);
             $filePath = $generator->generate();
+            $this->warnIfDomainCreated($generator, $domain);
 
             $this->line();
             $this->success('DTO created successfully');

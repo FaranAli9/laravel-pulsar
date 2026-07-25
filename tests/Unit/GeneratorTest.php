@@ -346,50 +346,6 @@ describe('Generator Base Class', function () {
         });
     });
 
-    describe('createRecursiveDirectories()', function () {
-
-        it('creates nested directory structure', function () {
-            $generator = new TestGenerator;
-            $root = $this->tempDir;
-            $elements = ['app', 'Pulsar', 'Services', 'Order', 'Modules'];
-
-            $fullPath = $generator->testCreateRecursiveDirectories($root, $elements);
-
-            expect(is_dir($fullPath))->toBeTrue();
-            expect($fullPath)->toContain('app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Services'.DIRECTORY_SEPARATOR.'Order'.DIRECTORY_SEPARATOR.'Modules');
-        });
-
-        it('returns full path', function () {
-            $generator = new TestGenerator;
-            $root = $this->tempDir;
-            $elements = ['level1', 'level2'];
-
-            $fullPath = $generator->testCreateRecursiveDirectories($root, $elements);
-
-            expect($fullPath)->toBe($root.DIRECTORY_SEPARATOR.'level1'.DIRECTORY_SEPARATOR.'level2');
-        });
-
-        it('handles empty elements array', function () {
-            $generator = new TestGenerator;
-            $root = $this->tempDir;
-
-            $fullPath = $generator->testCreateRecursiveDirectories($root, []);
-
-            expect($fullPath)->toBe($root);
-        });
-
-        it('handles single element', function () {
-            $generator = new TestGenerator;
-            $root = $this->tempDir;
-            $elements = ['single'];
-
-            $fullPath = $generator->testCreateRecursiveDirectories($root, $elements);
-
-            expect(is_dir($fullPath))->toBeTrue();
-            expect($fullPath)->toBe($root.DIRECTORY_SEPARATOR.'single');
-        });
-    });
-
     describe('createGitkeep()', function () {
 
         it('creates .gitkeep file in directory', function () {

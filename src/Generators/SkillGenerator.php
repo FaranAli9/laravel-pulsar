@@ -37,6 +37,7 @@ class SkillGenerator extends Generator
      */
     public function generate(): string
     {
+        $this->validateInputs();
         $filePath = $this->getSkillPath();
 
         if (! $this->force && $this->fileExists($filePath)) {

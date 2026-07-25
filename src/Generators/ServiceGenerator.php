@@ -33,6 +33,7 @@ class ServiceGenerator extends Generator
      */
     public function generate(): void
     {
+        $this->validateInputs([$this->name], [$this->name]);
         $this->validateServiceDoesNotExist();
         $this->createDirectories();
         $this->createProviders();
@@ -132,18 +133,12 @@ class ServiceGenerator extends Generator
      */
     protected function getServiceProviderContent(string $namespace): string
     {
-        $stubPath = __DIR__.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'service-provider.stub';
+        $stub = $this->loadStub($this->getStubPath('service-provider'));
 
-        if ($this->fileExists($stubPath)) {
-            $stub = $this->loadStub($stubPath);
-
-            return $this->replaceStubPlaceholders($stub, [
-                'namespace' => $namespace,
-                'name' => $this->name,
-            ]);
-        }
-
-        return $this->generateServiceProviderStub($namespace);
+        return $this->replaceStubPlaceholders($stub, [
+            'namespace' => $namespace,
+            'name' => $this->name,
+        ]);
     }
 
     /**
@@ -153,19 +148,13 @@ class ServiceGenerator extends Generator
      */
     protected function getRouteServiceProviderContent(string $namespace): string
     {
-        $stubPath = __DIR__.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'route-service-provider.stub';
+        $stub = $this->loadStub($this->getStubPath('route-service-provider'));
 
-        if ($this->fileExists($stubPath)) {
-            $stub = $this->loadStub($stubPath);
-
-            return $this->replaceStubPlaceholders($stub, [
-                'namespace' => $namespace,
-                'name' => $this->name,
-                'slug' => $this->slug,
-            ]);
-        }
-
-        return $this->generateRouteServiceProviderStub($namespace);
+        return $this->replaceStubPlaceholders($stub, [
+            'namespace' => $namespace,
+            'name' => $this->name,
+            'slug' => $this->slug,
+        ]);
     }
 
     /**
@@ -173,85 +162,11 @@ class ServiceGenerator extends Generator
      */
     protected function getRoutesContent(): string
     {
-        $stubPath = __DIR__.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'routes-api.stub';
+        $stub = $this->loadStub($this->getStubPath('routes-api'));
 
-        if ($this->fileExists($stubPath)) {
-            $stub = $this->loadStub($stubPath);
-
-            return $this->replaceStubPlaceholders($stub, [
-                'name' => $this->name,
-                'slug' => $this->slug,
-            ]);
-        }
-
-        return "<?php\n\nuse Illuminate\Support\Facades\Route;\n\n/*\n|--------------------------------------------------------------------------\n| {$this->name} Service Routes\n|--------------------------------------------------------------------------\n| Prefix: /api/{$this->slug}\n|\n*/\n";
-    }
-
-    /**
-     * Generate a default ServiceProvider stub.
-     */
-    protected function generateServiceProviderStub(string $namespace): string
-    {
-        return <<<PHP
-<?php
-
-namespace {$namespace}\\Providers;
-
-use Illuminate\\Support\\ServiceProvider;
-
-class {$this->name}ServiceProvider extends ServiceProvider
-{
-    /**
-     * Register services.
-     *
-     * @return void
-     */
-    public function register(): void
-    {
-        \$this->app->register(RouteServiceProvider::class);
-    }
-
-    /**
-     * Bootstrap services.
-     *
-     * @return void
-     */
-    public function boot(): void
-    {
-        //
-    }
-}
-PHP;
-    }
-
-    /**
-     * Generate a default RouteServiceProvider stub.
-     */
-    protected function generateRouteServiceProviderStub(string $namespace): string
-    {
-        return <<<PHP
-<?php
-
-namespace {$namespace}\\Providers;
-
-use Illuminate\\Support\\Facades\\Route;
-use Illuminate\\Support\\ServiceProvider;
-
-class RouteServiceProvider extends ServiceProvider
-{
-    /**
-     * Register services.
-     *
-     * @return void
-     */
-    public function register(): void
-    {
-        Route::prefix('api/{$this->slug}')
-            ->as('{$this->slug}.')
-            ->middleware('api')
-            ->group(__DIR__ . '/../Routes/api.php');
-    }
-}
-PHP;
+        return $this->replaceStubPlaceholders($stub, [
+            'name' => $this->name,
+            'slug' => $this->slug,
+        ]);
     }
 }

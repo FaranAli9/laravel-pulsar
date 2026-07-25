@@ -32,6 +32,7 @@ class EventGenerator extends Generator
      */
     public function generate(): string
     {
+        $this->validateInputs([$this->name], [$this->domain]);
         $this->createDomainDirectories();
 
         $filePath = $this->getEventPath();
@@ -51,10 +52,9 @@ class EventGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->getDomainPath();
+        $domainPath = $this->createDomainDirectory($this->domain);
         $eventsPath = $domainPath.DIRECTORY_SEPARATOR.'Events';
 
-        $this->createDirectory($domainPath);
         $this->createDirectory($eventsPath);
     }
 
