@@ -1,6 +1,9 @@
 # Pulsar Architecture Guide
 
-This project uses Pulsar's vertical slice architecture under `app/Pulsar`, with three layers: a Service Layer for HTTP delivery (scoped by consumer audience, e.g., Admin, Client), a Domain Layer for business logic and owned Contracts shared across services, and an Infrastructure Layer for concrete outbound adapters.
+This project uses Pulsar's vertical slice architecture under `app/Pulsar`, with three layers: a
+Service Layer for inbound HTTP, CLI, queue, and scheduler delivery (scoped by consumer audience,
+e.g., Admin, Client, Internal), a Domain Layer for business logic and owned Contracts shared
+across services, and an Infrastructure Layer for concrete outbound adapters.
 
 `app/Pulsar` is the explicit boundary for Pulsar-governed application code. Files inside it follow Pulsar's placement, dependency, and transaction rules; ordinary Laravel code outside it remains separate from the Pulsar architecture.
 
@@ -23,8 +26,11 @@ app/Pulsar/Services/{Service}/
 └── Modules/{Module}/
     ├── Controllers/    # HTTP handlers (thin)
     ├── Requests/       # Input validation
+    ├── Resources/      # HTTP response shaping
     ├── UseCases/       # Workflow orchestration
-    └── Operations/     # Reusable workflow fragments for UseCases
+    ├── Operations/     # Reusable workflow fragments for UseCases
+    ├── Jobs/           # Queue entrypoints (thin, idempotent)
+    └── Commands/       # CLI/scheduler entrypoints (thin)
 ```
 
 ### Domain Layer
@@ -36,12 +42,16 @@ app/Pulsar/Domain/{Domain}/
 ├── Contracts/      # Domain-owned capability ports
 ├── Models/         # Eloquent models
 ├── Actions/        # Atomic business operations
+├── Queries/        # Complex read operations
 ├── DTOs/           # Data transfer objects
+├── ValueObjects/    # Immutable validated domain primitives
 ├── Policies/       # Authorization
 ├── Events/         # Domain events
+├── Listeners/      # Synchronous or queued domain reactions
+├── Notifications/  # Domain outbound notifications
+├── Mail/           # Domain outbound mailables
 ├── Enums/          # Business states
-├── Exceptions/     # Business rule violations
-└── Queries/        # Complex read operations
+└── Exceptions/     # Business rule violations
 ```
 
 ### Infrastructure Layer
@@ -61,6 +71,9 @@ Typical areas are `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
 |-------|---------------|----------------|
 | **Controller** | Extract validated data, call UseCase, return response | Never contain business logic; never call Operations directly |
 | **Request** | Validate input structure, authorize | No business rule validation |
+| **Resource** | Shape Models, DTOs, and Value Objects for HTTP | Never place response shaping in Domain |
+| **Job** | Re-establish context, authorize, call one UseCase; retry idempotently | No models in payloads, transactions, or branching business logic |
+| **Command** | Validate CLI input, authorize, call one UseCase, return an exit code | No transactions or branching business logic |
 | **UseCase** | Orchestrate workflows, own transactions, emit events | Never coupled to HTTP Request objects |
 | **Action** | Atomic business operation, validate business rules | Don't call other UseCases |
 | **Operation** | Reusable workflow fragment across UseCases (conditional branching allowed) | No transactions, no event emission, never called by Controllers |
@@ -68,6 +81,9 @@ Typical areas are `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
 | **Model** | Data persistence, relationships | Keep thin, no business logic |
 | **Policy** | Authorize model abilities with `bool` results and an optional admin `before()` bypass | Default deny; never mutate or start transactions |
 | **Event** | Immutable, versioned fact dispatched after commit by default | UseCases emit only; never carry Eloquent models across queued/durable boundaries |
+| **Listener** | React with a side effect; queued variants may call one UseCase | Sync variants never call UseCases; queued variants are idempotent and loop-safe |
+| **Notification/Mailable** | Carry DTO/VO data for domain-owned outbound communication | No workflow orchestration or response shaping |
+| **Value Object** | Immutable domain primitive that validates on construction | Never permit an invalid instance |
 | **Contract** | Domain-owned port for a stable capability | No Services, concrete Infrastructure, helpers, or behavioral calls to workflow types |
 | **Adapter** | Implement a Domain Contract and translate vendor/framework errors | No Services, UseCases, Actions, Operations, or other domains' internals |
 
@@ -286,6 +302,11 @@ class GetLowStockProductsQuery
 Controllers → UseCases ✅
 Controllers → Operations ❌ (always call a UseCase)
 Controllers → Actions ❌ (use UseCase instead)
+Commands/Jobs → one UseCase ✅
+Commands/Jobs → Actions/Operations/transactions ❌
+Sync Listeners → Contract side effect/Notification/Job ✅
+Sync Listeners → UseCases ❌
+Queued Listeners → at most one UseCase ✅
 
 UseCases → Actions ✅
 UseCases → Operations ✅
@@ -324,6 +345,27 @@ Domain Layer → Service Layer ❌ (forbidden)
 Domain/Service Layer → Concrete Infrastructure ❌
 Service A → Service B ❌ (use events for cross-service communication)
 ```
+
+## Inbound Adapter Rule and Call Graphs
+
+Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
+context, and call exactly one UseCase (or one Query for a read-only endpoint). It owns no
+transaction and contains no branching business logic. Authorization must exist for non-HTTP
+entrypoints because Commands, Jobs, and Listeners have no Form Request.
+
+```text
+HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
+Artisan:   Console   → Command    → UseCase → ...
+Queue:     Worker    → Job        → UseCase → ...
+Scheduler: Schedule  → Command|Job → UseCase → ...
+Event:     UseCase   → Event → Listener → {Contract side effect | Notification/Job | (queued) UseCase}
+```
+
+Jobs carry IDs, scalars, DTOs, or Value Objects—never Eloquent models—and re-establish context
+from those identifiers. Queues are at-least-once, so Jobs and queued Listeners are idempotent.
+Synchronous Listeners may perform a side effect but never call a UseCase. Queued Listeners use
+`ShouldQueue` plus `ShouldQueueAfterCommit`, may call one UseCase, and guard against reentrant
+event loops.
 
 ## Contracts and Infrastructure
 
@@ -503,6 +545,11 @@ Events are immutable facts. They carry IDs, scalars, DTOs, or Value Objects, nev
 models across a queued or durable boundary. Events are created and dispatched by UseCases only;
 Actions and Operations never emit them.
 
+Synchronous Listeners perform side effects or read-only checks without calling a UseCase and
+must not assume durability. Queued Listeners implement `ShouldQueue` and
+`ShouldQueueAfterCommit`; they may enter one UseCase, but must be idempotent and must not
+re-dispatch the same event without a loop guard.
+
 Pulsar uses this four-tier rule:
 
 | Tier | Mechanism | Guarantee | Use when |
@@ -626,6 +673,11 @@ Actions can return:
 8. **Business state?** → Enum
 9. **Business rule violation?** → Exception
 10. **State change notification?** → Event
+11. **Queue or scheduler workflow entrypoint?** → Job or Command in an audience Service
+12. **Domain event reaction?** → Listener (queued only when it must enter a UseCase)
+13. **HTTP response shaping?** → Resource in the Service module
+14. **Domain communication?** → Notification or Mailable
+15. **Immutable validated primitive?** → Value Object
 
 ## Forbidden Patterns
 
@@ -633,7 +685,9 @@ Actions can return:
 - Controllers calling Operations directly
 - Actions calling other Actions or Queries
 - Operations calling other Operations or UseCases
-- Events emitted by UseCases only; Actions/Operations never emit
+- Events emitted outside UseCases; Actions/Operations never emit
+- Business logic, transactions, or multiple workflow calls in Jobs/Commands/Listeners
+- Eloquent models serialized into Jobs or queued Events/Listeners
 - Transactions inside Actions or Operations
 - UseCases calling other UseCases
 - Request objects leaking past Controllers
@@ -700,8 +754,11 @@ test('creates order via API', function () {
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
+| `make:resource` | `{name} {module} {service} [--collection]` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:job` | `{name} {module} {service}` |
+| `make:command` | `{name} {module} {service} [--signature={signature}]` |
 | `make:domain` | `{name}` |
 | `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
@@ -709,7 +766,11 @@ test('creates order via API', function () {
 | `make:dto` | `{name} {domain}` |
 | `make:policy` | `{name} {domain} [--model={model}]` |
 | `make:event` | `{name} {domain}` |
+| `make:listener` | `{name} {domain} [--event={event}] [--queued]` |
+| `make:notification` | `{name} {domain}` |
+| `make:mailable` | `{name} {domain}` |
 | `make:enum` | `{name} {domain}` |
+| `make:value-object` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
 | `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |

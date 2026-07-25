@@ -4,11 +4,15 @@ Guidance for Claude Code when working on the Pulsar package.
 
 ## What is Pulsar?
 
-Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture under `app/Pulsar`. It generates files for a Service Layer (HTTP delivery, scoped by consumer audience), a Domain Layer (shared business logic and Contracts), and an Infrastructure Layer (concrete outbound adapters).
+Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture under `app/Pulsar`. It generates files for a Service Layer (HTTP, CLI, queue, and scheduler delivery scoped by consumer audience), a Domain Layer (shared business logic and Contracts), and an Infrastructure Layer (concrete outbound adapters).
 
 ## Architecture Invariants
 
 - Controllers call UseCases only.
+- Every inbound adapter (HTTP, CLI, queue, scheduler, event) is thin: validate, authorize,
+  establish context, and call at most one UseCase (or one Query for a read).
+- Jobs and Commands live in audience-scoped Service modules; Listeners live in Domain.
+- Adapters own no transactions or branching business logic; UseCases own transactions.
 - Operations are called by UseCases only (never by Controllers).
 - Multiple UseCases may reuse the same Operation.
 - Operations are reusable workflow fragments; conditional branching is allowed.
@@ -38,6 +42,9 @@ vendor/bin/pest --parallel
 ./bin/pulsar make:service Admin
 ./bin/pulsar make:controller ProductController Products Admin
 ./bin/pulsar make:use-case CreateProduct Products Admin
+./bin/pulsar make:job ProcessOrder Orders Internal
+./bin/pulsar make:command ReconcileLedger Billing Internal --signature=billing:reconcile
+./bin/pulsar make:listener SendReceipt Billing --event=OrderPaid --queued
 ./bin/pulsar make:action CreateOrder Order
 ./bin/pulsar publish:context
 ./bin/pulsar publish:skill
@@ -51,8 +58,11 @@ vendor/bin/pest --parallel
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
+| `make:resource` | `{name} {module} {service} [--collection]` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:job` | `{name} {module} {service}` |
+| `make:command` | `{name} {module} {service} [--signature={signature}]` |
 | `make:domain` | `{name}` |
 | `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
@@ -60,13 +70,47 @@ vendor/bin/pest --parallel
 | `make:dto` | `{name} {domain}` |
 | `make:policy` | `{name} {domain} [--model={model}]` |
 | `make:event` | `{name} {domain}` |
+| `make:listener` | `{name} {domain} [--event={event}] [--queued]` |
+| `make:notification` | `{name} {domain}` |
+| `make:mailable` | `{name} {domain}` |
 | `make:enum` | `{name} {domain}` |
+| `make:value-object` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
 | `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |
 | `publish:context` | `[--force] [--path={path}]` |
 | `publish:skill` | `[--force] [--path={path}]` |
 | `ping` | — |
+
+## Generated Application Structure
+
+```text
+app/Pulsar/
+├── Services/{Service}/Modules/{Module}/
+│   ├── Controllers/
+│   ├── Requests/
+│   ├── Resources/
+│   ├── UseCases/
+│   ├── Operations/
+│   ├── Jobs/
+│   └── Commands/
+├── Domain/{Domain}/
+│   ├── Contracts/
+│   ├── Models/
+│   ├── Actions/
+│   ├── Queries/
+│   ├── DTOs/
+│   ├── ValueObjects/
+│   ├── Enums/
+│   ├── Events/
+│   ├── Listeners/
+│   ├── Notifications/
+│   ├── Mail/
+│   ├── Policies/
+│   └── Exceptions/
+└── Infrastructure/{Area}/
+    └── {Adapter}.php
+```
 
 ## Codebase Structure
 
