@@ -4,5 +4,5 @@ namespace Faran\Pulsar;
 
 final class Pulsar
 {
-    public const string VERSION = '0.2.1';
+    public const string VERSION = '0.3.0';
 }

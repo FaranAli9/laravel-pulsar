@@ -12,6 +12,7 @@ It defines the **architectural contract**, not a tutorial.
 ## Table of Contents
 
 - [Installation & wiring](#installation--wiring)
+- [Upgrading](#upgrading)
 - [Architecture Overview](#architecture-overview)
 - [Architecture Rules](#architecture-rules)
 - [File Types](#file-types)
@@ -51,6 +52,14 @@ Then generate your first service:
 ```bash
 pulsar make:service Admin
 ```
+
+---
+
+## Upgrading
+
+Upgrading an existing application to v0.3.0 requires an Operation method rename and may require
+new application wiring. Follow the ordered migration and codemod recipes in
+[UPGRADING.md](UPGRADING.md). Release details are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

@@ -105,7 +105,7 @@ real Illuminate classes now that Testbench is a development dependency. The guar
 - queued Job dispatch plus repeat handling (the at-least-once reality);
 - rollback suppression and after-commit dispatch for `ShouldDispatchAfterCommit`.
 
-The same six tests run locally on Laravel 12/Testbench 10 and Laravel 13/Testbench 11.
+The same six tests run against Laravel 12/Testbench 10 and Laravel 13/Testbench 11.
 
 ## Static analysis
 
@@ -128,10 +128,10 @@ vendor/bin/phpstan analyse --no-progress
 vendor/bin/pest --configuration=phpunit.xml.dist --testsuite=Pulsar --coverage --min=85
 ```
 
-The distinct integration job pins Testbench 10 for Laravel 12 on PHP 8.3/8.4 and Testbench 11
-for Laravel 13 on PHP 8.3/8.4/8.5. It runs only the `Integration` testsuite, keeping framework
-compatibility separate from the unit coverage matrix. The committed `phpunit.xml.dist` defines
-both suites explicitly.
+The distinct integration job pins Testbench 10 for Laravel 12 and Testbench 11 for Laravel 13.
+Both Laravel majors run on PHP 8.3, 8.4, and 8.5. The job runs only the `Integration` testsuite,
+keeping framework compatibility separate from the unit coverage matrix. The committed
+`phpunit.xml.dist` defines both suites explicitly.
 
 ## Adding or changing generators
 
