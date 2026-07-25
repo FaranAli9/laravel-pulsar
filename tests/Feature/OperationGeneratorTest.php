@@ -49,7 +49,7 @@ describe('Operation Generator', function () {
                 ->not->toContain('{{');
 
             expect('App\Pulsar\Services\TestService\Modules\Checkout\Operations\CreateOrder')
-                ->toHaveMethod('handle');
+                ->toHaveMethod('execute');
         });
 
         it('namespace is correct', function () {

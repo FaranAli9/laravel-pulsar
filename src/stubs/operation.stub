@@ -4,7 +4,7 @@ namespace {{namespace}};
 
 class {{name}}
 {
-    public function handle()
+    public function execute()
     {
         //
     }

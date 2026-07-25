@@ -17,12 +17,18 @@ class PolicyGenerator extends Generator
     protected string $domain;
 
     /**
+     * The optional domain model protected by the policy.
+     */
+    protected ?string $model;
+
+    /**
      * Create a new PolicyGenerator instance.
      */
-    public function __construct(string $name, string $domain)
+    public function __construct(string $name, string $domain, ?string $model = null)
     {
         $this->name = $name;
         $this->domain = $domain;
+        $this->model = $model;
     }
 
     /**
@@ -32,7 +38,13 @@ class PolicyGenerator extends Generator
      */
     public function generate(): string
     {
-        $this->validateInputs([$this->name], [$this->domain]);
+        $names = [$this->name];
+
+        if ($this->model !== null) {
+            $names[] = $this->model;
+        }
+
+        $this->validateInputs($names, [$this->domain]);
         $this->createDomainDirectories();
 
         $filePath = $this->getPolicyPath();
@@ -80,12 +92,18 @@ class PolicyGenerator extends Generator
     protected function getPolicyContent(): string
     {
         $namespace = $this->findDomainNamespace($this->domain).'\\Policies';
-        $stubPath = $this->getStubPath('policy');
+        $stubPath = $this->getStubPath($this->model === null ? 'policy' : 'policy-model');
         $stub = $this->loadStub($stubPath);
-
-        return $this->replaceStubPlaceholders($stub, [
+        $replacements = [
             'namespace' => $namespace,
             'name' => $this->name,
-        ]);
+        ];
+
+        if ($this->model !== null) {
+            $replacements['model'] = $this->model;
+            $replacements['modelFqcn'] = $this->findDomainNamespace($this->domain).'\\Models\\'.$this->model;
+        }
+
+        return $this->replaceStubPlaceholders($stub, $replacements);
     }
 }

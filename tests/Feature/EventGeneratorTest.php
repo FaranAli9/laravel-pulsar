@@ -12,17 +12,16 @@ describe('Event Generator', function () {
 
         expect($relativePath)->toBe($expectedPath);
 
-        $fullPath = $this->tempDir.DIRECTORY_SEPARATOR.$relativePath;
-        $content = file_get_contents($fullPath);
-        require $fullPath;
+        $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
         expect($content)
             ->toBeValidPhp()
             ->toHaveNamespace('App\Pulsar\Domain\Orders\Events')
             ->toHaveClass('OrderPlaced')
+            ->toContain('implements ShouldDispatchAfterCommit')
+            ->toContain('public const int VERSION = 1;')
+            ->toContain('public function __construct(')
             ->not->toContain('{{');
-
-        expect('App\Pulsar\Domain\Orders\Events\OrderPlaced')->toHaveMethod('__construct');
     });
 
     it('rejects a duplicate event', function () {

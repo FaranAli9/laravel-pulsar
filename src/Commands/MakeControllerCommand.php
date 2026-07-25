@@ -26,7 +26,7 @@ class MakeControllerCommand extends PulsarCommand
         $resource = $this->option('resource');
 
         try {
-            $generator = new ControllerGenerator($name, $service, $module, $resource);
+            $generator = new ControllerGenerator($name, $module, $service, $resource);
             $filePath = $generator->generate();
 
             $this->line();

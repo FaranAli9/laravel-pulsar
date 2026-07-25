@@ -159,7 +159,7 @@ it('returns a failure exit code and error output from each Make command', functi
     'make:use-case failure' => [MakeUseCaseCommand::class, ['name' => 'CreateOrder', 'module' => 'Orders', 'service' => 'Admin']],
 ]);
 
-it('maps Controller arguments from name module service to name service module', function () {
+it('keeps Controller command and generator arguments in name module service order', function () {
     $tester = new CommandTester(new MakeControllerCommand);
     $exitCode = $tester->execute([
         'name' => 'InvoiceController',
@@ -177,6 +177,28 @@ it('maps Controller arguments from name module service to name service module', 
         ->and($content)
         ->toHaveNamespace('App\Pulsar\Services\Admin\Modules\Billing\Controllers')
         ->not->toContain('Services\Billing\Modules\Admin');
+});
+
+it('passes the policy model option through to a model-aware stub', function () {
+    $tester = new CommandTester(new MakePolicyCommand);
+    $exitCode = $tester->execute([
+        'name' => 'UserPolicy',
+        'domain' => 'Accounts',
+        '--model' => 'User',
+    ]);
+    $relativePath = implode(DIRECTORY_SEPARATOR, [
+        'app', 'Pulsar', 'Domain', 'Accounts', 'Policies', 'UserPolicy.php',
+    ]);
+    $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($content)
+        ->toBeValidPhp()
+        ->toContain('use App\Pulsar\Domain\Accounts\Models\User;')
+        ->toContain('public function view(AuthUser $user, User $model): bool')
+        ->toContain('public function create(AuthUser $user): bool')
+        ->toContain('public function update(AuthUser $user, User $model): bool')
+        ->toContain('public function delete(AuthUser $user, User $model): bool');
 });
 
 it('rejects reserved, invalid, and traversal class names before writing through every Make command', function (
