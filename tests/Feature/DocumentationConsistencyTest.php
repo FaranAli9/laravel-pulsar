@@ -3,7 +3,10 @@
 describe('Documentation consistency', function () {
     $expectedCommands = [
         'make:action',
+        'make:adapter',
+        'make:contract',
         'make:controller',
+        'make:domain',
         'make:dto',
         'make:enum',
         'make:event',

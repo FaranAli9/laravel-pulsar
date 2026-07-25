@@ -4,7 +4,7 @@ Guidance for Claude Code when working on the Pulsar package.
 
 ## What is Pulsar?
 
-Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture under `app/Pulsar`. It generates files for a Service Layer (HTTP delivery, scoped by consumer audience) and a Domain Layer (shared business logic).
+Pulsar is a Laravel code generation tool that scaffolds service-oriented applications with vertical slice architecture under `app/Pulsar`. It generates files for a Service Layer (HTTP delivery, scoped by consumer audience), a Domain Layer (shared business logic and Contracts), and an Infrastructure Layer (concrete outbound adapters).
 
 ## Architecture Invariants
 
@@ -53,6 +53,8 @@ vendor/bin/pest --parallel
 | `make:request` | `{name} {module} {service}` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:domain` | `{name}` |
+| `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
 | `make:action` | `{name} {domain}` |
 | `make:dto` | `{name} {domain}` |
@@ -61,6 +63,7 @@ vendor/bin/pest --parallel
 | `make:enum` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
+| `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |
 | `publish:context` | `[--force] [--path={path}]` |
 | `publish:skill` | `[--force] [--path={path}]` |
 | `ping` | — |
@@ -116,8 +119,10 @@ protected function findPulsarRootPath(): string
 protected function findPulsarRootNamespace(): string
 protected function findServicesRootPath(): string
 protected function findDomainRootPath(): string
+protected function findInfrastructureRootPath(): string
 protected function findServiceNamespace(string $service): string
 protected function findDomainNamespace(string $domain): string
+protected function findInfrastructureNamespace(string $area): string
 protected function findLaravelRoot(): string
 protected function serviceExists(string $service): bool
 ```

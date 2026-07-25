@@ -1,6 +1,6 @@
 ---
 name: pulsar
-description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, use cases, actions, operations, queries, models, DTOs, events, enums, exceptions, or policies.
+description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, use cases, actions, operations, queries, models, DTOs, events, enums, exceptions, policies, contracts, domains, or infrastructure adapters.
 license: MIT
 metadata:
     author: faran
@@ -19,12 +19,16 @@ Violations are architectural errors.
 
 ## Mental Model
 
-Two layers exist:
+Three layers exist:
 
 Service Layer: `app/Pulsar/Services/`
 Domain Layer: `app/Pulsar/Domain/`
+Infrastructure Layer: `app/Pulsar/Infrastructure/`
 
 `app/Pulsar` is the architecture boundary. Code inside this directory follows Pulsar placement, dependency, and transaction rules.
+A type belongs inside when it calls, is called by, or implements a Pulsar type. Framework-owned
+bootstrap and configuration—migrations, factories, seeders, `bootstrap/app.php`, `config/`, and
+`routes/`—stay in stock Laravel paths.
 
 There is no `app/Http/Controllers`.
 There is no `app/Models`.
@@ -32,6 +36,7 @@ There is no `app/Models`.
 Services are delivery boundaries scoped to a consumer audience (Admin, Client, Internal).
 A Service is NOT a microservice, bounded context, or deployment unit.
 Domain is Laravel-aware business logic shared across services and independent of delivery concerns.
+Infrastructure contains concrete outbound adapters that implement Domain Contracts.
 
 ---
 
@@ -54,6 +59,7 @@ Domain Layer:
 
 ```
 app/Pulsar/Domain/{Domain}/
+  Contracts/
   Models/
   Actions/
   DTOs/
@@ -62,6 +68,13 @@ app/Pulsar/Domain/{Domain}/
   Enums/
   Exceptions/
   Queries/
+```
+
+Infrastructure Layer:
+
+```
+app/Pulsar/Infrastructure/{Area}/
+  {Adapter}.php
 ```
 
 ---
@@ -92,6 +105,13 @@ Domain Layer:
 | Enum      | `{Entity}{Concept}`       | `OrderStatus`                |
 | Exception | `{Descriptive}Exception`  | `InsufficientStockException` |
 | Policy    | `{Entity}Policy`          | `OrderPolicy`                |
+| Contract  | `{Capability}`            | `PaymentGateway`, `Clock`    |
+
+Infrastructure Layer:
+
+| Type    | Pattern                     | Example                        |
+| ------- | --------------------------- | ------------------------------ |
+| Adapter | `{Vendor}{Capability}`      | `StripePaymentGateway`         |
 
 ---
 
@@ -121,6 +141,14 @@ Domain Layer:
 
 **Policy** — `--model` generates `view`, `create`, `update`, and `delete` methods typed to the domain model. Methods return `bool` and default deny. `before()` may return `true` for an admin bypass or `null` to defer.
 
+**Contract** — Domain-owned port for a stable capability. Use capability names without
+`Contract` or `Interface` suffixes. Signatures may reference passive Domain types but never call
+workflow types or import Services/concrete Infrastructure.
+
+**Adapter** — Infrastructure implementation of a Domain Contract. Translate vendor/framework
+errors into Domain exceptions at this boundary. Never import Services, UseCases, Actions, or
+Operations.
+
 Generated policies assume the authenticatable is `App\Models\User`. If your application uses a different user model, update the generated import.
 
 ---
@@ -131,10 +159,11 @@ Allowed:
 
 ```
 Controller -> UseCase
-UseCase    -> Action, Operation, Query, Event (emit)
-Operation  -> Action, Query, Model
-Action     -> Model
+UseCase    -> Action, Operation, Query, Event (emit), Contract
+Operation  -> Action, Query, Model, Contract
+Action     -> Model, Contract
 Query      -> Model
+Infrastructure -> Domain Contract, DTO, Enum, Value Object, Domain Exception
 ```
 
 Forbidden:
@@ -148,8 +177,96 @@ Query      -> Query or Action
 Operation  -> Operation or UseCase
 Domain     -> Service (any direction)
 Service A  -> Service B
+Domain/Service -> Concrete Infrastructure
+Infrastructure -> Service, UseCase, Action, Operation, other domains' internals
 Events emitted by UseCases only; Actions/Operations never emit
 ```
+
+---
+
+## Contracts and Infrastructure
+
+Contracts live at `app/Pulsar/Domain/{Domain}/Contracts/{Name}.php`. The consumer owns the port:
+Billing defines `PaymentGateway` when Billing needs payment behavior; a concrete adapter lives at
+`app/Pulsar/Infrastructure/Payments/StripePaymentGateway.php`.
+
+Distinguish passive types from behavioral calls:
+
+- A Contract signature may passively reference DTOs, Enums, Value Objects, Models, Events, other
+  Contracts, and Laravel contracts.
+- A Contract never behaviorally invokes a UseCase, Action, or Operation.
+- A Contract never imports Services or concrete Infrastructure.
+
+What does NOT belong in `Contracts/`: DTOs, Value Objects, Enums, traits, helper classes,
+concrete implementations, framework aliases, or interface-per-class wrappers around pure Domain
+logic. A capability earns a Contract when it has a real alternate implementation, test fake, or
+varying strategy.
+
+Bind implementations in `PulsarServiceProvider::register()`:
+
+```php
+$this->app->bind(
+    \App\Pulsar\Domain\Billing\Contracts\PaymentGateway::class,
+    \App\Pulsar\Infrastructure\Payments\StripePaymentGateway::class,
+);
+```
+
+Stateless adapters may use `singleton()`. Request- or tenant-state adapters use `scoped()` and
+resolve context through closures, never constructor capture. Retryable side effects must be
+idempotent.
+
+### Event-name Contract via per-domain backed Enum
+
+```php
+// Domain/Shared/Contracts/DomainEventName.php
+interface DomainEventName
+{
+    public function eventName(): string;
+}
+
+// Domain/Orders/Enums/OrderEventName.php
+enum OrderEventName: string implements DomainEventName
+{
+    case Placed = 'orders.order_placed'; // Persisted/protocol identifier: immutable.
+    case Cancelled = 'orders.order_cancelled';
+
+    public function eventName(): string
+    {
+        return $this->value;
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Placed => 'Order placed',
+            self::Cancelled => 'Order cancelled',
+        };
+    }
+}
+```
+
+Do not accept arbitrary `BackedEnum` and do not create a cross-domain god enum. Backed values are
+stable machine identifiers; human labels belong in `label()` and may change. Event payload schema
+versioning belongs on the Event class as `public const int VERSION = 1`.
+
+### Magic-string Policy
+
+| Category | Recommendation | Why |
+|----------|----------------|-----|
+| Persisted business states | Per-domain string-backed Enum | Closed, domain-owned, type-safe set |
+| Persisted event names | Per-domain backed Enum implementing an event-name Contract | Stable machine identifier without a god enum |
+| Event categories | Enum | Closed set |
+| Authorization abilities | Per-domain string-backed Enum, passed to Gate as `->value` | No free-floating ability strings |
+| Queue connections and queue names | Config keys, referenced by constants | Operational and environment-varying |
+| Event listener names | Class names | Laravel registration is class-based |
+| Artisan command signatures | String on the command class | Framework-required, single source |
+| Configuration keys | Config files; typed accessor for hot paths | Laravel convention |
+| Route names | Namespaced string such as `{service}.*` | Framework string API |
+| External protocol identifiers | Immutable constant or backed Enum | Protocol stability |
+
+Closed sets use Enums; open/environment-varying sets use config. Convert Enums at framework
+boundaries with `->value`, never use human labels as machine identifiers, and never casually
+rename persisted/protocol values.
 
 ---
 
@@ -338,6 +455,8 @@ Use Pulsar CLI to generate files to ensure correct namespace and location.
 | `make:request` | `{name} {module} {service}` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:domain` | `{name}` |
+| `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
 | `make:action` | `{name} {domain}` |
 | `make:dto` | `{name} {domain}` |
@@ -346,6 +465,7 @@ Use Pulsar CLI to generate files to ensure correct namespace and location.
 | `make:enum` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
+| `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |
 | `publish:context` | `[--force] [--path={path}]` |
 | `publish:skill` | `[--force] [--path={path}]` |
 | `ping` | — |

@@ -18,8 +18,11 @@ if (!class_exists('Symfony\Component\Console\Application')) {
 }
 
 use Faran\Pulsar\Commands\MakeActionCommand;
+use Faran\Pulsar\Commands\MakeAdapterCommand;
+use Faran\Pulsar\Commands\MakeContractCommand;
 use Faran\Pulsar\Commands\MakeControllerCommand;
 use Faran\Pulsar\Commands\MakeDtoCommand;
+use Faran\Pulsar\Commands\MakeDomainCommand;
 use Faran\Pulsar\Commands\MakeEnumCommand;
 use Faran\Pulsar\Commands\MakeEventCommand;
 use Faran\Pulsar\Commands\MakeExceptionCommand;
@@ -49,6 +52,8 @@ $app->addCommand(new MakeUseCaseCommand());
 $app->addCommand(new MakeOperationCommand());
 
 // Domain layer commands
+$app->addCommand(new MakeDomainCommand());
+$app->addCommand(new MakeContractCommand());
 $app->addCommand(new MakeModelCommand());
 $app->addCommand(new MakeActionCommand());
 $app->addCommand(new MakeDtoCommand());
@@ -57,6 +62,9 @@ $app->addCommand(new MakeEventCommand());
 $app->addCommand(new MakeEnumCommand());
 $app->addCommand(new MakeExceptionCommand());
 $app->addCommand(new MakeQueryCommand());
+
+// Infrastructure layer commands
+$app->addCommand(new MakeAdapterCommand());
 
 // Publishing commands
 $app->addCommand(new PublishContextCommand());

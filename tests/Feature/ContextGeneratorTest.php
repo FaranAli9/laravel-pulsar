@@ -38,6 +38,9 @@ describe('Context Generator', function () {
             expect($content)
                 ->toContain('Service Layer')
                 ->toContain('Domain Layer')
+                ->toContain('Infrastructure Layer')
+                ->toContain('Contracts and Infrastructure')
+                ->toContain('Magic-string Policy')
                 ->toContain('Layer Responsibilities')
                 ->toContain('Dependency Rules')
                 ->toContain('Transaction Boundaries');
