@@ -11,7 +11,7 @@ It defines the **architectural contract**, not a tutorial.
 
 ## Table of Contents
 
-- [Installation](#installation)
+- [Installation & wiring](#installation--wiring)
 - [Architecture Overview](#architecture-overview)
 - [Architecture Rules](#architecture-rules)
 - [File Types](#file-types)
@@ -21,15 +21,32 @@ It defines the **architectural contract**, not a tutorial.
 
 ---
 
-## Installation
+## Installation & wiring
 
 Pulsar requires PHP 8.3 or newer.
 
 ```bash
 composer require faran/pulsar --dev
+pulsar install
 ```
 
-Generate your first service:
+`pulsar install` generates `app/Providers/PulsarServiceProvider.php`, registers it in
+`bootstrap/providers.php`, and re-establishes the Laravel conventions that move outside their
+stock paths under `app/Pulsar`: policy resolution, event-listener discovery, and Artisan command
+discovery. Command-directory globs are expanded before being passed to Laravel because
+`withCommands()` accepts concrete directories and classes.
+
+The installer is idempotent. It backs up `bootstrap/app.php` before writing, `--dry-run` prints
+the complete diff without changing files, and `--force` restores the generated provider without
+duplicating existing wiring. If a customized `Application::configure()` chain cannot be parsed
+safely, Pulsar changes nothing and prints the two manual wiring calls.
+
+The generated provider is the single place for Contract-to-adapter bindings, contextual
+audience bindings, request/tenant-scoped services, non-resource gates, global authorization
+hooks, and optional observers. Once wired, Laravel's `event:cache` and `optimize` commands remain
+compatible with the explicit discovery paths and provider registration.
+
+Then generate your first service:
 
 ```bash
 pulsar make:service Admin
@@ -250,6 +267,20 @@ into Domain exceptions at that boundary. Bind each Contract to its adapter in
 `PulsarServiceProvider::register()`. Use `scoped()` instead of `singleton()` when an adapter
 holds request- or tenant-lifetime state, and make retryable side effects idempotent.
 
+### Optional Architecture Preset
+
+Pulsar ships a recommended, opt-in Pest architecture test. It keeps Domain independent of
+Services, Infrastructure outside workflows and delivery, and Controllers limited to delivery
+DTOs plus UseCases:
+
+```bash
+mkdir -p tests/Arch
+cp vendor/faran/pulsar/presets/PulsarArchitectureTest.php tests/Arch/PulsarArchitectureTest.php
+```
+
+The preset is not installed automatically and is not required when an application already
+enforces equivalent dependency rules.
+
 ---
 
 ### Anti-Patterns
@@ -324,6 +355,7 @@ Flexibility is traded for consistency — deliberately.
 
 | Command | Arguments and options |
 |---------|-----------------------|
+| `install` | `[--dry-run] [--force]` |
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |

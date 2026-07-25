@@ -39,6 +39,7 @@ vendor/bin/pest --filter=validateName
 vendor/bin/pest --parallel
 
 # Execute Pulsar commands (from package directory)
+./bin/pulsar install
 ./bin/pulsar make:service Admin
 ./bin/pulsar make:controller ProductController Products Admin
 ./bin/pulsar make:use-case CreateProduct Products Admin
@@ -55,6 +56,7 @@ vendor/bin/pest --parallel
 
 | Command | Arguments and options |
 |---------|-----------------------|
+| `install` | `[--dry-run] [--force]` |
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |

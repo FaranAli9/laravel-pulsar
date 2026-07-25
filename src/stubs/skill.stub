@@ -40,6 +40,24 @@ Infrastructure contains concrete outbound adapters that implement Domain Contrac
 
 ---
 
+## Installation & Wiring
+
+Run `pulsar install` after adding Pulsar to a Laravel application. It generates and registers
+`PulsarServiceProvider`, then re-establishes policy, event-listener, and Artisan command
+discovery for `App\Pulsar`. Listener globs are native to event discovery; the installer expands
+the command glob to concrete directories for `withCommands()`.
+
+The operation is idempotent. `--dry-run` prints the diff without writing, every
+`bootstrap/app.php` write has a `.pulsar.bak` backup, `--force` re-applies the provider without
+duplicating wiring, and an unrecognized bootstrap shape fails closed with manual instructions.
+The explicit wiring remains compatible with `event:cache` and `optimize`.
+
+For opt-in executable dependency checks, copy
+`vendor/faran/pulsar/presets/PulsarArchitectureTest.php` into `tests/Arch/`. The preset is
+recommended, never required.
+
+---
+
 ## File Structure
 
 Service Layer:
@@ -511,6 +529,7 @@ Use Pulsar CLI to generate files to ensure correct namespace and location.
 
 | Command | Arguments and options |
 |---------|-----------------------|
+| `install` | `[--dry-run] [--force]` |
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |

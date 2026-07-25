@@ -11,6 +11,28 @@ A type belongs inside `app/Pulsar` when it calls, is called by, or implements a 
 Pure framework bootstrap and configuration that Laravel owns by convention—migrations,
 factories, seeders, `bootstrap/app.php`, `config/`, and `routes/`—stay in stock Laravel paths.
 
+## Installation & Wiring
+
+Run `pulsar install` once after requiring Pulsar. It generates and registers
+`app/Providers/PulsarServiceProvider.php`, then safely patches the Laravel
+`Application::configure()` chain for listener and command discovery. Laravel discovers listener
+globs directly; Pulsar expands the command-directory glob to concrete directories before calling
+`withCommands()`.
+
+Installation is idempotent. `--dry-run` prints a diff and writes nothing, `--force` restores the
+generated provider without duplicating wiring, and every `bootstrap/app.php` write first creates
+a non-destructive `.pulsar.bak` backup. An unexpected customized bootstrap shape is never
+modified; the command prints manual instructions instead.
+
+The provider centralizes Contract bindings, contextual audience bindings, `scoped()` request or
+tenant services, policy-name guessing, gates, admin hooks, and optional observers. The explicit
+paths and provider registration remain compatible with `php artisan event:cache` and
+`php artisan optimize`.
+
+The optional Pest preset can be copied from
+`vendor/faran/pulsar/presets/PulsarArchitectureTest.php` when the application wants executable
+dependency checks. It is recommended, not required.
+
 ## Directory Structure
 
 ### Service Layer
@@ -751,6 +773,7 @@ test('creates order via API', function () {
 
 | Command | Arguments and options |
 |---------|-----------------------|
+| `install` | `[--dry-run] [--force]` |
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |

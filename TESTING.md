@@ -1,35 +1,31 @@
 # Testing Pulsar
 
-Pulsar tests generated files in isolated mock Laravel project directories. The package test
-suite checks filesystem placement, namespaces, declarations, public methods, CLI argument
-wiring, command output, exit codes, and PHP syntax without requiring Laravel as a package
-dependency.
+Pulsar's unit/feature tier tests generated files in isolated mock Laravel project directories.
+It checks filesystem placement, namespaces, declarations, public methods, CLI argument wiring,
+command output, exit codes, PHP syntax, and safe bootstrap patching. A separate
+Orchestra Testbench tier boots a real Laravel fixture through its generated
+`bootstrap/app.php`.
 
 ## Current measured state
 
-The latest local run on July 24, 2026 produced:
+The latest local run on July 25, 2026 produced:
 
 ```text
-Tests:    304 passed (538 assertions)
-Coverage: 91.5%
+Unit/feature: 514 passed (1,554 assertions)
+Integration:  6 passed (18 assertions) on each Laravel major
+Coverage:     95.2%
 ```
 
-The measured line-coverage figure is **91.5%**. The enforced minimum remains **85%**.
+The measured line-coverage figure is **95.2%**. The enforced minimum remains **85%**.
 
-All 15 existing generators have dedicated feature coverage:
-
-- Service layer: Service, Controller, Request, UseCase, Operation
-- Domain layer: Model, Action, Dto, Policy, Event, Enum, Exception, Query
-- Publishing: Context, Skill
-
-Every one of the 13 `Make*Command` classes is exercised through Symfony's `CommandTester`.
-Those tests assert successful and failed exit codes, output, generated paths, and the
-Controller `name/module/service` to `name/service/module` constructor mapping.
+Every generator has dedicated feature coverage. Every `Make*Command` is exercised through
+Symfony's `CommandTester`; `InstallCommand` additionally covers dry-run and safe manual fallback.
+Those tests assert successful and failed exit codes, output, generated paths, input validation,
+and option/argument mapping.
 
 Generated PHP is checked with the `toBeValidPhp`, `toHaveNamespace`, and `toHaveClass`
-expectations. Tests now use Pest's reflection-based `toHaveMethod` expectation to lock current
-generated method names, including `Operation::handle()` and
-`Action::execute()` / `Query::execute()` / `UseCase::execute()`.
+expectations. Reflection-based assertions lock compatible generated method names, including
+`Operation::execute()` and `Action::execute()` / `Query::execute()` / `UseCase::execute()`.
 
 ## Running the checks
 
@@ -49,6 +45,12 @@ Run the coverage gate:
 
 ```bash
 composer test:coverage
+```
+
+Run the real-Laravel tier:
+
+```bash
+composer test:integration
 ```
 
 Run static analysis and style checks:
@@ -89,8 +91,21 @@ afterward. Tests must not share generated files or depend on execution order. Bu
 `DIRECTORY_SEPARATOR` so the suite remains portable.
 
 Feature tests use real filesystem operations. Generated framework classes are loaded against
-test-only stand-ins where reflection is needed; this does not claim real Laravel runtime
-integration.
+real Illuminate classes now that Testbench is a development dependency. The guarded aliases in
+`tests/Pest.php` remain only as a fallback when those classes are unavailable.
+
+## Real Laravel integration
+
+`tests/Integration/fixture` is a minimal Laravel application with an installed
+`PulsarServiceProvider` and patched bootstrap chain. Testbench boots that file and proves:
+
+- policy resolution through `Gate::guessPolicyNamesUsing`;
+- listener and command discovery from the Pulsar paths;
+- regular, contextual, and scoped container bindings;
+- queued Job dispatch plus repeat handling (the at-least-once reality);
+- rollback suppression and after-commit dispatch for `ShouldDispatchAfterCommit`.
+
+The same six tests run locally on Laravel 12/Testbench 10 and Laravel 13/Testbench 11.
 
 ## Static analysis
 
@@ -100,24 +115,23 @@ generator array parameters. New findings fail the build.
 
 ## Continuous integration
 
-The real workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). It runs on pushes
-to `main` and on pull requests with PHP 8.3, 8.4, and 8.5. The lockfile is resolved against
-PHP 8.3, so every job installs the same dependencies supported by Pulsar's minimum runtime.
-Every matrix job installs PCOV and runs:
+The real workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Its unit/feature
+job runs on PHP 8.3, 8.4, and 8.5. The lockfile is resolved against PHP 8.3, so every job
+installs dependencies supported by Pulsar's minimum runtime. Every unit matrix job installs
+PCOV and runs:
 
 ```bash
 php bin/pulsar --version
 php bin/pulsar ping
 vendor/bin/pint --test
 vendor/bin/phpstan analyse --no-progress
-vendor/bin/pest --configuration=phpunit.xml.dist --coverage --min=85
+vendor/bin/pest --configuration=phpunit.xml.dist --testsuite=Pulsar --coverage --min=85
 ```
 
-The committed `phpunit.xml.dist` keeps local and hosted Pest runs on the same explicit
-configuration.
-
-The Laravel 12/13 Testbench integration matrix is intentionally not present; it belongs to
-PRD 6.
+The distinct integration job pins Testbench 10 for Laravel 12 on PHP 8.3/8.4 and Testbench 11
+for Laravel 13 on PHP 8.3/8.4/8.5. It runs only the `Integration` testsuite, keeping framework
+compatibility separate from the unit coverage matrix. The committed `phpunit.xml.dist` defines
+both suites explicitly.
 
 ## Adding or changing generators
 
