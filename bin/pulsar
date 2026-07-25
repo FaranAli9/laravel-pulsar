@@ -33,9 +33,10 @@ use Faran\Pulsar\Commands\MakeUseCaseCommand;
 use Faran\Pulsar\Commands\PingCommand;
 use Faran\Pulsar\Commands\PublishContextCommand;
 use Faran\Pulsar\Commands\PublishSkillCommand;
+use Faran\Pulsar\Pulsar;
 use Symfony\Component\Console\Application;
 
-$app = new Application('Pulsar', '0.2.1');
+$app = new Application('Pulsar', Pulsar::VERSION);
 
 // Utility commands
 $app->addCommand(new PingCommand());
