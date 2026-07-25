@@ -1,0 +1,9 @@
+{
+    "name": "faran/pulsar-integration-fixture",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

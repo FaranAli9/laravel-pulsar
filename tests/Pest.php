@@ -1,6 +1,7 @@
 <?php
 
 use Tests\Helpers\FrameworkClass;
+use Tests\Integration\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -200,3 +201,5 @@ uses()->beforeEach(function () {
         deleteDirectory($this->tempDir);
     }
 })->in('Feature', 'Unit');
+
+uses(TestCase::class)->in('Integration');
