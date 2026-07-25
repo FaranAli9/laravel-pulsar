@@ -40,10 +40,13 @@ $controllerDependencies = array_merge(
     $namespaceDirectories('Pulsar/Services/*/Modules/*/Requests'),
     $namespaceDirectories('Pulsar/Services/*/Modules/*/Resources'),
     $namespaceDirectories('Pulsar/Services/*/Modules/*/UseCases'),
+    $namespaceDirectories('Pulsar/Domain/*/DTOs'),
+    $namespaceDirectories('Pulsar/Domain/*/ValueObjects'),
+    $namespaceDirectories('Pulsar/Domain/*/Enums'),
 );
 
 if ($controllers !== []) {
-    arch('Pulsar Controllers depend only on delivery DTOs and UseCases')
+    arch('Pulsar Controllers depend only on Domain DTOs and UseCases')
         ->expect($controllers)
         ->toOnlyUse($controllerDependencies)
         ->ignoring('Illuminate');

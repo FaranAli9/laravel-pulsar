@@ -334,7 +334,7 @@ UseCases → Actions ✅
 UseCases → Operations ✅
 UseCases → Queries ✅
 UseCases → Contracts ✅
-UseCases → Other UseCases ❌ (extract shared logic to Action)
+UseCases → Other UseCases ❌ (extract shared logic to an Operation)
 
 Actions → Models ✅ (atomic - single operation)
 Actions → Contracts ✅

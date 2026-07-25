@@ -279,7 +279,7 @@ holds request- or tenant-lifetime state, and make retryable side effects idempot
 ### Optional Architecture Preset
 
 Pulsar ships a recommended, opt-in Pest architecture test. It keeps Domain independent of
-Services, Infrastructure outside workflows and delivery, and Controllers limited to delivery
+Services, Infrastructure outside workflows and delivery, and Controllers limited to Domain
 DTOs plus UseCases:
 
 ```bash
