@@ -9,7 +9,6 @@ namespace {{namespace}};
  */
 class {{name}}
 {
-    
     public function execute()
     {
         //

@@ -680,7 +680,7 @@ Actions can return:
 - **Domain objects**: `CreateOrderAction` → `Order`
 - **Collections**: `BulkUpdateProductsAction` → `Collection<Product>`
 - **Booleans**: `ActivateAccountAction` → `bool`
-- **Void**: Operations often return void
+- **Void**: `RecordAuditAction` → `void`
 - **Primitives**: `CalculateTaxAction` → `float`
 
 ### When to Use What

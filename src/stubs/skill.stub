@@ -1,6 +1,6 @@
 ---
 name: pulsar
-description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, use cases, actions, operations, queries, models, DTOs, events, enums, exceptions, policies, contracts, domains, or infrastructure adapters.
+description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, API resources, use cases, operations, jobs, console commands, models, actions, queries, DTOs, value objects, enums, exceptions, events, listeners, notifications, mailables, policies, contracts, infrastructure adapters, or domains.
 license: MIT
 metadata:
     author: faran
@@ -190,10 +190,11 @@ instances cannot exist; provide a named constructor and value equality.
 
 **Exception** — Extends `Exception`. Descriptive name communicating the business rule violated.
 
-**Policy** — `--model` generates `view`, `create`, `update`, and `delete` methods typed to the domain model. Methods return `bool` and default deny. `before()` may return `true` for an admin bypass or `null` to defer.
+**Policy** — Without `--model`, generates only the `before()` hook. With `--model`, adds `view`, `create`, `update`, and `delete` methods typed to the domain model. Methods return `bool` and default deny. `before()` may return `true` for an admin bypass or `null` to defer.
 
 **Contract** — Domain-owned port for a stable capability. Use capability names without
-`Contract` or `Interface` suffixes. Signatures may reference passive Domain types but never call
+`Contract` or `Interface` suffixes (the generator strips a trailing one if you include it).
+Signatures may reference passive Domain types but never call
 workflow types or import Services/concrete Infrastructure.
 
 **Adapter** — Infrastructure implementation of a Domain Contract. Translate vendor/framework

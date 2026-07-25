@@ -1,6 +1,6 @@
 # Testing Pulsar
 
-Pulsar's unit/feature tier tests generated files in isolated mock Laravel project directories.
+Pulsar's unit/feature tier exercises generated files in isolated mock Laravel project directories.
 It checks filesystem placement, namespaces, declarations, public methods, CLI argument wiring,
 command output, exit codes, PHP syntax, and safe bootstrap patching. A separate
 Orchestra Testbench tier boots a real Laravel fixture through its generated
@@ -91,8 +91,8 @@ afterward. Tests must not share generated files or depend on execution order. Bu
 `DIRECTORY_SEPARATOR` so the suite remains portable.
 
 Feature tests use real filesystem operations. Generated framework classes are loaded against
-real Illuminate classes now that Testbench is a development dependency. The guarded aliases in
-`tests/Pest.php` remain only as a fallback when those classes are unavailable.
+real Illuminate classes because Testbench is a development dependency. The guarded aliases in
+`tests/Pest.php` act as a fallback when those classes are unavailable.
 
 ## Real Laravel integration
 

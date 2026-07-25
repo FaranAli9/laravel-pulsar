@@ -103,12 +103,12 @@ app/Pulsar/
 │   ├── Queries/
 │   ├── DTOs/
 │   ├── ValueObjects/
-│   ├── Enums/
+│   ├── Policies/
 │   ├── Events/
 │   ├── Listeners/
 │   ├── Notifications/
 │   ├── Mail/
-│   ├── Policies/
+│   ├── Enums/
 │   └── Exceptions/
 └── Infrastructure/{Area}/
     └── {Adapter}.php

@@ -57,9 +57,9 @@ pulsar make:service Admin
 
 ## Upgrading
 
-Upgrading an existing application to v0.3.0 requires an Operation method rename and may require
-new application wiring. Follow the ordered migration and codemod recipes in
-[UPGRADING.md](UPGRADING.md). Release details are recorded in [CHANGELOG.md](CHANGELOG.md).
+Upgrading an existing application to v0.3.0 may require code and wiring changes. Follow the
+ordered migration and codemod recipes in [UPGRADING.md](UPGRADING.md). Release details are
+recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -297,8 +297,10 @@ enforces equivalent dependency rules.
 - Fat Controllers containing business logic
 - Controllers calling Operations directly
 - Actions calling other Actions
+- Actions calling Queries (the UseCase or Operation passes in the data)
 - Events emitted outside UseCases; Actions and Operations never emit events
 - Transactions inside Actions or Operations
+- Operations calling other Operations
 - UseCases calling other UseCases
 
 If you feel tempted to do any of the above, the architecture is being violated.
@@ -396,7 +398,7 @@ Flexibility is traded for consistency — deliberately.
 
 ## Complete Example
 
-See project documentation for a full end-to-end example covering Domain and Service layers.
+Run `pulsar publish:context` to generate `PULSAR.md` — a complete annotated reference with end-to-end examples across the Domain and Service layers.
 
 ---
 

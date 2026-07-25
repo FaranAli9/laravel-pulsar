@@ -5,6 +5,11 @@
  *
  * Copy this file to tests/Arch/PulsarArchitectureTest.php in the consuming Laravel app.
  * Pest's architecture plugin is required.
+ *
+ * These rules enforce a subset of Pulsar's dependency direction: Domain never imports Services,
+ * Infrastructure stays out of workflows and delivery, and Controllers depend only on Domain DTOs
+ * and UseCases. The remaining rules (UseCases never call UseCases, Operations never own
+ * transactions or call Operations, events emitted only by UseCases) are upheld by convention.
  */
 $namespaceDirectories = static function (string $pattern): array {
     $directories = glob(app_path($pattern), GLOB_ONLYDIR) ?: [];
