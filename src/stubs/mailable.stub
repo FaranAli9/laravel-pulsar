@@ -1,0 +1,41 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailable;
+
+class {{name}} extends Mailable
+{
+    use Queueable;
+
+    public function __construct(
+        public readonly string $message,
+    ) {
+        // Carry DTOs or Value Objects when the mailable needs structured domain data.
+    }
+
+    public function envelope(): Envelope
+    {
+        return new Envelope(
+            subject: '{{name}}',
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            view: '{{view}}',
+        );
+    }
+
+    /**
+     * @return list<mixed>
+     */
+    public function attachments(): array
+    {
+        return [];
+    }
+}

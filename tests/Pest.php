@@ -89,6 +89,11 @@ foreach ([
     'Illuminate\Foundation\Http\FormRequest',
     'Illuminate\Routing\Controller',
     'Illuminate\Support\ServiceProvider',
+    'Illuminate\Notifications\Notification',
+    'Illuminate\Mail\Mailable',
+    'Illuminate\Http\Resources\Json\JsonResource',
+    'Illuminate\Http\Resources\Json\ResourceCollection',
+    'Illuminate\Console\Command',
 ] as $frameworkClass) {
     if (! class_exists($frameworkClass)) {
         class_alias(FrameworkClass::class, $frameworkClass);
