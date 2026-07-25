@@ -1,0 +1,19 @@
+<?php
+
+namespace {{namespace}};
+
+{{eventImport}}
+use Illuminate\Support\Facades\Gate;
+
+class {{name}}
+{
+    public function handle({{event}} $event): void
+    {
+        // Authorize this non-HTTP entrypoint when the reaction is actor-sensitive.
+        // Replace this framework string with the owning domain's backed Ability enum value.
+        Gate::authorize('replace-with-domain-ability', $event);
+
+        // Synchronous listeners may perform side effects or read-only invariant checks.
+        // Never call a UseCase, start a transaction, or assume this reaction is durable.
+    }
+}

@@ -1,0 +1,51 @@
+<?php
+
+namespace {{namespace}};
+
+use {{useCaseNamespace}}\{{useCase}};
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Gate;
+use Throwable;
+
+class {{name}} implements ShouldQueue
+{
+    use Queueable;
+
+    public int $tries = 3;
+
+    public int $timeout = 120;
+
+    public function __construct(
+        public readonly string $actorId,
+        public readonly string $tenantId,
+        public readonly string $idempotencyKey,
+    ) {
+        // Carry only IDs, scalars, DTOs, or Value Objects. Never Eloquent models.
+        // Do not add SerializesModels: a worker must receive explicit identity or snapshot data.
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function backoff(): array
+    {
+        return [10, 30, 60];
+    }
+
+    public function handle({{useCase}} $useCase): void
+    {
+        // Re-establish actor and tenant context from the carried identifiers before authorizing.
+        // Replace this framework string with the owning domain's backed Ability enum value.
+        Gate::authorize('replace-with-domain-ability', $this->actorId);
+
+        // Queues are at-least-once: make this workflow idempotent on $idempotencyKey.
+        // The UseCase owns the transaction; this Job must contain no branching business logic.
+        $useCase->execute($this->tenantId, $this->idempotencyKey);
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        // Report terminal failure without starting a replacement workflow here.
+    }
+}

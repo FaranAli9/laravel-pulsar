@@ -1,0 +1,43 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class {{name}} extends Notification
+{
+    use Queueable;
+
+    public function __construct(
+        public readonly string $message,
+    ) {
+        // Carry DTOs or Value Objects when the notification needs structured domain data.
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('{{name}}')
+            ->line($this->message);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'message' => $this->message,
+        ];
+    }
+}

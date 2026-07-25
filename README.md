@@ -53,9 +53,11 @@ A type belongs inside `app/Pulsar` when it calls, is called by, or implements an
 
 ### Service Layer
 
-**Purpose:** HTTP delivery and application orchestration, scoped by consumer audience (Admin, Client, Internal).
+**Purpose:** Inbound delivery and application orchestration, scoped by consumer audience (Admin, Client, Internal).
 
-Services live in `app/Pulsar/Services` because they are part of the Pulsar delivery layer. This keeps audience-specific HTTP entrypoints, routing, requests, use cases, and reusable operations together without mixing them into Laravel's default application folders.
+Services live in `app/Pulsar/Services` because they are part of the Pulsar delivery layer. This
+keeps audience-specific HTTP, CLI, queue, and scheduler entrypoints with their use cases and
+reusable operations. Machine-driven entrypoints normally belong to an `Internal` service.
 
 ```
 app/Pulsar/Services/{Service}/
@@ -67,8 +69,11 @@ app/Pulsar/Services/{Service}/
 └── Modules/{Module}/
     ├── Controllers/
     ├── Requests/
+    ├── Resources/
     ├── UseCases/
-    └── Operations/
+    ├── Operations/
+    ├── Jobs/
+    └── Commands/
 ```
 
 **A Service is:**
@@ -99,12 +104,16 @@ app/Pulsar/Domain/{Domain}/
 ├── Contracts/
 ├── Models/
 ├── Actions/
+├── Queries/
 ├── DTOs/
+├── ValueObjects/
 ├── Policies/
 ├── Events/
+├── Listeners/
+├── Notifications/
+├── Mail/
 ├── Enums/
-├── Exceptions/
-└── Queries/
+└── Exceptions/
 ```
 
 The Domain layer is **Laravel-first**:
@@ -155,16 +164,32 @@ The consumer owns the port: when Billing needs a payment capability, Billing def
 | **UseCase** | Application workflow                      |
 | **Operation** | Reusable workflow fragment for UseCases |
 | **Action**  | Atomic domain operation                   |
+| **Job** | Queued workflow entrypoint in a Service module |
+| **Command** | CLI/scheduler workflow entrypoint in a Service module |
+| **Listener** | Domain reaction; queued listeners may enter one UseCase |
 | **Contract** | Domain-owned capability boundary         |
 | **Adapter** | Infrastructure implementation of a Contract |
 
 ---
 
-### Service Layer Call Graph
+### Inbound Adapter Rule and Call Graphs
 
-Controllers call **UseCases** only.
-Only **UseCases** call Operations.
-Multiple UseCases may call the same Operation.
+Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
+context, and call exactly one UseCase (or one Query for a read-only endpoint). It owns no
+transaction and contains no branching business logic. Jobs carry IDs, DTOs, or Value Objects,
+never Eloquent models, and retryable handlers are idempotent.
+
+```text
+HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
+Artisan:   Console   → Command    → UseCase → ...
+Queue:     Worker    → Job        → UseCase → ...
+Scheduler: Schedule  → Command|Job → UseCase → ...
+Event:     UseCase   → Event → Listener → {Contract side effect | Notification/Job | (queued) UseCase}
+```
+
+Synchronous Listeners never call a UseCase. A queued Listener implements `ShouldQueue` and
+`ShouldQueueAfterCommit`, may call one UseCase, and must be idempotent with a reentrancy guard.
+Only UseCases call Operations; multiple UseCases may reuse an Operation.
 
 ---
 
@@ -185,6 +210,17 @@ Cross-domain coordination belongs in **UseCases**, never in Actions.
 **UseCases own all transaction boundaries.**
 
 Actions and Operations must never manage transactions.
+
+### Event Delivery Guarantees
+
+UseCases create and dispatch immutable domain events. The four tiers are deliberately distinct:
+
+| Tier | Mechanism | Guarantee | Use when |
+|------|-----------|-----------|----------|
+| 1. Sync in-process | Plain `event()` | Immediate; fires before commit if dispatched inside a transaction | Pure in-memory reactions only |
+| 2. After-commit | Event implements `ShouldDispatchAfterCommit` | Discarded on rollback; can be lost if the process crashes after commit | Default for domain events |
+| 3. Queued after-commit | Listener uses `ShouldQueue` + `ShouldQueueAfterCommit`, or Job uses `afterCommit()` | Worker delivery is at-least-once; idempotency required; enqueue is not atomic with the write | External calls, expensive reactions, cross-aggregate work |
+| 4. Outbox/inbox | Outbox row written in the business transaction and relayed | Durable across crashes; inbox/idempotency provides effectively-once effects | Integration events needing guaranteed external delivery |
 
 ### Generated Method Conventions
 
@@ -252,8 +288,11 @@ Flexibility is traded for consistency — deliberately.
 | Service    | Bootstrap a delivery boundary |
 | Controller | HTTP handling only            |
 | Request    | Validation and authorization  |
+| Resource   | HTTP response shaping from Models, DTOs, and Value Objects |
 | UseCase    | Workflow orchestration        |
 | Operation  | Reusable workflow fragment across UseCases (branching allowed; no transactions/events) |
+| Job        | Idempotent queued adapter that calls one UseCase |
+| Command    | Authorized CLI/scheduler adapter that calls one UseCase |
 
 ### Domain Layer
 
@@ -264,7 +303,11 @@ Flexibility is traded for consistency — deliberately.
 | DTO       | Data transfer             |
 | Policy    | Model-aware authorization with default-deny methods |
 | Event     | Immutable, versioned domain fact dispatched after commit by default |
+| Listener  | Synchronous side effect or queued, idempotent workflow reaction |
+| Notification | Domain outbound notification carrying DTO/VO data |
+| Mailable  | Domain outbound mail representation carrying DTO/VO data |
 | Enum      | Domain state              |
+| Value Object | Immutable validated domain primitive |
 | Exception | Business rule violation   |
 | Query     | Read-only domain query    |
 | Contract  | Domain-owned port for a stable capability |
@@ -284,8 +327,11 @@ Flexibility is traded for consistency — deliberately.
 | `make:service` | `{name}` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
+| `make:resource` | `{name} {module} {service} [--collection]` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:job` | `{name} {module} {service}` |
+| `make:command` | `{name} {module} {service} [--signature={signature}]` |
 | `make:domain` | `{name}` |
 | `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
@@ -293,7 +339,11 @@ Flexibility is traded for consistency — deliberately.
 | `make:dto` | `{name} {domain}` |
 | `make:policy` | `{name} {domain} [--model={model}]` |
 | `make:event` | `{name} {domain}` |
+| `make:listener` | `{name} {domain} [--event={event}] [--queued]` |
+| `make:notification` | `{name} {domain}` |
+| `make:mailable` | `{name} {domain}` |
 | `make:enum` | `{name} {domain}` |
+| `make:value-object` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
 | `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |

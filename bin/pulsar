@@ -19,6 +19,7 @@ if (!class_exists('Symfony\Component\Console\Application')) {
 
 use Faran\Pulsar\Commands\MakeActionCommand;
 use Faran\Pulsar\Commands\MakeAdapterCommand;
+use Faran\Pulsar\Commands\MakeCommandCommand;
 use Faran\Pulsar\Commands\MakeContractCommand;
 use Faran\Pulsar\Commands\MakeControllerCommand;
 use Faran\Pulsar\Commands\MakeDtoCommand;
@@ -26,13 +27,19 @@ use Faran\Pulsar\Commands\MakeDomainCommand;
 use Faran\Pulsar\Commands\MakeEnumCommand;
 use Faran\Pulsar\Commands\MakeEventCommand;
 use Faran\Pulsar\Commands\MakeExceptionCommand;
+use Faran\Pulsar\Commands\MakeJobCommand;
+use Faran\Pulsar\Commands\MakeListenerCommand;
+use Faran\Pulsar\Commands\MakeMailableCommand;
 use Faran\Pulsar\Commands\MakeModelCommand;
+use Faran\Pulsar\Commands\MakeNotificationCommand;
 use Faran\Pulsar\Commands\MakeOperationCommand;
 use Faran\Pulsar\Commands\MakePolicyCommand;
 use Faran\Pulsar\Commands\MakeQueryCommand;
 use Faran\Pulsar\Commands\MakeRequestCommand;
+use Faran\Pulsar\Commands\MakeResourceCommand;
 use Faran\Pulsar\Commands\MakeServiceCommand;
 use Faran\Pulsar\Commands\MakeUseCaseCommand;
+use Faran\Pulsar\Commands\MakeValueObjectCommand;
 use Faran\Pulsar\Commands\PingCommand;
 use Faran\Pulsar\Commands\PublishContextCommand;
 use Faran\Pulsar\Commands\PublishSkillCommand;
@@ -48,8 +55,11 @@ $app->addCommand(new PingCommand());
 $app->addCommand(new MakeServiceCommand());
 $app->addCommand(new MakeControllerCommand());
 $app->addCommand(new MakeRequestCommand());
+$app->addCommand(new MakeResourceCommand());
 $app->addCommand(new MakeUseCaseCommand());
 $app->addCommand(new MakeOperationCommand());
+$app->addCommand(new MakeJobCommand());
+$app->addCommand(new MakeCommandCommand());
 
 // Domain layer commands
 $app->addCommand(new MakeDomainCommand());
@@ -59,7 +69,11 @@ $app->addCommand(new MakeActionCommand());
 $app->addCommand(new MakeDtoCommand());
 $app->addCommand(new MakePolicyCommand());
 $app->addCommand(new MakeEventCommand());
+$app->addCommand(new MakeListenerCommand());
+$app->addCommand(new MakeNotificationCommand());
+$app->addCommand(new MakeMailableCommand());
 $app->addCommand(new MakeEnumCommand());
+$app->addCommand(new MakeValueObjectCommand());
 $app->addCommand(new MakeExceptionCommand());
 $app->addCommand(new MakeQueryCommand());
 

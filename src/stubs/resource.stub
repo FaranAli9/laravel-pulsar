@@ -1,0 +1,20 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class {{name}} extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        // Shape Models, DTOs, and Value Objects here. Never shape HTTP responses in Domain.
+        return [
+            //
+        ];
+    }
+}

@@ -1,0 +1,27 @@
+<?php
+
+namespace {{namespace}};
+
+{{eventImport}}
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Gate;
+
+class {{name}} implements ShouldQueue, ShouldQueueAfterCommit
+{
+    use Queueable;
+
+    public int $tries = 3;
+
+    public function handle({{event}} $event): void
+    {
+        // Carry immutable IDs, scalars, DTOs, or Value Objects in events. Never Eloquent models.
+        // Re-establish actor/tenant context, then authorize with the owning domain's Ability enum.
+        Gate::authorize('replace-with-domain-ability', $event);
+
+        // Queued delivery is at-least-once: make every side effect or UseCase call idempotent.
+        // Guard against re-dispatching the same event and causing a reentrant listener loop.
+        // This listener may resolve and call exactly one UseCase; that UseCase owns transactions.
+    }
+}

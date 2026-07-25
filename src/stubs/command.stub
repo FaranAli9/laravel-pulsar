@@ -1,0 +1,26 @@
+<?php
+
+namespace {{namespace}};
+
+use {{useCaseNamespace}}\{{useCase}};
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Gate;
+
+class {{name}} extends Command
+{
+    protected $signature = {{signature}};
+
+    protected $description = 'Run the {{name}} workflow';
+
+    public function handle({{useCase}} $useCase): int
+    {
+        // Validate CLI input and establish actor/tenant context before this point.
+        // Replace this framework string with the owning domain's backed Ability enum value.
+        Gate::authorize('replace-with-domain-ability');
+
+        // Call exactly one UseCase. The UseCase owns the transaction and business branching.
+        $useCase->execute();
+
+        return self::SUCCESS;
+    }
+}
