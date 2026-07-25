@@ -3,16 +3,16 @@
 namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulsar\Generators\EventGenerator;
+use Faran\Pulsar\Generators\DomainGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 
 #[AsCommand(
-    name: 'make:event',
-    description: 'Create a new domain event class',
+    name: 'make:domain',
+    description: 'Create a new domain',
 )]
-class MakeEventCommand extends PulsarCommand
+class MakeDomainCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
@@ -20,14 +20,13 @@ class MakeEventCommand extends PulsarCommand
     public function handle(): int
     {
         $name = $this->argument('name');
-        $domain = $this->argument('domain');
 
         try {
-            $generator = new EventGenerator($name, $domain);
+            $generator = new DomainGenerator($name);
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success('Event created successfully');
+            $this->success('Domain created successfully');
             $this->line();
             $this->info("Location: {$filePath}");
             $this->line();
@@ -47,7 +46,6 @@ class MakeEventCommand extends PulsarCommand
      */
     protected function configure(): void
     {
-        $this->addArgument('name', InputArgument::REQUIRED, 'The name of the event');
-        $this->addArgument('domain', InputArgument::REQUIRED, 'The name of the domain');
+        $this->addArgument('name', InputArgument::REQUIRED, 'The name of the domain');
     }
 }

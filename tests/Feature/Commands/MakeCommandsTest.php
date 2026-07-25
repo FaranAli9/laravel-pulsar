@@ -1,7 +1,10 @@
 <?php
 
 use Faran\Pulsar\Commands\MakeActionCommand;
+use Faran\Pulsar\Commands\MakeAdapterCommand;
+use Faran\Pulsar\Commands\MakeContractCommand;
 use Faran\Pulsar\Commands\MakeControllerCommand;
+use Faran\Pulsar\Commands\MakeDomainCommand;
 use Faran\Pulsar\Commands\MakeDtoCommand;
 use Faran\Pulsar\Commands\MakeEnumCommand;
 use Faran\Pulsar\Commands\MakeEventCommand;
@@ -18,12 +21,18 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 beforeEach(function () {
     createService($this->tempDir, 'Admin');
+    createDomain($this->tempDir, 'Orders');
+    createDomain($this->tempDir, 'Accounts');
+    createDomain($this->tempDir, 'Billing');
 });
 
 dataset('make command validation cases', [
     'make:action' => [MakeActionCommand::class, ['name' => 'CreateOrder', 'domain' => 'Orders']],
+    'make:adapter' => [MakeAdapterCommand::class, ['name' => 'StripePaymentGateway', 'area' => 'Payments']],
+    'make:contract' => [MakeContractCommand::class, ['name' => 'PaymentGateway', 'domain' => 'Billing']],
     'make:controller' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin']],
     'make:dto' => [MakeDtoCommand::class, ['name' => 'OrderData', 'domain' => 'Orders']],
+    'make:domain' => [MakeDomainCommand::class, ['name' => 'Catalog']],
     'make:enum' => [MakeEnumCommand::class, ['name' => 'OrderStatus', 'domain' => 'Orders']],
     'make:event' => [MakeEventCommand::class, ['name' => 'OrderPlaced', 'domain' => 'Orders']],
     'make:exception' => [MakeExceptionCommand::class, ['name' => 'OrderNotFound', 'domain' => 'Orders']],
@@ -57,6 +66,23 @@ it('runs each Make command successfully with the documented output and exit code
         'Action created successfully',
         ['app', 'Pulsar', 'Domain', 'Orders', 'Actions', 'CreateOrder.php'],
     ],
+    'make:adapter' => [
+        MakeAdapterCommand::class,
+        [
+            'name' => 'StripePaymentGateway',
+            'area' => 'Payments',
+            '--contract' => 'PaymentGateway',
+            '--domain' => 'Billing',
+        ],
+        'Adapter created successfully',
+        ['app', 'Pulsar', 'Infrastructure', 'Payments', 'StripePaymentGateway.php'],
+    ],
+    'make:contract' => [
+        MakeContractCommand::class,
+        ['name' => 'PaymentGateway', 'domain' => 'Billing'],
+        'Contract created successfully',
+        ['app', 'Pulsar', 'Domain', 'Billing', 'Contracts', 'PaymentGateway.php'],
+    ],
     'make:controller' => [
         MakeControllerCommand::class,
         ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin'],
@@ -68,6 +94,12 @@ it('runs each Make command successfully with the documented output and exit code
         ['name' => 'OrderData', 'domain' => 'Orders'],
         'DTO created successfully',
         ['app', 'Pulsar', 'Domain', 'Orders', 'DTOs', 'OrderData.php'],
+    ],
+    'make:domain' => [
+        MakeDomainCommand::class,
+        ['name' => 'Catalog'],
+        'Domain created successfully',
+        ['app', 'Pulsar', 'Domain', 'Catalog', '.gitkeep'],
     ],
     'make:enum' => [
         MakeEnumCommand::class,
@@ -145,8 +177,11 @@ it('returns a failure exit code and error output from each Make command', functi
         ->and($duplicateRun->getDisplay())->toContain('already exists');
 })->with([
     'make:action failure' => [MakeActionCommand::class, ['name' => 'CreateOrder', 'domain' => 'Orders']],
+    'make:adapter failure' => [MakeAdapterCommand::class, ['name' => 'StripePaymentGateway', 'area' => 'Payments']],
+    'make:contract failure' => [MakeContractCommand::class, ['name' => 'PaymentGateway', 'domain' => 'Billing']],
     'make:controller failure' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin']],
     'make:dto failure' => [MakeDtoCommand::class, ['name' => 'OrderData', 'domain' => 'Orders']],
+    'make:domain failure' => [MakeDomainCommand::class, ['name' => 'Catalog']],
     'make:enum failure' => [MakeEnumCommand::class, ['name' => 'OrderStatus', 'domain' => 'Orders']],
     'make:event failure' => [MakeEventCommand::class, ['name' => 'OrderPlaced', 'domain' => 'Orders']],
     'make:exception failure' => [MakeExceptionCommand::class, ['name' => 'OrderNotFound', 'domain' => 'Orders']],
@@ -266,6 +301,18 @@ it('rejects invalid and traversing path segments before writing through applicab
     }
 })->with([
     'make:action domain' => [MakeActionCommand::class, ['name' => 'CreateOrder', 'domain' => 'Orders'], 'domain'],
+    'make:adapter area' => [MakeAdapterCommand::class, ['name' => 'StripePaymentGateway', 'area' => 'Payments'], 'area'],
+    'make:adapter domain' => [
+        MakeAdapterCommand::class,
+        [
+            'name' => 'StripePaymentGateway',
+            'area' => 'Payments',
+            '--contract' => 'PaymentGateway',
+            '--domain' => 'Billing',
+        ],
+        '--domain',
+    ],
+    'make:contract domain' => [MakeContractCommand::class, ['name' => 'PaymentGateway', 'domain' => 'Billing'], 'domain'],
     'make:controller service' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin'], 'service'],
     'make:controller module' => [MakeControllerCommand::class, ['name' => 'OrderController', 'module' => 'Orders', 'service' => 'Admin'], 'module'],
     'make:dto domain' => [MakeDtoCommand::class, ['name' => 'OrderData', 'domain' => 'Orders'], 'domain'],
@@ -284,12 +331,47 @@ it('rejects invalid and traversing path segments before writing through applicab
     'make:use-case module' => [MakeUseCaseCommand::class, ['name' => 'CreateOrder', 'module' => 'Orders', 'service' => 'Admin'], 'module'],
 ]);
 
-it('warns only when a domain is created for the first time', function () {
-    $first = new CommandTester(new MakeActionCommand);
-    $second = new CommandTester(new MakeDtoCommand);
+it('prints the adapter binding line and normalizes contract suffixes through the CLI', function () {
+    $contract = new CommandTester(new MakeContractCommand);
+    $adapter = new CommandTester(new MakeAdapterCommand);
 
-    expect($first->execute(['name' => 'CreateOrder', 'domain' => 'Orders']))->toBe(Command::SUCCESS)
-        ->and($first->getDisplay())->toContain('Domain [Orders] did not exist and was created.')
-        ->and($second->execute(['name' => 'OrderData', 'domain' => 'Orders']))->toBe(Command::SUCCESS)
-        ->and($second->getDisplay())->not->toContain('did not exist and was created.');
+    expect($contract->execute([
+        'name' => 'ClockContract',
+        'domain' => 'Billing',
+    ]))->toBe(Command::SUCCESS)
+        ->and($contract->getDisplay())->toContain(
+            implode(DIRECTORY_SEPARATOR, [
+                'app', 'Pulsar', 'Domain', 'Billing', 'Contracts', 'Clock.php',
+            ]),
+        )
+        ->and($adapter->execute([
+            'name' => 'SystemClock',
+            'area' => 'Time',
+            '--contract' => 'Clock',
+            '--domain' => 'Billing',
+        ]))->toBe(Command::SUCCESS)
+        ->and($adapter->getDisplay())
+        ->toContain('$this->app->bind(Clock::class, SystemClock::class);');
 });
+
+it('hard-fails domain type commands when their domain does not exist', function (
+    string $commandClass,
+    array $arguments,
+) {
+    $tester = new CommandTester(new $commandClass);
+
+    expect($tester->execute($arguments))->toBe(Command::FAILURE)
+        ->and($tester->getDisplay())->toContain('Domain [Missing] does not exist')
+        ->and(is_dir($this->tempDir.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'
+            .DIRECTORY_SEPARATOR.'Domain'.DIRECTORY_SEPARATOR.'Missing'))->toBeFalse();
+})->with([
+    'make:action missing domain' => [MakeActionCommand::class, ['name' => 'CreateOrder', 'domain' => 'Missing']],
+    'make:contract missing domain' => [MakeContractCommand::class, ['name' => 'PaymentGateway', 'domain' => 'Missing']],
+    'make:dto missing domain' => [MakeDtoCommand::class, ['name' => 'OrderData', 'domain' => 'Missing']],
+    'make:enum missing domain' => [MakeEnumCommand::class, ['name' => 'OrderStatus', 'domain' => 'Missing']],
+    'make:event missing domain' => [MakeEventCommand::class, ['name' => 'OrderPlaced', 'domain' => 'Missing']],
+    'make:exception missing domain' => [MakeExceptionCommand::class, ['name' => 'OrderNotFound', 'domain' => 'Missing']],
+    'make:model missing domain' => [MakeModelCommand::class, ['name' => 'Order', 'domain' => 'Missing']],
+    'make:policy missing domain' => [MakePolicyCommand::class, ['name' => 'OrderPolicy', 'domain' => 'Missing']],
+    'make:query missing domain' => [MakeQueryCommand::class, ['name' => 'FindOrder', 'domain' => 'Missing']],
+]);

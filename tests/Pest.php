@@ -129,6 +129,21 @@ PHP;
     );
 }
 
+function createDomain(string $root, string $name): void
+{
+    $path = $root.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Domain'.DIRECTORY_SEPARATOR.$name;
+
+    if (! is_dir($path)) {
+        mkdir($path, 0755, true);
+    }
+
+    $gitkeep = $path.DIRECTORY_SEPARATOR.'.gitkeep';
+
+    if (! file_exists($gitkeep)) {
+        file_put_contents($gitkeep, '');
+    }
+}
+
 function deleteDirectory(string $dir): void
 {
     if (! is_dir($dir)) {

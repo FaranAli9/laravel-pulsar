@@ -33,6 +33,7 @@ class ModelGenerator extends Generator
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
+        $this->validateDomainExists($this->domain);
         $this->createDomainDirectories();
 
         $filePath = $this->getModelPath();
@@ -52,7 +53,7 @@ class ModelGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->createDomainDirectory($this->domain);
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
         $modelsPath = $domainPath.DIRECTORY_SEPARATOR.'Models';
 
         $this->createDirectory($modelsPath);

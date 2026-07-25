@@ -2,6 +2,7 @@
 
 namespace Faran\Pulsar\Generators;
 
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
 use Faran\Pulsar\Exceptions\InvalidNameException;
 use Faran\Pulsar\Exceptions\StubNotFoundException;
 use Faran\Pulsar\Traits\Finder;
@@ -14,11 +15,6 @@ use Faran\Pulsar\Traits\Finder;
 abstract class Generator
 {
     use Finder;
-
-    /**
-     * Whether this generator created a new domain directory.
-     */
-    protected bool $domainCreated = false;
 
     /**
      * Create a directory if it doesn't exist.
@@ -187,25 +183,15 @@ abstract class Generator
     }
 
     /**
-     * Create a domain directory and remember whether it was newly created.
+     * Validate that a domain exists before generating one of its types.
+     *
+     * @throws DomainDoesNotExistException
      */
-    protected function createDomainDirectory(string $domain): string
+    protected function validateDomainExists(string $domain): void
     {
-        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$domain;
-
-        $this->domainCreated = ! $this->domainExists($domain);
-
-        $this->createDirectory($domainPath);
-
-        return $domainPath;
-    }
-
-    /**
-     * Determine whether this generator created a new domain directory.
-     */
-    public function didCreateDomain(): bool
-    {
-        return $this->domainCreated;
+        if (! $this->domainExists($domain)) {
+            throw DomainDoesNotExistException::make($domain);
+        }
     }
 
     /**

@@ -33,6 +33,7 @@ class ExceptionGenerator extends Generator
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
+        $this->validateDomainExists($this->domain);
         $this->createDomainDirectories();
 
         $filePath = $this->getExceptionPath();
@@ -52,7 +53,7 @@ class ExceptionGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->createDomainDirectory($this->domain);
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
         $exceptionsPath = $domainPath.DIRECTORY_SEPARATOR.'Exceptions';
 
         $this->createDirectory($exceptionsPath);

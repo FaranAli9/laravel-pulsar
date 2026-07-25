@@ -2,7 +2,6 @@
 
 namespace Faran\Pulsar\Commands;
 
-use Faran\Pulsar\Generators\Generator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -83,24 +82,6 @@ abstract class PulsarCommand extends Command
     protected function error(string $message): void
     {
         $this->output->writeln("<error>✗ {$message}</error>");
-    }
-
-    /**
-     * Write a string as warning output.
-     */
-    protected function warning(string $message): void
-    {
-        $this->output->writeln("<comment>⚠ {$message}</comment>");
-    }
-
-    /**
-     * Warn when generation created a previously missing domain.
-     */
-    protected function warnIfDomainCreated(Generator $generator, string $domain): void
-    {
-        if ($generator->didCreateDomain()) {
-            $this->warning("Domain [{$domain}] did not exist and was created.");
-        }
     }
 
     /**

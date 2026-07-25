@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\DtoGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('DTO Generator', function () {
     it('generates the current DTO contract', function () {
         $generator = new DtoGenerator('OrderData', 'Orders');
@@ -32,5 +36,10 @@ describe('DTO Generator', function () {
 
         expect(fn () => (new DtoGenerator('OrderData', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new DtoGenerator('OrderData', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

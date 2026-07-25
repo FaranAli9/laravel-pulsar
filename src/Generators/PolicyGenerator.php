@@ -45,6 +45,7 @@ class PolicyGenerator extends Generator
         }
 
         $this->validateInputs($names, [$this->domain]);
+        $this->validateDomainExists($this->domain);
         $this->createDomainDirectories();
 
         $filePath = $this->getPolicyPath();
@@ -64,7 +65,7 @@ class PolicyGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->createDomainDirectory($this->domain);
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
         $policiesPath = $domainPath.DIRECTORY_SEPARATOR.'Policies';
 
         $this->createDirectory($policiesPath);

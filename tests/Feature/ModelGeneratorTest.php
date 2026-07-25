@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\ModelGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('Model Generator', function () {
     it('generates the current model contract', function () {
         $generator = new ModelGenerator('Order', 'Orders');
@@ -27,5 +31,10 @@ describe('Model Generator', function () {
 
         expect(fn () => (new ModelGenerator('Order', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new ModelGenerator('Order', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });
