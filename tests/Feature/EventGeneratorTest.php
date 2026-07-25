@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\EventGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('Event Generator', function () {
     it('generates the current event contract', function () {
         $generator = new EventGenerator('OrderPlaced', 'Orders');
@@ -29,5 +33,10 @@ describe('Event Generator', function () {
 
         expect(fn () => (new EventGenerator('OrderPlaced', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new EventGenerator('OrderPlaced', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

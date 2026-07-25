@@ -1,8 +1,12 @@
 # Pulsar Architecture Guide
 
-This project uses Pulsar's vertical slice architecture under `app/Pulsar`, with two layers: a Service Layer for HTTP delivery (scoped by consumer audience, e.g., Admin, Client) and a Domain Layer for business logic shared across all services.
+This project uses Pulsar's vertical slice architecture under `app/Pulsar`, with three layers: a Service Layer for HTTP delivery (scoped by consumer audience, e.g., Admin, Client), a Domain Layer for business logic and owned Contracts shared across services, and an Infrastructure Layer for concrete outbound adapters.
 
 `app/Pulsar` is the explicit boundary for Pulsar-governed application code. Files inside it follow Pulsar's placement, dependency, and transaction rules; ordinary Laravel code outside it remains separate from the Pulsar architecture.
+
+A type belongs inside `app/Pulsar` when it calls, is called by, or implements a Pulsar type.
+Pure framework bootstrap and configuration that Laravel owns by convention—migrations,
+factories, seeders, `bootstrap/app.php`, `config/`, and `routes/`—stay in stock Laravel paths.
 
 ## Directory Structure
 
@@ -29,6 +33,7 @@ Domains live in `app/Pulsar/Domain` because they represent Laravel-aware busines
 
 ```
 app/Pulsar/Domain/{Domain}/
+├── Contracts/      # Domain-owned capability ports
 ├── Models/         # Eloquent models
 ├── Actions/        # Atomic business operations
 ├── DTOs/           # Data transfer objects
@@ -38,6 +43,17 @@ app/Pulsar/Domain/{Domain}/
 ├── Exceptions/     # Business rule violations
 └── Queries/        # Complex read operations
 ```
+
+### Infrastructure Layer
+
+Concrete outbound adapters live in capability-oriented areas:
+
+```
+app/Pulsar/Infrastructure/{Area}/
+└── {Adapter}.php   # Implements a Domain Contract
+```
+
+Typical areas are `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
 
 ## Layer Responsibilities
 
@@ -52,6 +68,8 @@ app/Pulsar/Domain/{Domain}/
 | **Model** | Data persistence, relationships | Keep thin, no business logic |
 | **Policy** | Authorize model abilities with `bool` results and an optional admin `before()` bypass | Default deny; never mutate or start transactions |
 | **Event** | Immutable, versioned fact dispatched after commit by default | UseCases emit only; never carry Eloquent models across queued/durable boundaries |
+| **Contract** | Domain-owned port for a stable capability | No Services, concrete Infrastructure, helpers, or behavioral calls to workflow types |
+| **Adapter** | Implement a Domain Contract and translate vendor/framework errors | No Services, UseCases, Actions, Operations, or other domains' internals |
 
 Generated policies assume the authenticatable is `App\Models\User`. If your application uses a
 different user model, update the generated import.
@@ -272,15 +290,18 @@ Controllers → Actions ❌ (use UseCase instead)
 UseCases → Actions ✅
 UseCases → Operations ✅
 UseCases → Queries ✅
+UseCases → Contracts ✅
 UseCases → Other UseCases ❌ (extract shared logic to Action)
 
 Actions → Models ✅ (atomic - single operation)
+Actions → Contracts ✅
 Actions → Queries ❌ (UseCase/Operation passes needed data)
 Actions → Other Actions ❌ (compose in UseCase/Operation)
 
 Operations → Actions ✅
 Operations → Queries ✅
 Operations → Models ✅
+Operations → Contracts ✅
 Operations → Other Operations ❌
 Operations → UseCases ❌
 Operations → Events ❌ (emit from UseCase)
@@ -288,15 +309,120 @@ Operations → Events ❌ (emit from UseCase)
 Queries → Models ✅
 Queries → Other Queries ❌
 Queries → Actions ❌
+
+Infrastructure → Domain Contracts ✅
+Infrastructure → Services/UseCases/Actions/Operations ❌
+Domain/Services → Concrete Infrastructure ❌ (depend on the Contract)
 ```
 
 ### Layer Direction
 
 ```
 Service Layer → Domain Layer ✅
+Infrastructure Layer → Domain Contracts ✅
 Domain Layer → Service Layer ❌ (forbidden)
+Domain/Service Layer → Concrete Infrastructure ❌
 Service A → Service B ❌ (use events for cross-service communication)
 ```
+
+## Contracts and Infrastructure
+
+Contracts live at `Domain/{Domain}/Contracts/{Name}.php` and use capability names without a
+`Contract` or `Interface` suffix: `PaymentGateway`, `Clock`, `FileStorage`. The consumer owns
+the port. If Billing needs to take payments, Billing defines `PaymentGateway`; the implementation
+lives in `Infrastructure/Payments`.
+
+A Contract's method signatures may use DTOs, Enums, Value Objects, Models, Events, other
+Contracts, or Laravel contracts as **passive type dependencies**. A passive dependency appears
+in a signature; it is not a workflow call. Contracts never have a **behavioral dependency** on
+a UseCase, Action, or Operation, and never import Services or concrete Infrastructure.
+
+Do not turn `Contracts/` into a junk drawer. DTOs, Value Objects, Enums, traits, helper classes,
+concrete implementations, framework aliases, and interface-per-class wrappers around pure Domain
+logic do not belong there. Create a Contract only for a stable capability with a real alternate
+implementation, test fake, or strategy boundary.
+
+An adapter implements the Contract and translates vendor/framework failures into Domain
+exceptions:
+
+```php
+namespace App\Pulsar\Infrastructure\Payments;
+
+use App\Pulsar\Domain\Billing\Contracts\PaymentGateway;
+
+class StripePaymentGateway implements PaymentGateway
+{
+    // Translate Stripe errors into Billing Domain exceptions here.
+}
+```
+
+Bind the consumer-owned port in `PulsarServiceProvider::register()`:
+
+```php
+$this->app->bind(
+    \App\Pulsar\Domain\Billing\Contracts\PaymentGateway::class,
+    \App\Pulsar\Infrastructure\Payments\StripePaymentGateway::class,
+);
+```
+
+Stateless adapters may be singleton-bound. Use `scoped()` for adapters with request- or
+tenant-lifetime state, resolve that context through a closure rather than capturing it in the
+constructor, and make retryable side effects idempotent.
+
+### Event-name Contracts with per-domain Enums
+
+Use one stable event-name Contract and let each domain own a backed Enum. Do not accept arbitrary
+`BackedEnum`, and do not centralize every domain's names in a global god enum.
+
+```php
+// Domain/Shared/Contracts/DomainEventName.php
+interface DomainEventName
+{
+    public function eventName(): string;
+}
+
+// Domain/Orders/Enums/OrderEventName.php
+enum OrderEventName: string implements DomainEventName
+{
+    case Placed = 'orders.order_placed'; // Persisted/protocol identifier: immutable.
+    case Cancelled = 'orders.order_cancelled';
+
+    public function eventName(): string
+    {
+        return $this->value;
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Placed => 'Order placed',
+            self::Cancelled => 'Order cancelled',
+        };
+    }
+}
+```
+
+The backed value is the stable machine identifier. Human labels stay in `label()` and may
+change. Event payload schema versions belong on the Event class as `public const int VERSION = 1`.
+
+### Magic-string Policy
+
+| Category | Recommendation | Why |
+|----------|----------------|-----|
+| Persisted business states | Per-domain string-backed Enum | Closed, domain-owned, type-safe set |
+| Persisted event names | Per-domain backed Enum implementing an event-name Contract | Stable machine identifier without a god enum |
+| Event categories | Enum | Closed set |
+| Authorization abilities | Per-domain string-backed Enum, passed to Gate as `->value` | Domain ownership and no free-floating ability strings |
+| Queue connections and queue names | Config keys, referenced by constants | Operational and environment-varying |
+| Event listener names | Class names | Laravel discovery and registration are class-based |
+| Artisan command signatures | String on the command class | Framework-required, single source |
+| Configuration keys | Config files; typed accessor for hot paths | Laravel convention |
+| Route names | Namespaced string such as `{service}.*` | Framework string API |
+| External protocol identifiers | Immutable constant or backed Enum | Protocol stability |
+
+Closed sets use Enums; open or environment-varying sets use config. Convert Enums to strings at
+framework boundaries with `->value`, never reuse human labels as machine identifiers, and never
+rename persisted/protocol values casually.
 
 ## Dependency Injection (Octane-Safe)
 
@@ -576,6 +702,8 @@ test('creates order via API', function () {
 | `make:request` | `{name} {module} {service}` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:domain` | `{name}` |
+| `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
 | `make:action` | `{name} {domain}` |
 | `make:dto` | `{name} {domain}` |
@@ -584,6 +712,7 @@ test('creates order via API', function () {
 | `make:enum` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
+| `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |
 | `publish:context` | `[--force] [--path={path}]` |
 | `publish:skill` | `[--force] [--path={path}]` |
 | `ping` | — |

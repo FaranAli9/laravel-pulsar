@@ -78,6 +78,14 @@ trait Finder
     }
 
     /**
+     * Find the root path of all infrastructure adapters.
+     */
+    public function findInfrastructureRootPath(): string
+    {
+        return $this->findPulsarRootPath().DIRECTORY_SEPARATOR.'Infrastructure';
+    }
+
+    /**
      * Find the namespace from composer.json.
      *
      * @throws Exception
@@ -129,6 +137,18 @@ trait Finder
         $root = $this->findPulsarRootNamespace();
 
         return "$root\\Domain\\$domain";
+    }
+
+    /**
+     * Find the infrastructure namespace.
+     *
+     * @throws Exception
+     */
+    public function findInfrastructureNamespace(string $area): string
+    {
+        $root = $this->findPulsarRootNamespace();
+
+        return "$root\\Infrastructure\\$area";
     }
 
     /**

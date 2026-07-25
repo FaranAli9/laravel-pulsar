@@ -39,12 +39,15 @@ pulsar make:service Admin
 
 ## Architecture Overview
 
-Pulsar organizes your Laravel application into **two complementary layers**.
+Pulsar organizes your Laravel application into **three complementary layers**.
 
 - **Service Layer** — delivery and orchestration
 - **Domain Layer** — business logic
+- **Infrastructure Layer** — outbound adapters that implement Domain Contracts
 
 Pulsar places its generated architecture under `app/Pulsar` so the application's architectural boundary is explicit. Everything inside this directory follows Pulsar's placement, dependency, and transaction rules; everything outside it remains available for ordinary Laravel code that is not governed by Pulsar.
+
+A type belongs inside `app/Pulsar` when it calls, is called by, or implements another Pulsar type. Pure framework bootstrap and configuration that Laravel owns by convention—migrations, factories, seeders, `bootstrap/app.php`, `config/`, and `routes/`—stay in their stock Laravel locations.
 
 ---
 
@@ -93,6 +96,7 @@ Domains live in `app/Pulsar/Domain` because they represent business capabilities
 
 ```
 app/Pulsar/Domain/{Domain}/
+├── Contracts/
 ├── Models/
 ├── Actions/
 ├── DTOs/
@@ -114,6 +118,31 @@ It is independent of HTTP, **not** independent of Laravel.
 
 ---
 
+### Infrastructure Layer
+
+**Purpose:** Concrete outbound adapters for volatile framework and vendor concerns.
+
+```
+app/Pulsar/Infrastructure/{Area}/
+└── {Adapter}.php
+```
+
+Areas group capabilities such as `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
+Infrastructure adapters implement Domain Contracts and may depend on the framework or third-party
+SDKs. They never import Services, UseCases, Actions, or Operations. Domain and Services depend on
+the Contract; Laravel's container supplies the adapter.
+
+The dependency rule is:
+
+> Delivery points inward to Domain. Infrastructure points inward to Domain Contracts. Domain
+> points at itself and its own Contracts. Nothing points at Delivery.
+
+The consumer owns the port: when Billing needs a payment capability, Billing defines
+`Domain/Billing/Contracts/PaymentGateway`; a concrete implementation such as
+`Infrastructure/Payments/StripePaymentGateway` satisfies it.
+
+---
+
 ## Architecture Rules
 
 ### Shared Vocabulary
@@ -126,6 +155,8 @@ It is independent of HTTP, **not** independent of Laravel.
 | **UseCase** | Application workflow                      |
 | **Operation** | Reusable workflow fragment for UseCases |
 | **Action**  | Atomic domain operation                   |
+| **Contract** | Domain-owned capability boundary         |
+| **Adapter** | Infrastructure implementation of a Contract |
 
 ---
 
@@ -170,6 +201,18 @@ Actions and Operations must never manage transactions.
 
 Actions and Queries may return domain models, collections, primitives, or void.
 They must never return HTTP or framework response objects.
+
+### Contracts and Adapters
+
+Contracts use capability names without a `Contract` or `Interface` suffix, such as
+`PaymentGateway` or `Clock`. A Contract signature may passively reference DTOs, Enums, Value
+Objects, Models, Events, other Contracts, or Laravel contracts. It must not behaviorally invoke
+a UseCase, Action, or Operation, and it must never import Services or concrete Infrastructure.
+
+Concrete adapters live under `Infrastructure/{Area}` and translate vendor or framework errors
+into Domain exceptions at that boundary. Bind each Contract to its adapter in
+`PulsarServiceProvider::register()`. Use `scoped()` instead of `singleton()` when an adapter
+holds request- or tenant-lifetime state, and make retryable side effects idempotent.
 
 ---
 
@@ -224,6 +267,13 @@ Flexibility is traded for consistency — deliberately.
 | Enum      | Domain state              |
 | Exception | Business rule violation   |
 | Query     | Read-only domain query    |
+| Contract  | Domain-owned port for a stable capability |
+
+### Infrastructure Layer
+
+| Type | Purpose |
+|------|---------|
+| Adapter | Concrete framework/vendor implementation of a Domain Contract |
 
 ---
 
@@ -236,6 +286,8 @@ Flexibility is traded for consistency — deliberately.
 | `make:request` | `{name} {module} {service}` |
 | `make:use-case` | `{name} {module} {service}` |
 | `make:operation` | `{name} {module} {service}` |
+| `make:domain` | `{name}` |
+| `make:contract` | `{name} {domain}` |
 | `make:model` | `{name} {domain}` |
 | `make:action` | `{name} {domain}` |
 | `make:dto` | `{name} {domain}` |
@@ -244,6 +296,7 @@ Flexibility is traded for consistency — deliberately.
 | `make:enum` | `{name} {domain}` |
 | `make:exception` | `{name} {domain}` |
 | `make:query` | `{name} {domain}` |
+| `make:adapter` | `{name} {area} [--contract={FQCN\|name}] [--domain={domain}]` |
 | `publish:context` | `[--force] [--path={path}]` |
 | `publish:skill` | `[--force] [--path={path}]` |
 | `ping` | — |

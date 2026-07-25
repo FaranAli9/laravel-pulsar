@@ -1,0 +1,9 @@
+<?php
+
+namespace {{namespace}};
+
+interface {{name}}
+{
+    // Define the capability this port exposes.
+    // Accept/return DTOs, Value Objects, Enums, or scalars — never framework response objects.
+}

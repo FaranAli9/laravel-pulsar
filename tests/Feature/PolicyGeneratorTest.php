@@ -2,6 +2,11 @@
 
 use Faran\Pulsar\Generators\PolicyGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+    createDomain($this->tempDir, 'Accounts');
+});
+
 describe('Policy Generator', function () {
     it('generates a bare policy with an admin bypass hook', function () {
         $generator = new PolicyGenerator('OrderPolicy', 'Orders');
@@ -66,5 +71,10 @@ describe('Policy Generator', function () {
 
         expect(fn () => (new PolicyGenerator('OrderPolicy', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new PolicyGenerator('OrderPolicy', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

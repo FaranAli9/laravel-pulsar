@@ -33,6 +33,7 @@ class ActionGenerator extends Generator
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
+        $this->validateDomainExists($this->domain);
         $this->createDomainDirectories();
 
         $filePath = $this->getActionPath();
@@ -52,7 +53,7 @@ class ActionGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->createDomainDirectory($this->domain);
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
         $actionsPath = $domainPath.DIRECTORY_SEPARATOR.'Actions';
 
         $this->createDirectory($actionsPath);

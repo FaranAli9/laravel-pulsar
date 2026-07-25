@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\QueryGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('Query Generator', function () {
     it('generates the current query contract', function () {
         $generator = new QueryGenerator('FindOrder', 'Orders');
@@ -30,5 +34,10 @@ describe('Query Generator', function () {
 
         expect(fn () => (new QueryGenerator('FindOrder', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new QueryGenerator('FindOrder', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

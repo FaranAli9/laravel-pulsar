@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\ActionGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('Action Generator', function () {
     it('generates the current action contract', function () {
         $generator = new ActionGenerator('CreateOrder', 'Orders');
@@ -30,5 +34,10 @@ describe('Action Generator', function () {
 
         expect(fn () => (new ActionGenerator('CreateOrder', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new ActionGenerator('CreateOrder', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

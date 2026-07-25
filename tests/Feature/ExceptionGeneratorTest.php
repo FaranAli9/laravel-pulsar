@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\ExceptionGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('Exception Generator', function () {
     it('generates the current exception contract', function () {
         $generator = new ExceptionGenerator('OrderNotFound', 'Orders');
@@ -27,5 +31,10 @@ describe('Exception Generator', function () {
 
         expect(fn () => (new ExceptionGenerator('OrderNotFound', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new ExceptionGenerator('OrderNotFound', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

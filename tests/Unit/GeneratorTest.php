@@ -205,7 +205,7 @@ describe('Generator Base Class', function () {
                 ->toBe($this->tempDir.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar');
         });
 
-        it('resolves service and domain root paths inside Pulsar root', function () {
+        it('resolves service, domain, and infrastructure root paths inside Pulsar root', function () {
             $generator = new TestGenerator;
 
             expect($generator->findServicesRootPath())
@@ -213,14 +213,18 @@ describe('Generator Base Class', function () {
 
             expect($generator->findDomainRootPath())
                 ->toBe($this->tempDir.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Domain');
+
+            expect($generator->findInfrastructureRootPath())
+                ->toBe($this->tempDir.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Pulsar'.DIRECTORY_SEPARATOR.'Infrastructure');
         });
 
-        it('resolves service and domain namespaces inside App Pulsar namespace', function () {
+        it('resolves service, domain, and infrastructure namespaces inside App Pulsar namespace', function () {
             $generator = new TestGenerator;
 
             expect($generator->findPulsarRootNamespace())->toBe('App\Pulsar');
             expect($generator->findServiceNamespace('Admin'))->toBe('App\Pulsar\Services\Admin');
             expect($generator->findDomainNamespace('Order'))->toBe('App\Pulsar\Domain\Order');
+            expect($generator->findInfrastructureNamespace('Payments'))->toBe('App\Pulsar\Infrastructure\Payments');
         });
     });
 

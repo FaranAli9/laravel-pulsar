@@ -1,10 +1,17 @@
 <?php
 
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
 use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 use Faran\Pulsar\Exceptions\InvalidNameException;
 use Faran\Pulsar\Exceptions\StubNotFoundException;
 
 describe('Custom Exceptions', function () {
+    describe('DomainDoesNotExistException', function () {
+        it('identifies the missing domain', function () {
+            expect(DomainDoesNotExistException::make('Billing')->getMessage())
+                ->toBe('Domain [Billing] does not exist!');
+        });
+    });
 
     describe('InvalidNameException', function () {
 

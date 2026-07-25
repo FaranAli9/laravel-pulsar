@@ -3,16 +3,16 @@
 namespace Faran\Pulsar\Commands;
 
 use Exception;
-use Faran\Pulsar\Generators\EventGenerator;
+use Faran\Pulsar\Generators\ContractGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 
 #[AsCommand(
-    name: 'make:event',
-    description: 'Create a new domain event class',
+    name: 'make:contract',
+    description: 'Create a new domain contract interface',
 )]
-class MakeEventCommand extends PulsarCommand
+class MakeContractCommand extends PulsarCommand
 {
     /**
      * Handle the command execution.
@@ -23,11 +23,11 @@ class MakeEventCommand extends PulsarCommand
         $domain = $this->argument('domain');
 
         try {
-            $generator = new EventGenerator($name, $domain);
+            $generator = new ContractGenerator($name, $domain);
             $filePath = $generator->generate();
 
             $this->line();
-            $this->success('Event created successfully');
+            $this->success('Contract created successfully');
             $this->line();
             $this->info("Location: {$filePath}");
             $this->line();
@@ -47,7 +47,7 @@ class MakeEventCommand extends PulsarCommand
      */
     protected function configure(): void
     {
-        $this->addArgument('name', InputArgument::REQUIRED, 'The name of the event');
-        $this->addArgument('domain', InputArgument::REQUIRED, 'The name of the domain');
+        $this->addArgument('name', InputArgument::REQUIRED, 'The capability name of the contract');
+        $this->addArgument('domain', InputArgument::REQUIRED, 'The name of the owning domain');
     }
 }

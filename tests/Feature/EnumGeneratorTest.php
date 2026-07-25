@@ -2,6 +2,10 @@
 
 use Faran\Pulsar\Generators\EnumGenerator;
 
+beforeEach(function () {
+    createDomain($this->tempDir, 'Orders');
+});
+
 describe('Enum Generator', function () {
     it('generates the current enum contract', function () {
         $generator = new EnumGenerator('OrderStatus', 'Orders');
@@ -26,5 +30,10 @@ describe('Enum Generator', function () {
 
         expect(fn () => (new EnumGenerator('OrderStatus', 'Orders'))->generate())
             ->toThrow(Exception::class, 'already exists');
+    });
+
+    it('rejects a missing domain', function () {
+        expect(fn () => (new EnumGenerator('OrderStatus', 'Missing'))->generate())
+            ->toThrow(Exception::class, 'Domain [Missing] does not exist');
     });
 });

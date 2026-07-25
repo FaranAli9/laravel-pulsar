@@ -33,6 +33,7 @@ class QueryGenerator extends Generator
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
+        $this->validateDomainExists($this->domain);
         $this->createDomainDirectories();
 
         $filePath = $this->getQueryPath();
@@ -52,7 +53,7 @@ class QueryGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->createDomainDirectory($this->domain);
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
         $queriesPath = $domainPath.DIRECTORY_SEPARATOR.'Queries';
 
         $this->createDirectory($queriesPath);

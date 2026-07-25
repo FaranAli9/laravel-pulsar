@@ -46,6 +46,8 @@ describe('Skill Generator', function () {
             $content = file_get_contents($this->tempDir.DIRECTORY_SEPARATOR.$relativePath);
 
             expect($content)
+                ->toContain('Contracts and Infrastructure')
+                ->toContain('Magic-string Policy')
                 ->toContain('Layer Responsibilities')
                 ->toContain('Dependency Rules')
                 ->toContain('Transaction Ownership')
@@ -61,7 +63,8 @@ describe('Skill Generator', function () {
 
             expect($content)
                 ->toContain('app/Pulsar/Services/{Service}/')
-                ->toContain('app/Pulsar/Domain/{Domain}/');
+                ->toContain('app/Pulsar/Domain/{Domain}/')
+                ->toContain('app/Pulsar/Infrastructure/{Area}/');
         });
 
         it('content has no stub placeholders', function () {

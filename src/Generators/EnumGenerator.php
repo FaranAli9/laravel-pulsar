@@ -33,6 +33,7 @@ class EnumGenerator extends Generator
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
+        $this->validateDomainExists($this->domain);
         $this->createDomainDirectories();
 
         $filePath = $this->getEnumPath();
@@ -52,7 +53,7 @@ class EnumGenerator extends Generator
      */
     protected function createDomainDirectories(): void
     {
-        $domainPath = $this->createDomainDirectory($this->domain);
+        $domainPath = $this->findDomainRootPath().DIRECTORY_SEPARATOR.$this->domain;
         $enumsPath = $domainPath.DIRECTORY_SEPARATOR.'Enums';
 
         $this->createDirectory($enumsPath);

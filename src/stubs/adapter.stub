@@ -1,0 +1,12 @@
+<?php
+
+namespace {{namespace}};
+
+{{contractImport}}
+
+class {{name}} {{implements}}
+{
+    // Translate vendor/framework errors into Domain exceptions at this boundary.
+    // Make retryable side effects idempotent.
+    // Bind in PulsarServiceProvider: $this->app->bind({{contract}}::class, {{name}}::class);
+}
