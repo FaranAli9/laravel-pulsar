@@ -37,8 +37,33 @@ vendor/bin/pest --parallel
 # Execute Pulsar commands (from package directory)
 ./bin/pulsar make:service Admin
 ./bin/pulsar make:controller ProductController Products Admin
+./bin/pulsar make:use-case CreateProduct Products Admin
 ./bin/pulsar make:action CreateOrder Order
+./bin/pulsar publish:context
+./bin/pulsar publish:skill
+./bin/pulsar ping
 ```
+
+### Pulsar Command Reference
+
+| Command | Arguments and options |
+|---------|-----------------------|
+| `make:service` | `{name}` |
+| `make:controller` | `{name} {module} {service} [--resource]` |
+| `make:request` | `{name} {module} {service}` |
+| `make:use-case` | `{name} {module} {service}` |
+| `make:operation` | `{name} {module} {service}` |
+| `make:model` | `{name} {domain}` |
+| `make:action` | `{name} {domain}` |
+| `make:dto` | `{name} {domain}` |
+| `make:policy` | `{name} {domain} [--model={model}]` |
+| `make:event` | `{name} {domain}` |
+| `make:enum` | `{name} {domain}` |
+| `make:exception` | `{name} {domain}` |
+| `make:query` | `{name} {domain}` |
+| `publish:context` | `[--force] [--path={path}]` |
+| `publish:skill` | `[--force] [--path={path}]` |
+| `ping` | — |
 
 ## Codebase Structure
 
@@ -118,7 +143,7 @@ Custom Pest expectations:
 expect($content)->toBeValidPhp();
 expect($content)->toHaveNamespace('App\Pulsar\Services\Auth\Modules\Orders\Operations');
 expect($content)->toHaveClass('CreateOrderOperation');
-expect($content)->toHaveMethod('handle');
+expect($content)->toHaveMethod('execute');
 ```
 
 When modifying generators, test:
