@@ -2,39 +2,25 @@
 
 namespace Faran\Pulsar\Generators;
 
-use Exception;
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 
 class PolicyGenerator extends Generator
 {
     /**
-     * The name of the policy to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the domain.
-     */
-    protected string $domain;
-
-    /**
-     * The optional domain model protected by the policy.
-     */
-    protected ?string $model;
-
-    /**
      * Create a new PolicyGenerator instance.
      */
-    public function __construct(string $name, string $domain, ?string $model = null)
-    {
-        $this->name = $name;
-        $this->domain = $domain;
-        $this->model = $model;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $domain,
+        protected ?string $model = null,
+    ) {}
 
     /**
      * Generate the policy file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws DomainDoesNotExistException
      */
     public function generate(): string
     {
@@ -46,13 +32,14 @@ class PolicyGenerator extends Generator
 
         $this->validateInputs($names, [$this->domain]);
         $this->validateDomainExists($this->domain);
-        $this->createDomainDirectories();
 
         $filePath = $this->getPolicyPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Policy [{$this->name}] already exists in {$this->domain}!");
+            throw FileAlreadyExistsException::make('Policy', $this->name, $this->domain);
         }
+
+        $this->createDomainDirectories();
 
         $content = $this->getPolicyContent();
         $this->createFile($filePath, $content);

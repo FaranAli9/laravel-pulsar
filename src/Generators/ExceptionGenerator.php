@@ -2,45 +2,37 @@
 
 namespace Faran\Pulsar\Generators;
 
-use Exception;
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 
 class ExceptionGenerator extends Generator
 {
     /**
-     * The name of the exception to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the domain.
-     */
-    protected string $domain;
-
-    /**
      * Create a new ExceptionGenerator instance.
      */
-    public function __construct(string $name, string $domain)
-    {
-        $this->name = $name;
-        $this->domain = $domain;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $domain,
+    ) {}
 
     /**
      * Generate the exception file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws DomainDoesNotExistException
      */
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
         $this->validateDomainExists($this->domain);
-        $this->createDomainDirectories();
 
         $filePath = $this->getExceptionPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Exception [{$this->name}] already exists in {$this->domain}!");
+            throw FileAlreadyExistsException::make('Exception', $this->name, $this->domain);
         }
+
+        $this->createDomainDirectories();
 
         $content = $this->getExceptionContent();
         $this->createFile($filePath, $content);

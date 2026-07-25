@@ -2,45 +2,37 @@
 
 namespace Faran\Pulsar\Generators;
 
-use Exception;
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 
 class EventGenerator extends Generator
 {
     /**
-     * The name of the event to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the domain.
-     */
-    protected string $domain;
-
-    /**
      * Create a new EventGenerator instance.
      */
-    public function __construct(string $name, string $domain)
-    {
-        $this->name = $name;
-        $this->domain = $domain;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $domain,
+    ) {}
 
     /**
      * Generate the event file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws DomainDoesNotExistException
      */
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
         $this->validateDomainExists($this->domain);
-        $this->createDomainDirectories();
 
         $filePath = $this->getEventPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Event [{$this->name}] already exists in {$this->domain}!");
+            throw FileAlreadyExistsException::make('Event', $this->name, $this->domain);
         }
+
+        $this->createDomainDirectories();
 
         $content = $this->getEventContent();
         $this->createFile($filePath, $content);

@@ -3,57 +3,39 @@
 namespace Faran\Pulsar\Generators;
 
 use Exception;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 use Faran\Pulsar\Exceptions\ServiceDoesNotExistException;
 
 class ControllerGenerator extends Generator
 {
     /**
-     * The name of the controller to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the service.
-     */
-    protected string $service;
-
-    /**
-     * The name of the module.
-     */
-    protected string $module;
-
-    /**
-     * Whether to generate a resourceful controller.
-     */
-    protected bool $resource;
-
-    /**
      * Create a new ControllerGenerator instance.
      */
-    public function __construct(string $name, string $module, string $service, bool $resource = false)
-    {
-        $this->name = $name;
-        $this->module = $module;
-        $this->service = $service;
-        $this->resource = $resource;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $module,
+        protected string $service,
+        protected bool $resource = false,
+    ) {}
 
     /**
      * Generate the controller file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws ServiceDoesNotExistException
      */
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->service, $this->module]);
         $this->validateServiceExists();
-        $this->createModuleDirectories();
 
         $filePath = $this->getControllerPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Controller [{$this->name}] already exists in {$this->service}/{$this->module}!");
+            throw FileAlreadyExistsException::make('Controller', $this->name, "{$this->service}/{$this->module}");
         }
+
+        $this->createModuleDirectories();
 
         $content = $this->getControllerContent();
         $this->createFile($filePath, $content);

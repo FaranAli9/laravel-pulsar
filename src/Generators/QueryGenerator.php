@@ -2,45 +2,37 @@
 
 namespace Faran\Pulsar\Generators;
 
-use Exception;
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 
 class QueryGenerator extends Generator
 {
     /**
-     * The name of the query to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the domain.
-     */
-    protected string $domain;
-
-    /**
      * Create a new QueryGenerator instance.
      */
-    public function __construct(string $name, string $domain)
-    {
-        $this->name = $name;
-        $this->domain = $domain;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $domain,
+    ) {}
 
     /**
      * Generate the query file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws DomainDoesNotExistException
      */
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
         $this->validateDomainExists($this->domain);
-        $this->createDomainDirectories();
 
         $filePath = $this->getQueryPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Query [{$this->name}] already exists in {$this->domain}!");
+            throw FileAlreadyExistsException::make('Query', $this->name, $this->domain);
         }
+
+        $this->createDomainDirectories();
 
         $content = $this->getQueryContent();
         $this->createFile($filePath, $content);

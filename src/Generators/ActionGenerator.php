@@ -2,45 +2,37 @@
 
 namespace Faran\Pulsar\Generators;
 
-use Exception;
+use Faran\Pulsar\Exceptions\DomainDoesNotExistException;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 
 class ActionGenerator extends Generator
 {
     /**
-     * The name of the action to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the domain.
-     */
-    protected string $domain;
-
-    /**
      * Create a new ActionGenerator instance.
      */
-    public function __construct(string $name, string $domain)
-    {
-        $this->name = $name;
-        $this->domain = $domain;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $domain,
+    ) {}
 
     /**
      * Generate the action file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws DomainDoesNotExistException
      */
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->domain]);
         $this->validateDomainExists($this->domain);
-        $this->createDomainDirectories();
 
         $filePath = $this->getActionPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Action [{$this->name}] already exists in {$this->domain}!");
+            throw FileAlreadyExistsException::make('Action', $this->name, $this->domain);
         }
+
+        $this->createDomainDirectories();
 
         $content = $this->getActionContent();
         $this->createFile($filePath, $content);

@@ -2,52 +2,38 @@
 
 namespace Faran\Pulsar\Generators;
 
-use Exception;
+use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 use Faran\Pulsar\Exceptions\ServiceDoesNotExistException;
 
 class OperationGenerator extends Generator
 {
     /**
-     * The name of the operation to generate.
-     */
-    protected string $name;
-
-    /**
-     * The name of the module.
-     */
-    protected string $module;
-
-    /**
-     * The name of the service.
-     */
-    protected string $service;
-
-    /**
      * Create a new OperationGenerator instance.
      */
-    public function __construct(string $name, string $module, string $service)
-    {
-        $this->name = $name;
-        $this->module = $module;
-        $this->service = $service;
-    }
+    public function __construct(
+        protected string $name,
+        protected string $module,
+        protected string $service,
+    ) {}
 
     /**
      * Generate the operation file.
      *
-     * @throws Exception
+     * @throws FileAlreadyExistsException
+     * @throws ServiceDoesNotExistException
      */
     public function generate(): string
     {
         $this->validateInputs([$this->name], [$this->service, $this->module]);
         $this->validateServiceExists();
-        $this->createModuleDirectories();
 
         $filePath = $this->getOperationPath();
 
         if ($this->fileExists($filePath)) {
-            throw new Exception("Operation [{$this->name}] already exists in {$this->service}/{$this->module}!");
+            throw FileAlreadyExistsException::make('Operation', $this->name, "{$this->service}/{$this->module}");
         }
+
+        $this->createModuleDirectories();
 
         $content = $this->getOperationContent();
         $this->createFile($filePath, $content);
