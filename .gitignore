@@ -25,3 +25,6 @@ Thumbs.db
 # Build artifacts
 build/
 dist/
+
+# Local documentation
+docs/
