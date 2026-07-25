@@ -5,7 +5,8 @@
 **Pulsar is an opinionated architecture tool.** It provides a strict and explicit approach to organizing Laravel applications using clean architecture, domain-driven design, and service-oriented patterns. This architecture works well for medium-to-large scale applications, multi-tenant SaaS platforms, and teams that benefit from enforced boundaries between business logic and delivery mechanisms. If you prefer Laravel's default structure or flexible, ad-hoc patterns, Pulsar may not be the right fit.
 
 This README is intentionally **concise**.
-It defines the **architectural contract**, not a tutorial.
+It defines the **architectural contract**, not a tutorial. For the reasoning behind these rules —
+the design rationale and the decisions on record — see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
