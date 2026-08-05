@@ -1,11 +1,12 @@
 ---
 name: pulsar
-description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, API resources, use cases, operations, jobs, console commands, models, actions, queries, DTOs, value objects, enums, exceptions, events, listeners, notifications, mailables, policies, contracts, infrastructure adapters, or domains.
+description: Enforces Pulsar vertical slice architecture rules when generating or modifying Laravel code. Activates when creating or changing controllers, requests, HTTP resources, use cases, operations, jobs, console commands, models, actions, queries, DTOs, value objects, enums, exceptions, events, listeners, notifications, mailables, policies, contracts, infrastructure adapters, or domains.
 license: MIT
 metadata:
     author: faran
     framework: laravel
     architecture: pulsar
+    version: {{version}}
     pattern: vertical-slice
     strictness: mandatory
 ---
@@ -30,8 +31,8 @@ A type belongs inside when it calls, is called by, or implements a Pulsar type. 
 bootstrap and configuration—migrations, factories, seeders, `bootstrap/app.php`, `config/`, and
 `routes/`—stay in stock Laravel paths.
 
-There is no `app/Http/Controllers`.
-There is no `app/Models`.
+Stock Laravel directories may coexist with `app/Pulsar` indefinitely. Pulsar governs code inside
+its boundary; incremental adoption may proceed route-by-route and module-by-module.
 
 Services are delivery boundaries scoped to a consumer audience (Admin, Client, Internal).
 A Service is NOT a microservice, bounded context, or deployment unit.
@@ -65,7 +66,8 @@ Service Layer:
 ```
 app/Pulsar/Services/{Service}/
   Providers/
-  Routes/
+  Routes/api.php
+  Routes/web.php        # generated with make:service --web
   Modules/{Module}/
     Controllers/
     Requests/
@@ -149,11 +151,11 @@ Infrastructure Layer:
 
 ## Layer Responsibilities
 
-**Controller** — Extract validated data, call UseCase, return HTTP response. No business logic. Call UseCases only (never Operations, Actions, or Queries directly).
+**Controller** — Extract validated data, call one UseCase or one cohesive read Query, and assemble the HTTP response. No business logic. Never call Operations or Actions directly.
 
 **Request** — Validate input structure only. No business rules. Authorization via `authorize()` is allowed.
 
-**Resource** — Shape Models, DTOs, and Value Objects for HTTP. Response shaping never belongs in Domain.
+**Resource** — Reusable field-level shaping of Models, DTOs, and Value Objects for HTTP. Response shaping never belongs in Domain.
 
 **Job** — Queue entrypoint in an audience Service module. Re-establish context, authorize, and
 call one UseCase. Carry IDs/DTOs/Value Objects, never Eloquent models. No transaction or
@@ -210,7 +212,8 @@ Generated policies assume the authenticatable is `App\Models\User`. If your appl
 Allowed:
 
 ```
-Controller -> UseCase
+Controller -> one UseCase
+Read-only Controller -> one cohesive Domain Query
 Command/Job -> one UseCase
 Sync Listener -> Contract side effect, Notification, or Job
 Queued Listener -> at most one UseCase
@@ -224,7 +227,7 @@ Infrastructure -> Domain Contract, DTO, Enum, Value Object, Domain Exception
 Forbidden:
 
 ```
-Controller -> Operation, Action, or Query directly
+Controller -> Operation or Action directly
 Command/Job -> Action, Operation, transaction, or multiple UseCases
 Sync Listener -> UseCase
 UseCase    -> UseCase
@@ -244,12 +247,16 @@ Event emission outside UseCases
 ## Inbound Adapter Rule and Call Graphs
 
 Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
-context, and call exactly one UseCase (or one Query for a read-only endpoint). It owns no
-transaction and contains no branching business logic. Commands, Jobs, and Listeners have no
-Form Request, so their authorization touchpoint is explicit.
+context, and call one application entrypoint. A mutation or workflow calls exactly one UseCase.
+A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.
+A read-only adapter that composes reads or applies audience-specific orchestration calls exactly
+one UseCase; that read-only UseCase need not open a transaction. A static page with no application
+data needs neither. After the entrypoint returns, a Controller may perform delivery-only response
+assembly. It owns no transaction and contains no branching business logic. Commands, Jobs, and
+Listeners have no Form Request, so their authorization touchpoint is explicit.
 
 ```text
-HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
+HTTP:      Request   → Controller → {one UseCase | one Query | response-only static page}
 Artisan:   Console   → Command    → UseCase → ...
 Queue:     Worker    → Job        → UseCase → ...
 Scheduler: Schedule  → Command|Job → UseCase → ...
@@ -360,7 +367,9 @@ Actions, Operations, and Queries never start transactions.
 Constructor = dependencies only (injected services).
 `execute()` = runtime data (DTOs, IDs, arrays).
 Request objects never cross Controller boundary — convert to DTO or `$request->validated()` first.
-Actions and Queries return domain types (models, collections, primitives, void). Never HTTP responses.
+Actions, Queries, and UseCases return delivery-neutral domain types (models, collections, DTOs,
+Value Objects, primitives, arrays, or void). Never return Resources, Inertia prop wrappers,
+redirects, or HTTP responses.
 
 ---
 
@@ -422,10 +431,48 @@ Routes live inside the Service, not in Laravel's default `routes/` directory.
 
 ```
 app/Pulsar/Services/Admin/Routes/api.php
-app/Pulsar/Services/Client/Routes/api.php
+app/Pulsar/Services/Admin/Routes/web.php
 ```
 
-Each Service's `RouteServiceProvider` loads its own route file with appropriate prefix and middleware.
+`make:service Admin` generates the prefixed API surface. `make:service Admin --web` additionally
+generates an unprefixed `web.php` loaded with Laravel's `web` middleware. Put any desired browser
+URL or route-name prefix inside `web.php`, and register the Service provider class printed by the
+command in `bootstrap/providers.php`.
+
+### Inertia Delivery
+
+Pulsar does not install Inertia. The application owns the root view, client adapter, and
+`HandleInertiaRequests` middleware. The Controller owns top-level response assembly; a Service
+Resource owns reusable field-level shaping. Cross-page shared props belong in
+`HandleInertiaRequests`; Inertia lazy/deferred/optional wrappers and partial-reload prop names
+belong in the Controller. Queries and UseCases never return Resources, Inertia wrappers,
+redirects, or response objects.
+
+```php
+Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+
+class OrderController extends Controller
+{
+    public function index(ListOrdersQuery $query): \Inertia\Response
+    {
+        return Inertia::render('Orders/Index', [
+            'orders' => OrderResource::collection($query->execute()),
+        ]);
+    }
+
+    public function store(PlaceOrderRequest $request, PlaceOrderUseCase $useCase): RedirectResponse
+    {
+        $useCase->execute(OrderData::from($request->validated()));
+
+        return to_route('orders.index');
+    }
+}
+```
+
+Invalid Inertia form submissions use Laravel's normal redirect-and-flash validation flow. Do not
+override `failedValidation()` or return a manual `422` response for a browser page route. Error
+bags, old input, and redirect status handling remain Laravel/Inertia delivery behavior.
 
 ---
 
@@ -531,7 +578,7 @@ Use Pulsar CLI to generate files to ensure correct namespace and location.
 | Command | Arguments and options |
 |---------|-----------------------|
 | `install` | `[--dry-run] [--force]` |
-| `make:service` | `{name}` |
+| `make:service` | `{name} [--web]` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
 | `make:resource` | `{name} {module} {service} [--collection]` |

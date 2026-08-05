@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand(
     name: 'make:resource',
-    description: 'Create a new service-layer API resource',
+    description: 'Create a new service-layer HTTP resource',
 )]
 class MakeResourceCommand extends PulsarCommand
 {

@@ -24,6 +24,8 @@ Two principles constrain every decision:
   type belongs *inside* when it participates in a Pulsar dependency edge; it stays *outside* when
   it is framework bootstrap or configuration Laravel's tooling must own by convention
   (`bootstrap/app.php`, `config/`, `database/migrations`, `database/factories`).
+  Stock Laravel directories may coexist with `app/Pulsar` indefinitely. This is an architecture
+  boundary, not a demand for a big-bang directory migration.
 
 **Non-goals.** Framework independence; supporting every Laravel class type; replacing Laravel's
 discovery with something its tooling cannot see; being a runtime library (Pulsar is a build-time
@@ -44,7 +46,7 @@ The dependency rule, and the whole point of the structure:
 > **Delivery points inward to Domain. Infrastructure points inward to Domain Contracts. Domain
 > points only at itself and its own Contracts. Nothing points at Delivery.**
 
-- A **Service** is a *consumer/audience* boundary (Admin API, Client API, Internal/machine). It is
+- A **Service** is a *consumer/audience* boundary (Admin browser/API, Client API, Internal/machine). It is
   **not** a microservice, bounded context, deployment unit, database, or schema. Modeling audience
   is what lets the same Domain capability be delivered differently to different consumers without
   duplication.
@@ -105,23 +107,48 @@ The dependency graph distinguishes two kinds of edge:
   restrict (Action→Action, UseCase→UseCase, Operation→Operation, Action→Query, Controller→Operation
   are all forbidden).
 
-This distinction is why a Controller may import a Domain DTO (passive) while still being forbidden
-from calling anything but a UseCase (behavioral). The shipped architecture preset enforces the
-structural core of this (Domain ↛ Services, Infrastructure ↛ workflows/delivery, Controllers depend
-only on Domain DTOs + UseCases); the remaining rules are upheld by convention and review.
+This distinction is why a Controller may import a Domain DTO (passive) while remaining forbidden
+from calling Operations or Actions. The shipped architecture preset enforces the structural core
+of this (Domain ↛ Services, Infrastructure ↛ workflows/delivery, Controllers depend only on
+delivery types, Domain value types, Queries, and UseCases); the remaining rules are upheld by
+convention and review.
 
 ## The adapter rule (all entrypoints are thin)
 
 Every inbound entrypoint — HTTP Controller, queue Job, Artisan Command, and any other adapter — may
-validate, authorize, establish context, and call **exactly one UseCase** (a read-only endpoint may
-call one Query). It owns no transaction and contains no branching business logic. This is the same
-rule for every audience, so business logic cannot accumulate in Jobs, Commands, or Listeners.
+validate, authorize, establish context, and call one application entrypoint. A mutation or workflow
+calls exactly one UseCase. A read-only adapter that performs one cohesive Domain read may call
+exactly one Query directly. A read-only adapter that composes reads or applies audience-specific
+orchestration calls exactly one UseCase, which need not open a transaction. A static page with no
+application data needs neither. After the entrypoint returns, a Controller may perform
+delivery-only response assembly. The adapter owns no transaction and contains no branching
+business logic.
 
 Because a Job or Command has no HTTP request, it re-establishes actor/tenant context from its
 payload and authorizes explicitly — **authorization never lives only in a Form Request.** Jobs
 carry IDs / DTOs / Value Objects, never Eloquent models, across the queue boundary (a serialized
 model is only a key re-fetched on the worker — a staleness trap), and are idempotent because queues
 are at-least-once.
+
+## Browser and Inertia delivery
+
+HTTP is not synonymous with JSON. A browser route needs Laravel's `web` middleware for cookies,
+session state, flashed errors, request-forgery protection, and route bindings. `make:service --web`
+therefore adds a separate, unprefixed `Routes/web.php`; it does not put browser traffic below the
+existing `/api/{service}` prefix. This also preserves URLs and route names while a stock Laravel
+application migrates incrementally.
+
+Inertia remains application-owned and optional. A page Controller owns the component name,
+top-level props, redirects, and Inertia's lazy/deferred/optional wrappers. The Controller owns
+top-level response assembly; a Service Resource owns reusable field-level shaping.
+`HandleInertiaRequests` owns sparse cross-page shared data. Queries and UseCases return
+delivery-neutral values and never depend on Inertia or return Resources, redirects, or responses.
+
+Invalid Inertia form submissions use Laravel's normal redirect-and-flash validation flow. The
+generated Form Request needs no override: on a route using `web`, Laravel redirects back and
+flashes the error bag, and Inertia shares it as page errors. Successful mutations normally redirect
+to a GET page. Partial reload selection remains a Controller concern; Domain Queries do not inspect
+Inertia headers or prop names.
 
 ## Events and the four-tier delivery rule
 
@@ -161,6 +188,9 @@ Pulsar re-establishes discovery *explicitly*:
   `Domain\{D}\Models\{Model}` → `Domain\{D}\Policies\{Model}Policy`, gates and admin hooks) and
   idempotently patches `bootstrap/app.php` to add `->withEvents(discover: […])` for listeners and a
   glob-expanded `->withCommands([…])` for commands.
+- Each generated Service provider remains explicit application wiring. `make:service` prints the
+  class that must be added to `bootstrap/providers.php`; it does not silently mutate bootstrap
+  state.
 - The patcher is idempotent, backs up before writing, supports `--dry-run`, and refuses to touch a
   `bootstrap/app.php` whose shape it cannot parse (printing manual instructions instead of
   corrupting it).

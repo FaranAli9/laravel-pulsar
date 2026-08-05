@@ -48,19 +48,26 @@ audience bindings, request/tenant-scoped services, non-resource gates, global au
 hooks, and optional observers. Once wired, Laravel's `event:cache` and `optimize` commands remain
 compatible with the explicit discovery paths and provider registration.
 
-Then generate your first service:
+Then generate your first service and register the provider class printed by the command in
+`bootstrap/providers.php`:
 
 ```bash
 pulsar make:service Admin
+```
+
+Add `--web` when the Service also needs session-backed browser routes:
+
+```bash
+pulsar make:service Admin --web
 ```
 
 ---
 
 ## Upgrading
 
-Upgrading an existing application to v0.3.0 may require code and wiring changes. Follow the
-ordered migration and codemod recipes in [UPGRADING.md](UPGRADING.md). Release details are
-recorded in [CHANGELOG.md](CHANGELOG.md).
+Upgrading an existing application to v0.4.0 adds an opt-in browser route surface and clarifies
+the inbound adapter contract. Follow the ordered migration recipes in
+[UPGRADING.md](UPGRADING.md). Release details are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -72,7 +79,7 @@ Pulsar organizes your Laravel application into **three complementary layers**.
 - **Domain Layer** — business logic
 - **Infrastructure Layer** — outbound adapters that implement Domain Contracts
 
-Pulsar places its generated architecture under `app/Pulsar` so the application's architectural boundary is explicit. Everything inside this directory follows Pulsar's placement, dependency, and transaction rules; everything outside it remains available for ordinary Laravel code that is not governed by Pulsar.
+Pulsar places its generated architecture under `app/Pulsar` so the application's architectural boundary is explicit. Everything inside this directory follows Pulsar's placement, dependency, and transaction rules; everything outside it remains available for ordinary Laravel code that is not governed by Pulsar. Stock Laravel directories may coexist with `app/Pulsar` indefinitely; adoption can proceed route-by-route and module-by-module.
 
 A type belongs inside `app/Pulsar` when it calls, is called by, or implements another Pulsar type. Pure framework bootstrap and configuration that Laravel owns by convention—migrations, factories, seeders, `bootstrap/app.php`, `config/`, and `routes/`—stay in their stock Laravel locations.
 
@@ -92,7 +99,8 @@ app/Pulsar/Services/{Service}/
 │   ├── {Service}ServiceProvider.php
 │   └── RouteServiceProvider.php
 ├── Routes/
-│   └── api.php
+│   ├── api.php
+│   └── web.php       # generated with --web
 └── Modules/{Module}/
     ├── Controllers/
     ├── Requests/
@@ -105,7 +113,7 @@ app/Pulsar/Services/{Service}/
 
 **A Service is:**
 
-- A delivery boundary (Admin API, Client API)
+- A delivery boundary (Admin browser, Admin API, Client API)
 - Scoped to a consumer audience
 - A logical separation inside a single Laravel application
 
@@ -202,12 +210,21 @@ The consumer owns the port: when Billing needs a payment capability, Billing def
 ### Inbound Adapter Rule and Call Graphs
 
 Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
-context, and call exactly one UseCase (or one Query for a read-only endpoint). It owns no
-transaction and contains no branching business logic. Jobs carry IDs, DTOs, or Value Objects,
-never Eloquent models, and retryable handlers are idempotent.
+context, and call one application entrypoint. It owns no transaction and contains no branching
+business logic. Apply these rules:
+
+1. A mutation or application workflow calls exactly one UseCase.
+2. A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.
+3. A read-only adapter that composes reads or applies audience-specific orchestration calls
+   exactly one UseCase; a read-only UseCase does not need a transaction.
+4. A static page with no application data does not need a synthetic Query or UseCase.
+5. After the entrypoint returns, an HTTP Controller may perform delivery-only response assembly.
+
+Jobs carry IDs, DTOs, or Value Objects, never Eloquent models, and retryable handlers are
+idempotent.
 
 ```text
-HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
+HTTP:      Request   → Controller → {one UseCase | one Query | response-only static page}
 Artisan:   Console   → Command    → UseCase → ...
 Queue:     Worker    → Job        → UseCase → ...
 Scheduler: Schedule  → Command|Job → UseCase → ...
@@ -262,8 +279,10 @@ UseCases create and dispatch immutable domain events. The four tiers are deliber
 
 ### Return Types
 
-Actions and Queries may return domain models, collections, primitives, or void.
-They must never return HTTP or framework response objects.
+Actions, Queries, and UseCases may return delivery-neutral domain models, collections, DTOs,
+Value Objects, primitives, arrays, or void. They must never return HTTP Resources, Inertia prop
+wrappers, redirects, or framework response objects. The Controller owns top-level response
+assembly; a Service Resource owns reusable field-level shaping.
 
 ### Contracts and Adapters
 
@@ -280,8 +299,8 @@ holds request- or tenant-lifetime state, and make retryable side effects idempot
 ### Optional Architecture Preset
 
 Pulsar ships a recommended, opt-in Pest architecture test. It keeps Domain independent of
-Services, Infrastructure outside workflows and delivery, and Controllers limited to Domain
-DTOs plus UseCases:
+Services, Infrastructure outside workflows and delivery, and Controllers limited to delivery
+types, Domain value types, Queries, and UseCases:
 
 ```bash
 mkdir -p tests/Arch
@@ -319,6 +338,30 @@ Pulsar optimizes for:
 - Fewer "where does this logic go?" debates
 
 Flexibility is traded for consistency — deliberately.
+
+---
+
+### Browser Routes and Inertia
+
+`make:service {name} --web` generates the existing prefixed API routes plus an unprefixed
+`Routes/web.php` loaded through Laravel's `web` middleware group. The unprefixed surface lets an
+existing Laravel route keep its URL and route name during incremental migration. Put any desired
+browser prefix or name scope inside that Service's `web.php`.
+
+Pulsar does not install or require Inertia. In an Inertia application, keep the root view, client
+adapter, and `HandleInertiaRequests` middleware in their normal application-owned locations.
+Controllers choose the component and top-level props, redirects, and lazy/deferred/optional prop
+wrappers. Service Resources may shape reusable prop values, and `HandleInertiaRequests` owns
+sparse cross-page shared data. Domain types and application entrypoints remain unaware of Inertia.
+
+Invalid Inertia form submissions use Laravel's normal redirect-and-flash validation flow. A Form
+Request validates and authorizes before the Controller; the Controller converts validated data to
+a Domain DTO, calls one UseCase, and normally returns `to_route()` after a successful mutation.
+Do not return a manual `422` response or override `failedValidation()` for a browser page route.
+
+For an existing Service, browser support can be adopted manually: add `Routes/web.php`, load it
+with `Route::middleware('web')` from the Service's `RouteServiceProvider`, and confirm the Service
+provider is listed in `bootstrap/providers.php`.
 
 ---
 
@@ -368,7 +411,7 @@ Flexibility is traded for consistency — deliberately.
 | Command | Arguments and options |
 |---------|-----------------------|
 | `install` | `[--dry-run] [--force]` |
-| `make:service` | `{name}` |
+| `make:service` | `{name} [--web]` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
 | `make:resource` | `{name} {module} {service} [--collection]` |

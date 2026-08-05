@@ -8,7 +8,10 @@ Pulsar is a Laravel code generation tool that scaffolds service-oriented applica
 
 ## Architecture Invariants
 
-- Controllers call UseCases only.
+- Controllers call one UseCase, or one Query for a cohesive read-only request.
+- Read-only Controllers that compose reads or apply audience orchestration call one UseCase.
+- Controllers own top-level HTTP/Inertia response assembly; Resources own reusable field shaping.
+- Form Requests on `web` routes use Laravel's redirect-and-flash validation behavior.
 - Every inbound adapter (HTTP, CLI, queue, scheduler, event) is thin: validate, authorize,
   establish context, and call at most one UseCase (or one Query for a read).
 - Jobs and Commands live in audience-scoped Service modules; Listeners live in Domain.
@@ -41,6 +44,7 @@ vendor/bin/pest --parallel
 # Execute Pulsar commands (from package directory)
 ./bin/pulsar install
 ./bin/pulsar make:service Admin
+./bin/pulsar make:service Admin --web
 ./bin/pulsar make:controller ProductController Products Admin
 ./bin/pulsar make:use-case CreateProduct Products Admin
 ./bin/pulsar make:job ProcessOrder Orders Internal
@@ -57,7 +61,7 @@ vendor/bin/pest --parallel
 | Command | Arguments and options |
 |---------|-----------------------|
 | `install` | `[--dry-run] [--force]` |
-| `make:service` | `{name}` |
+| `make:service` | `{name} [--web]` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
 | `make:resource` | `{name} {module} {service} [--collection]` |
@@ -113,6 +117,10 @@ app/Pulsar/
 └── Infrastructure/{Area}/
     └── {Adapter}.php
 ```
+
+Stock Laravel directories may coexist with `app/Pulsar` indefinitely. Pulsar governs its own
+boundary and supports route-by-route, module-by-module adoption. `make:service --web` adds an
+unprefixed browser route file using Laravel's `web` middleware while preserving the API surface.
 
 ## Codebase Structure
 

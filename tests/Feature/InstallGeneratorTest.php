@@ -3,6 +3,7 @@
 use Faran\Pulsar\Commands\InstallCommand;
 use Faran\Pulsar\Exceptions\UnexpectedBootstrapFileException;
 use Faran\Pulsar\Generators\InstallGenerator;
+use Illuminate\Foundation\Application as LaravelApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -14,6 +15,7 @@ function freshApplicationBootstrap(): string
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,7 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        );
     })->create();
 PHP;
 }
@@ -59,6 +63,36 @@ beforeEach(function () {
 });
 
 describe('Install Generator', function () {
+    it('patches and boots the exact Laravel 13 bootstrap shape without changing exception behavior', function () {
+        $applicationPath = $this->tempDir.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'app.php';
+        $exceptionCallback = <<<'PHP'
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        );
+    })
+PHP;
+
+        $result = (new InstallGenerator)->generate();
+        $patched = file_get_contents($applicationPath);
+
+        expect($result->changed())->toBeTrue()
+            ->and($patched)
+            ->toBeValidPhp()
+            ->toContain($exceptionCallback)
+            ->and(substr_count($patched, 'Pulsar/Domain/*/Listeners'))->toBe(1)
+            ->and(substr_count($patched, 'Pulsar/Services/*/Modules/*/Commands'))->toBe(1);
+
+        $application = require $applicationPath;
+
+        expect($application)->toBeInstanceOf(LaravelApplication::class)
+            ->and(LaravelApplication::VERSION)->toStartWith('13.');
+
+        $second = (new InstallGenerator)->generate();
+
+        expect($second->changed())->toBeFalse();
+    });
+
     it('prints a complete dry-run diff without writing any file', function () {
         $applicationPath = $this->tempDir.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'app.php';
         $providersPath = $this->tempDir.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'providers.php';

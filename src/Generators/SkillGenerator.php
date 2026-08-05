@@ -3,6 +3,7 @@
 namespace Faran\Pulsar\Generators;
 
 use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
+use Faran\Pulsar\Pulsar;
 
 class SkillGenerator extends Generator
 {
@@ -51,7 +52,10 @@ class SkillGenerator extends Generator
             $this->createDirectory($parentDir);
         }
 
-        $content = $this->loadStub($this->getStubPath('skill'));
+        $stub = $this->loadStub($this->getStubPath('skill'));
+        $content = $this->replaceStubPlaceholders($stub, [
+            'version' => Pulsar::VERSION,
+        ]);
         $this->createFile($filePath, $content);
 
         return $this->getRelativePath($filePath);

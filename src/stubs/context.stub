@@ -6,6 +6,8 @@ e.g., Admin, Client, Internal), a Domain Layer for business logic and owned Cont
 across services, and an Infrastructure Layer for concrete outbound adapters.
 
 `app/Pulsar` is the explicit boundary for Pulsar-governed application code. Files inside it follow Pulsar's placement, dependency, and transaction rules; ordinary Laravel code outside it remains separate from the Pulsar architecture.
+Stock Laravel directories may coexist with `app/Pulsar` indefinitely; migrate route-by-route and
+module-by-module rather than treating adoption as a directory-removal project.
 
 A type belongs inside `app/Pulsar` when it calls, is called by, or implements a Pulsar type.
 Pure framework bootstrap and configuration that Laravel owns by convention—migrations,
@@ -44,7 +46,9 @@ app/Pulsar/Services/{Service}/
 ├── Providers/
 │   ├── {Service}ServiceProvider.php
 │   └── RouteServiceProvider.php
-├── Routes/api.php
+├── Routes/
+│   ├── api.php
+│   └── web.php        # generated with make:service --web
 └── Modules/{Module}/
     ├── Controllers/    # HTTP handlers (thin)
     ├── Requests/       # Input validation
@@ -91,9 +95,9 @@ Typical areas are `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
 
 | Layer | Responsibility | What NOT to do |
 |-------|---------------|----------------|
-| **Controller** | Extract validated data, call UseCase, return response | Never contain business logic; never call Operations directly |
+| **Controller** | Extract validated data, call one UseCase or one cohesive read Query, assemble response | Never contain business logic; never call Operations or Actions directly |
 | **Request** | Validate input structure, authorize | No business rule validation |
-| **Resource** | Shape Models, DTOs, and Value Objects for HTTP | Never place response shaping in Domain |
+| **Resource** | Reusable field-level shaping of Models, DTOs, and Value Objects for HTTP | Never place response shaping in Domain |
 | **Job** | Re-establish context, authorize, call one UseCase; retry idempotently | No models in payloads, transactions, or branching business logic |
 | **Command** | Validate CLI input, authorize, call one UseCase, return an exit code | No transactions or branching business logic |
 | **UseCase** | Orchestrate workflows, own transactions, emit events | Never coupled to HTTP Request objects |
@@ -111,6 +115,9 @@ Typical areas are `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
 
 Generated policies assume the authenticatable is `App\Models\User`. If your application uses a
 different user model, update the generated import.
+
+Actions, Queries, and UseCases return delivery-neutral domain values. They never return a Resource,
+Inertia prop wrapper, redirect, or HTTP response.
 
 ## Code Examples
 
@@ -155,6 +162,44 @@ class PlaceOrderRequest extends FormRequest
     }
 }
 ```
+
+### Browser Routes and Inertia
+
+Generate a browser-capable Service with `pulsar make:service Admin --web`. It keeps the existing
+`api.php` surface and adds an unprefixed `Routes/web.php` using Laravel's `web` middleware group.
+Register the Service provider class printed by the command in `bootstrap/providers.php`.
+
+Pulsar does not install Inertia. The application owns its root view, client adapter, and
+`HandleInertiaRequests` middleware. The Controller owns top-level response assembly; a Service
+Resource owns reusable field-level shaping. Shared cross-page props belong in
+`HandleInertiaRequests`; partial-reload wrappers and prop names remain Controller concerns.
+
+```php
+Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+
+class OrderController extends Controller
+{
+    public function index(ListOrdersQuery $query): \Inertia\Response
+    {
+        return Inertia::render('Orders/Index', [
+            'orders' => OrderResource::collection($query->execute()),
+        ]);
+    }
+
+    public function store(PlaceOrderRequest $request, PlaceOrderUseCase $useCase): RedirectResponse
+    {
+        $useCase->execute(OrderData::from($request->validated()));
+
+        return to_route('orders.index');
+    }
+}
+```
+
+Invalid Inertia form submissions use Laravel's normal redirect-and-flash validation flow. Do not
+override `failedValidation()` or return a manual `422` response for a browser page route. Error
+bags, old input, and redirect status handling remain Laravel/Inertia delivery behavior; the Request,
+DTO, Query, and UseCase stay delivery-neutral.
 
 ### UseCase (Workflow Orchestrator)
 
@@ -321,7 +366,8 @@ class GetLowStockProductsQuery
 ## Dependency Rules
 
 ```
-Controllers → UseCases ✅
+Controllers → one UseCase ✅
+Read-only Controllers → one cohesive Domain Query ✅
 Controllers → Operations ❌ (always call a UseCase)
 Controllers → Actions ❌ (use UseCase instead)
 Commands/Jobs → one UseCase ✅
@@ -371,12 +417,16 @@ Service A → Service B ❌ (use events for cross-service communication)
 ## Inbound Adapter Rule and Call Graphs
 
 Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
-context, and call exactly one UseCase (or one Query for a read-only endpoint). It owns no
-transaction and contains no branching business logic. Authorization must exist for non-HTTP
-entrypoints because Commands, Jobs, and Listeners have no Form Request.
+context, and call one application entrypoint. A mutation or workflow calls exactly one UseCase.
+A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.
+A read-only adapter that composes reads or applies audience-specific orchestration calls exactly
+one UseCase; that read-only UseCase need not open a transaction. A static page with no application
+data needs neither. After the entrypoint returns, a Controller may perform delivery-only response
+assembly. The adapter owns no transaction and contains no branching business logic. Authorization
+must exist for non-HTTP entrypoints because Commands, Jobs, and Listeners have no Form Request.
 
 ```text
-HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
+HTTP:      Request   → Controller → {one UseCase | one Query | response-only static page}
 Artisan:   Console   → Command    → UseCase → ...
 Queue:     Worker    → Job        → UseCase → ...
 Scheduler: Schedule  → Command|Job → UseCase → ...
@@ -697,7 +747,7 @@ Actions can return:
 10. **State change notification?** → Event
 11. **Queue or scheduler workflow entrypoint?** → Job or Command in an audience Service
 12. **Domain event reaction?** → Listener (queued only when it must enter a UseCase)
-13. **HTTP response shaping?** → Resource in the Service module
+13. **Reusable HTTP field shaping?** → Resource in the Service module
 14. **Domain communication?** → Notification or Mailable
 15. **Immutable validated primitive?** → Value Object
 
@@ -774,7 +824,7 @@ test('creates order via API', function () {
 | Command | Arguments and options |
 |---------|-----------------------|
 | `install` | `[--dry-run] [--force]` |
-| `make:service` | `{name}` |
+| `make:service` | `{name} [--web]` |
 | `make:controller` | `{name} {module} {service} [--resource]` |
 | `make:request` | `{name} {module} {service}` |
 | `make:resource` | `{name} {module} {service} [--collection]` |

@@ -2,6 +2,7 @@
 
 use Faran\Pulsar\Exceptions\FileAlreadyExistsException;
 use Faran\Pulsar\Generators\SkillGenerator;
+use Faran\Pulsar\Pulsar;
 
 describe('Skill Generator', function () {
 
@@ -84,7 +85,8 @@ describe('Skill Generator', function () {
 
             expect($content)
                 ->toStartWith('---')
-                ->toContain('description:');
+                ->toContain('description:')
+                ->toContain('version: '.Pulsar::VERSION);
         });
     });
 

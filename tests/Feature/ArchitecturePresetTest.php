@@ -12,6 +12,7 @@ it('ships an opt-in Pest architecture preset with all three dependency rules', f
         ->toContain("'App\\Pulsar\\Infrastructure'")
         ->toContain('Pulsar/Domain/*/Actions')
         ->toContain('Pulsar/Services/*/Modules/*/Controllers')
+        ->toContain('Pulsar/Domain/*/Queries')
         ->toContain('Pulsar/Services/*/Modules/*/Operations')
         ->toContain('Pulsar/Services/*/Modules/*/UseCases')
         ->toContain('->toOnlyUse(')

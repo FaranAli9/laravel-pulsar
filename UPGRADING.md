@@ -1,5 +1,62 @@
 # Upgrading Pulsar
 
+## v0.4.0
+
+Pulsar v0.4.0 is additive. Existing generated Services and API routes continue to work unchanged.
+
+### Add browser routes to a new Service
+
+Generate both API and session-backed browser route surfaces:
+
+```bash
+vendor/bin/pulsar make:service Admin --web
+```
+
+Add the provider class printed by the command to `bootstrap/providers.php`. The generated API
+routes retain `/api/{service}`, `{service}.*`, and `api` middleware. Browser routes are loaded from
+`Routes/web.php` with `web` middleware and no automatic URL or route-name prefix.
+
+### Add browser routes to an existing Service
+
+Do not rerun `make:service`, because it will protect the existing Service from being overwritten.
+Instead:
+
+1. Add `app/Pulsar/Services/{Service}/Routes/web.php`.
+2. Add the following group to that Service's `Providers/RouteServiceProvider.php`:
+
+   ```php
+   Route::middleware('web')
+       ->group(__DIR__ . '/../Routes/web.php');
+   ```
+
+3. Confirm the Service provider is listed in `bootstrap/providers.php`.
+
+Add any desired browser URL or route-name prefix inside `web.php`. Leaving the generated group
+unprefixed allows existing stock Laravel routes to move without changing their public contract.
+
+### Apply the clarified inbound adapter rule
+
+- Mutations and workflows call one UseCase.
+- A cohesive single Domain read may call one Query directly.
+- A read that composes data or applies audience-specific orchestration calls one UseCase; a
+  read-only UseCase does not need a transaction.
+- A static page without application data needs neither.
+- Controllers assemble delivery responses after the application entrypoint returns.
+
+If the application copied Pulsar's optional Pest architecture preset, replace it with the v0.4.0
+version so legitimate Controller-to-Query dependencies are allowed.
+
+### Refresh a published skill
+
+The published skill is an application-owned snapshot. Refresh it after upgrading so its
+architecture contract and new version metadata match the package:
+
+```bash
+vendor/bin/pulsar publish:skill --force
+```
+
+Review local customizations before overwriting the existing skill.
+
 ## v0.3.0
 
 Pulsar v0.3.0 requires PHP 8.3 or newer. Upgrade the package, then apply the steps below in

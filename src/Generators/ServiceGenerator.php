@@ -20,7 +20,7 @@ class ServiceGenerator extends Generator
     /**
      * Create a new ServiceGenerator instance.
      */
-    public function __construct(string $name)
+    public function __construct(string $name, protected bool $web = false)
     {
         $this->name = $name;
         $this->slug = $this->generateSlug($name);
@@ -110,11 +110,20 @@ class ServiceGenerator extends Generator
     {
         $servicePath = $this->getServicePath();
         $routesPath = $servicePath.DIRECTORY_SEPARATOR.'Routes';
-        $routeFile = $routesPath.DIRECTORY_SEPARATOR.'api.php';
+        $apiRouteFile = $routesPath.DIRECTORY_SEPARATOR.'api.php';
 
-        if (! $this->fileExists($routeFile)) {
-            $content = $this->getRoutesContent();
-            $this->createFile($routeFile, $content);
+        if (! $this->fileExists($apiRouteFile)) {
+            $content = $this->getApiRoutesContent();
+            $this->createFile($apiRouteFile, $content);
+        }
+
+        if ($this->web) {
+            $webRouteFile = $routesPath.DIRECTORY_SEPARATOR.'web.php';
+
+            if (! $this->fileExists($webRouteFile)) {
+                $content = $this->getWebRoutesContent();
+                $this->createFile($webRouteFile, $content);
+            }
         }
     }
 
@@ -148,7 +157,8 @@ class ServiceGenerator extends Generator
      */
     protected function getRouteServiceProviderContent(string $namespace): string
     {
-        $stub = $this->loadStub($this->getStubPath('route-service-provider'));
+        $stubName = $this->web ? 'route-service-provider-web' : 'route-service-provider';
+        $stub = $this->loadStub($this->getStubPath($stubName));
 
         return $this->replaceStubPlaceholders($stub, [
             'namespace' => $namespace,
@@ -160,13 +170,25 @@ class ServiceGenerator extends Generator
     /**
      * Get the routes file content.
      */
-    protected function getRoutesContent(): string
+    protected function getApiRoutesContent(): string
     {
         $stub = $this->loadStub($this->getStubPath('routes-api'));
 
         return $this->replaceStubPlaceholders($stub, [
             'name' => $this->name,
             'slug' => $this->slug,
+        ]);
+    }
+
+    /**
+     * Get the browser routes file content.
+     */
+    protected function getWebRoutesContent(): string
+    {
+        $stub = $this->loadStub($this->getStubPath('routes-web'));
+
+        return $this->replaceStubPlaceholders($stub, [
+            'name' => $this->name,
         ]);
     }
 }

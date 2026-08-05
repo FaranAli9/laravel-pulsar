@@ -12,6 +12,7 @@ describe('Service Generator', function () {
         $providerPath = $servicePath.DIRECTORY_SEPARATOR.'Providers'.DIRECTORY_SEPARATOR.'AdminServiceProvider.php';
         $routeProviderPath = $servicePath.DIRECTORY_SEPARATOR.'Providers'.DIRECTORY_SEPARATOR.'RouteServiceProvider.php';
         $routesPath = $servicePath.DIRECTORY_SEPARATOR.'Routes'.DIRECTORY_SEPARATOR.'api.php';
+        $webRoutesPath = $servicePath.DIRECTORY_SEPARATOR.'Routes'.DIRECTORY_SEPARATOR.'web.php';
 
         expect($result)->toBeNull()
             ->and(is_dir($servicePath.DIRECTORY_SEPARATOR.'Providers'))->toBeTrue()
@@ -20,7 +21,8 @@ describe('Service Generator', function () {
             ->and(file_exists($servicePath.DIRECTORY_SEPARATOR.'Modules'.DIRECTORY_SEPARATOR.'.gitkeep'))->toBeTrue()
             ->and(file_exists($providerPath))->toBeTrue()
             ->and(file_exists($routeProviderPath))->toBeTrue()
-            ->and(file_exists($routesPath))->toBeTrue();
+            ->and(file_exists($routesPath))->toBeTrue()
+            ->and(file_exists($webRoutesPath))->toBeFalse();
 
         $providerContent = file_get_contents($providerPath);
         $routeProviderContent = file_get_contents($routeProviderPath);
@@ -57,6 +59,33 @@ describe('Service Generator', function () {
             ->toContain('Prefix: /api/admin')
             ->toContain('Named Routes: admin.*')
             ->toContain('Middleware: api')
+            ->not->toContain('{{');
+    });
+
+    it('generates additive unprefixed browser routes when requested', function () {
+        (new ServiceGenerator('Portal', true))->generate();
+        $servicePath = $this->tempDir.DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR, [
+            'app', 'Pulsar', 'Services', 'Portal',
+        ]);
+        $routeProviderPath = $servicePath.DIRECTORY_SEPARATOR.'Providers'.DIRECTORY_SEPARATOR.'RouteServiceProvider.php';
+        $apiRoutesPath = $servicePath.DIRECTORY_SEPARATOR.'Routes'.DIRECTORY_SEPARATOR.'api.php';
+        $webRoutesPath = $servicePath.DIRECTORY_SEPARATOR.'Routes'.DIRECTORY_SEPARATOR.'web.php';
+        $routeProviderContent = file_get_contents($routeProviderPath);
+        $webRoutesContent = file_get_contents($webRoutesPath);
+
+        expect(file_exists($apiRoutesPath))->toBeTrue()
+            ->and(file_exists($webRoutesPath))->toBeTrue()
+            ->and($routeProviderContent)
+            ->toBeValidPhp()
+            ->toContain("Route::prefix('api/portal')")
+            ->toContain("Route::middleware('web')")
+            ->toContain("->group(__DIR__ . '/../Routes/web.php')")
+            ->and($webRoutesContent)
+            ->toBeValidPhp()
+            ->toContain('Portal Service Browser Routes')
+            ->toContain('Prefix: none')
+            ->toContain('Named Routes: none')
+            ->toContain('Middleware: web')
             ->not->toContain('{{');
     });
 

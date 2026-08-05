@@ -1,0 +1,14 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| {{name}} Service Browser Routes
+|--------------------------------------------------------------------------
+|
+| Prefix: none
+| Named Routes: none
+| Middleware: web
+|
+*/

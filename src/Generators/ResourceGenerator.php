@@ -18,7 +18,7 @@ class ResourceGenerator extends Generator
     ) {}
 
     /**
-     * Generate the API resource.
+     * Generate the HTTP resource.
      *
      * @throws FileAlreadyExistsException
      * @throws ServiceDoesNotExistException

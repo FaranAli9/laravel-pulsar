@@ -172,4 +172,48 @@ describe('Documentation consistency', function () {
                 ->toBe($stubMethods, "Method convention drifted in {$path}");
         }
     });
+
+    it('keeps browser delivery and inbound adapter rules aligned across published guidance', function () use (
+        $projectRoot,
+    ) {
+        $publishedGuidance = [
+            $projectRoot.DIRECTORY_SEPARATOR.'README.md',
+            $projectRoot.DIRECTORY_SEPARATOR.'ARCHITECTURE.md',
+            $projectRoot.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'context.stub',
+            $projectRoot.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'skill.stub',
+        ];
+        $sharedRules = [
+            'A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.',
+            'The Controller owns top-level response assembly; a Service Resource owns reusable field-level shaping.',
+            'Stock Laravel directories may coexist with `app/Pulsar` indefinitely',
+            "Invalid Inertia form submissions use Laravel's normal redirect-and-flash validation flow.",
+        ];
+
+        foreach ($publishedGuidance as $path) {
+            $content = file_get_contents($path);
+
+            expect($content)->not->toBeFalse();
+
+            $normalized = preg_replace('/\s+/', ' ', $content);
+
+            expect($normalized)->not->toBeNull();
+
+            foreach ($sharedRules as $rule) {
+                expect($normalized)->toContain($rule);
+            }
+        }
+
+        foreach ([
+            $projectRoot.DIRECTORY_SEPARATOR.'README.md',
+            $projectRoot.DIRECTORY_SEPARATOR.'CLAUDE.md',
+            $projectRoot.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'context.stub',
+            $projectRoot.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'skill.stub',
+        ] as $path) {
+            $content = file_get_contents($path);
+
+            expect($content)
+                ->not->toBeFalse()
+                ->toContain('| `make:service` | `{name} [--web]` |');
+        }
+    });
 });

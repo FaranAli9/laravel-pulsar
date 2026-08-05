@@ -282,6 +282,23 @@ it('keeps Controller command and generator arguments in name module service orde
         ->not->toContain('Services\Billing\Modules\Admin');
 });
 
+it('passes the web option through to the Service generator and prints provider registration', function () {
+    $tester = new CommandTester(new MakeServiceCommand);
+    $exitCode = $tester->execute([
+        'name' => 'Portal',
+        '--web' => true,
+    ]);
+    $servicePath = $this->tempDir.DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR, [
+        'app', 'Pulsar', 'Services', 'Portal',
+    ]);
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and(file_exists($servicePath.DIRECTORY_SEPARATOR.'Routes'.DIRECTORY_SEPARATOR.'api.php'))->toBeTrue()
+        ->and(file_exists($servicePath.DIRECTORY_SEPARATOR.'Routes'.DIRECTORY_SEPARATOR.'web.php'))->toBeTrue()
+        ->and($tester->getDisplay())
+        ->toContain('Register: App\Pulsar\Services\Portal\Providers\PortalServiceProvider::class');
+});
+
 it('passes the policy model option through to a model-aware stub', function () {
     $tester = new CommandTester(new MakePolicyCommand);
     $exitCode = $tester->execute([

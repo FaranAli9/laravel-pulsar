@@ -7,8 +7,8 @@
  * Pest's architecture plugin is required.
  *
  * These rules enforce a subset of Pulsar's dependency direction: Domain never imports Services,
- * Infrastructure stays out of workflows and delivery, and Controllers depend only on Domain DTOs
- * and UseCases. The remaining rules (UseCases never call UseCases, Operations never own
+ * Infrastructure stays out of workflows and delivery, and Controllers depend only on delivery
+ * types, Domain value types, Queries, and UseCases. The remaining rules (UseCases never call UseCases, Operations never own
  * transactions or call Operations, events emitted only by UseCases) are upheld by convention.
  */
 $namespaceDirectories = static function (string $pattern): array {
@@ -45,13 +45,14 @@ $controllerDependencies = array_merge(
     $namespaceDirectories('Pulsar/Services/*/Modules/*/Requests'),
     $namespaceDirectories('Pulsar/Services/*/Modules/*/Resources'),
     $namespaceDirectories('Pulsar/Services/*/Modules/*/UseCases'),
+    $namespaceDirectories('Pulsar/Domain/*/Queries'),
     $namespaceDirectories('Pulsar/Domain/*/DTOs'),
     $namespaceDirectories('Pulsar/Domain/*/ValueObjects'),
     $namespaceDirectories('Pulsar/Domain/*/Enums'),
 );
 
 if ($controllers !== []) {
-    arch('Pulsar Controllers depend only on Domain DTOs and UseCases')
+    arch('Pulsar Controllers depend only on delivery types, Domain values, Queries, and UseCases')
         ->expect($controllers)
         ->toOnlyUse($controllerDependencies)
         ->ignoring('Illuminate');
