@@ -2,6 +2,23 @@
 
 All notable changes to Pulsar are documented in this file.
 
+## v0.4.1 - 2026-08-06
+
+### Fixed
+
+- Restored the agentic-first invariant that every Controller method calls exactly one UseCase,
+  including read-only methods backed by a single Query and pages without Domain data.
+- Removed the Controller-to-Query exception from all published guidance, Inertia examples, and
+  the optional Pest architecture preset.
+- Extended documentation consistency tests to reject the superseded direct-Query wording as well
+  as require the current rule.
+
+### Compatibility
+
+- Controllers written from the v0.4.0 guidance that inject a Query directly must add a read-only
+  UseCase and move the Query call into it. Read-only UseCases do not require a transaction.
+- Re-publish the generated skill after upgrading so agents receive the corrected invariant.
+
 ## v0.4.0 - 2026-08-05
 
 ### Added

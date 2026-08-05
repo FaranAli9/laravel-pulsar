@@ -8,12 +8,12 @@ Pulsar is a Laravel code generation tool that scaffolds service-oriented applica
 
 ## Architecture Invariants
 
-- Controllers call one UseCase, or one Query for a cohesive read-only request.
-- Read-only Controllers that compose reads or apply audience orchestration call one UseCase.
+- Every Controller method calls exactly one UseCase. Controllers never call Queries directly.
+- Read-only UseCases may call one or more Queries and do not require a transaction.
 - Controllers own top-level HTTP/Inertia response assembly; Resources own reusable field shaping.
 - Form Requests on `web` routes use Laravel's redirect-and-flash validation behavior.
-- Every inbound adapter (HTTP, CLI, queue, scheduler, event) is thin: validate, authorize,
-  establish context, and call at most one UseCase (or one Query for a read).
+- Every inbound adapter is thin: validate, authorize, establish context, and follow its documented
+  single-entrypoint rule. Controllers, Jobs, and Commands call exactly one UseCase.
 - Jobs and Commands live in audience-scoped Service modules; Listeners live in Domain.
 - Adapters own no transactions or branching business logic; UseCases own transactions.
 - Operations are called by UseCases only (never by Controllers).

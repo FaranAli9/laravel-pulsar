@@ -183,10 +183,17 @@ describe('Documentation consistency', function () {
             $projectRoot.DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.'skill.stub',
         ];
         $sharedRules = [
-            'A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.',
+            'Every Controller method calls exactly one UseCase.',
+            'Controllers never call Queries directly.',
             'The Controller owns top-level response assembly; a Service Resource owns reusable field-level shaping.',
             'Stock Laravel directories may coexist with `app/Pulsar` indefinitely',
             "Invalid Inertia form submissions use Laravel's normal redirect-and-flash validation flow.",
+        ];
+        $supersededRules = [
+            'may call exactly one Query directly',
+            'Read-only Controller -> one cohesive Domain Query',
+            'Read-only Controllers → one cohesive Domain Query',
+            'response-only static page',
         ];
 
         foreach ($publishedGuidance as $path) {
@@ -200,6 +207,10 @@ describe('Documentation consistency', function () {
 
             foreach ($sharedRules as $rule) {
                 expect($normalized)->toContain($rule);
+            }
+
+            foreach ($supersededRules as $rule) {
+                expect($normalized)->not->toContain($rule);
             }
         }
 

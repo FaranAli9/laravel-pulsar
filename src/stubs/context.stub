@@ -95,7 +95,7 @@ Typical areas are `Payments`, `Search`, `Storage`, `Messaging`, and `Time`.
 
 | Layer | Responsibility | What NOT to do |
 |-------|---------------|----------------|
-| **Controller** | Extract validated data, call one UseCase or one cohesive read Query, assemble response | Never contain business logic; never call Operations or Actions directly |
+| **Controller** | Extract validated data, call exactly one UseCase, assemble response | Never contain business logic; never call Queries, Operations, or Actions directly |
 | **Request** | Validate input structure, authorize | No business rule validation |
 | **Resource** | Reusable field-level shaping of Models, DTOs, and Value Objects for HTTP | Never place response shaping in Domain |
 | **Job** | Re-establish context, authorize, call one UseCase; retry idempotently | No models in payloads, transactions, or branching business logic |
@@ -180,10 +180,10 @@ Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
 
 class OrderController extends Controller
 {
-    public function index(ListOrdersQuery $query): \Inertia\Response
+    public function index(ListOrdersUseCase $useCase): \Inertia\Response
     {
         return Inertia::render('Orders/Index', [
-            'orders' => OrderResource::collection($query->execute()),
+            'orders' => OrderResource::collection($useCase->execute()),
         ]);
     }
 
@@ -366,8 +366,8 @@ class GetLowStockProductsQuery
 ## Dependency Rules
 
 ```
-Controllers → one UseCase ✅
-Read-only Controllers → one cohesive Domain Query ✅
+Every Controller method → exactly one UseCase ✅
+Controllers → Queries ❌ (the UseCase calls one or more Queries)
 Controllers → Operations ❌ (always call a UseCase)
 Controllers → Actions ❌ (use UseCase instead)
 Commands/Jobs → one UseCase ✅
@@ -416,17 +416,20 @@ Service A → Service B ❌ (use events for cross-service communication)
 
 ## Inbound Adapter Rule and Call Graphs
 
-Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
-context, and call one application entrypoint. A mutation or workflow calls exactly one UseCase.
-A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.
-A read-only adapter that composes reads or applies audience-specific orchestration calls exactly
-one UseCase; that read-only UseCase need not open a transaction. A static page with no application
-data needs neither. After the entrypoint returns, a Controller may perform delivery-only response
-assembly. The adapter owns no transaction and contains no branching business logic. Authorization
-must exist for non-HTTP entrypoints because Commands, Jobs, and Listeners have no Form Request.
+Every inbound adapter is thin. Every Controller method calls exactly one UseCase. Controllers never
+call Queries directly. Jobs and Commands also validate, authorize, establish actor/tenant/
+correlation context, and call exactly one UseCase. A read-only UseCase may call one or more Queries
+and need not open a transaction. After the UseCase returns, a Controller may perform delivery-only
+response assembly. The adapter owns no transaction and contains no branching business logic.
+Authorization must exist for non-HTTP entrypoints because Commands, Jobs, and Listeners have no
+Form Request.
+
+This rule applies to mutations, reads, and pages without Domain data. Extra UseCase scaffolding is
+deliberate: Pulsar is agentic-first and favors one mechanically enforceable call graph over asking
+an agent to classify endpoint complexity or choose an application entrypoint type.
 
 ```text
-HTTP:      Request   → Controller → {one UseCase | one Query | response-only static page}
+HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
 Artisan:   Console   → Command    → UseCase → ...
 Queue:     Worker    → Job        → UseCase → ...
 Scheduler: Schedule  → Command|Job → UseCase → ...
@@ -754,6 +757,7 @@ Actions can return:
 ## Forbidden Patterns
 
 - Fat Controllers containing business logic
+- Controllers calling Queries directly
 - Controllers calling Operations directly
 - Actions calling other Actions or Queries
 - Operations calling other Operations or UseCases

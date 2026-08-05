@@ -108,21 +108,23 @@ The dependency graph distinguishes two kinds of edge:
   are all forbidden).
 
 This distinction is why a Controller may import a Domain DTO (passive) while remaining forbidden
-from calling Operations or Actions. The shipped architecture preset enforces the structural core
-of this (Domain ↛ Services, Infrastructure ↛ workflows/delivery, Controllers depend only on
-delivery types, Domain value types, Queries, and UseCases); the remaining rules are upheld by
+from calling Queries, Operations, or Actions. The shipped architecture preset enforces the
+structural core of this (Domain ↛ Services, Infrastructure ↛ workflows/delivery, Controllers depend
+only on delivery types, Domain value types, and UseCases); the remaining rules are upheld by
 convention and review.
 
 ## The adapter rule (all entrypoints are thin)
 
-Every inbound entrypoint — HTTP Controller, queue Job, Artisan Command, and any other adapter — may
-validate, authorize, establish context, and call one application entrypoint. A mutation or workflow
-calls exactly one UseCase. A read-only adapter that performs one cohesive Domain read may call
-exactly one Query directly. A read-only adapter that composes reads or applies audience-specific
-orchestration calls exactly one UseCase, which need not open a transaction. A static page with no
-application data needs neither. After the entrypoint returns, a Controller may perform
-delivery-only response assembly. The adapter owns no transaction and contains no branching
-business logic.
+Every Controller method calls exactly one UseCase. Controllers never call Queries directly. Queue
+Jobs and Artisan Commands also validate, authorize, establish context, and call exactly one
+UseCase. A read-only UseCase may call one or more Queries and need not open a transaction. After
+the UseCase returns, a Controller may perform delivery-only response assembly. The adapter owns no
+transaction and contains no branching business logic.
+
+This uniformity is deliberate. Pulsar is agentic-first: a mechanically enforceable call graph is
+more valuable than avoiding a pass-through UseCase. Reads, writes, and pages without Domain data
+follow the same Controller → UseCase rule, so an agent never classifies endpoint complexity or
+chooses an application entrypoint type.
 
 Because a Job or Command has no HTTP request, it re-establishes actor/tenant context from its
 payload and authorizes explicitly — **authorization never lives only in a Form Request.** Jobs

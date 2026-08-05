@@ -1,5 +1,49 @@
 # Upgrading Pulsar
 
+## v0.4.1
+
+Pulsar v0.4.1 restores one uniform, agent-enforceable HTTP call graph:
+
+```text
+Request → Controller → exactly one UseCase → {Queries, Actions, Operations, Events}
+```
+
+Every Controller method calls exactly one UseCase. Controllers never call Queries directly, even
+when the method performs a single read. A read-only UseCase may call one or more Queries and does
+not require a transaction.
+
+Replace a direct Query dependency:
+
+```php
+public function index(ListOrdersQuery $query): Response
+{
+    return Inertia::render('Orders/Index', [
+        'orders' => OrderResource::collection($query->execute()),
+    ]);
+}
+```
+
+with a read-only UseCase boundary:
+
+```php
+public function index(ListOrdersUseCase $useCase): Response
+{
+    return Inertia::render('Orders/Index', [
+        'orders' => OrderResource::collection($useCase->execute()),
+    ]);
+}
+```
+
+The UseCase delegates to `ListOrdersQuery`. Keep component selection, prop names, Resources, and
+Inertia wrappers in the Controller.
+
+If the application copied Pulsar's optional Pest architecture preset, replace it with the v0.4.1
+version. Refresh a published skill so agents receive the correction:
+
+```bash
+vendor/bin/pulsar publish:skill --force
+```
+
 ## v0.4.0
 
 Pulsar v0.4.0 is additive. Existing generated Services and API routes continue to work unchanged.
@@ -34,17 +78,11 @@ Instead:
 Add any desired browser URL or route-name prefix inside `web.php`. Leaving the generated group
 unprefixed allows existing stock Laravel routes to move without changing their public contract.
 
-### Apply the clarified inbound adapter rule
+### Inbound adapter guidance superseded by v0.4.1
 
-- Mutations and workflows call one UseCase.
-- A cohesive single Domain read may call one Query directly.
-- A read that composes data or applies audience-specific orchestration calls one UseCase; a
-  read-only UseCase does not need a transaction.
-- A static page without application data needs neither.
-- Controllers assemble delivery responses after the application entrypoint returns.
-
-If the application copied Pulsar's optional Pest architecture preset, replace it with the v0.4.0
-version so legitimate Controller-to-Query dependencies are allowed.
+v0.4.0 briefly documented a direct Controller-to-Query exception for some read-only methods.
+Do not adopt that exception. Follow the v0.4.1 rule above: every Controller method calls exactly
+one UseCase, and the UseCase calls any Queries it needs.
 
 ### Refresh a published skill
 

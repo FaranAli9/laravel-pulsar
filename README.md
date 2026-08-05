@@ -65,8 +65,8 @@ pulsar make:service Admin --web
 
 ## Upgrading
 
-Upgrading an existing application to v0.4.0 adds an opt-in browser route surface and clarifies
-the inbound adapter contract. Follow the ordered migration recipes in
+Upgrading an existing application to v0.4.1 restores the uniform Controller-to-UseCase contract;
+v0.4.0 added the opt-in browser route surface. Follow the ordered migration recipes in
 [UPGRADING.md](UPGRADING.md). Release details are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ---
@@ -210,21 +210,23 @@ The consumer owns the port: when Billing needs a payment capability, Billing def
 ### Inbound Adapter Rule and Call Graphs
 
 Every inbound adapter is thin. It may validate, authorize, establish actor/tenant/correlation
-context, and call one application entrypoint. It owns no transaction and contains no branching
-business logic. Apply these rules:
+context, and call its single application entrypoint. It owns no transaction and contains no
+branching business logic. Apply these rules:
 
-1. A mutation or application workflow calls exactly one UseCase.
-2. A read-only adapter that performs one cohesive Domain read may call exactly one Query directly.
-3. A read-only adapter that composes reads or applies audience-specific orchestration calls
-   exactly one UseCase; a read-only UseCase does not need a transaction.
-4. A static page with no application data does not need a synthetic Query or UseCase.
-5. After the entrypoint returns, an HTTP Controller may perform delivery-only response assembly.
+1. Every Controller method calls exactly one UseCase. Controllers never call Queries directly.
+2. Jobs and Commands call exactly one UseCase.
+3. A read-only UseCase may call one or more Queries and does not need a transaction.
+4. After the UseCase returns, an HTTP Controller may perform delivery-only response assembly.
+
+The rule applies uniformly to mutations, reads, and pages without Domain data. Extra UseCase
+scaffolding is deliberate: Pulsar favors one mechanically enforceable call graph so agents do not
+classify endpoint complexity or choose between application entrypoint types.
 
 Jobs carry IDs, DTOs, or Value Objects, never Eloquent models, and retryable handlers are
 idempotent.
 
 ```text
-HTTP:      Request   → Controller → {one UseCase | one Query | response-only static page}
+HTTP:      Request   → Controller → UseCase → {Actions, Operations, Queries, Events}
 Artisan:   Console   → Command    → UseCase → ...
 Queue:     Worker    → Job        → UseCase → ...
 Scheduler: Schedule  → Command|Job → UseCase → ...
@@ -300,7 +302,7 @@ holds request- or tenant-lifetime state, and make retryable side effects idempot
 
 Pulsar ships a recommended, opt-in Pest architecture test. It keeps Domain independent of
 Services, Infrastructure outside workflows and delivery, and Controllers limited to delivery
-types, Domain value types, Queries, and UseCases:
+types, Domain value types, and UseCases:
 
 ```bash
 mkdir -p tests/Arch
@@ -315,6 +317,7 @@ enforces equivalent dependency rules.
 ### Anti-Patterns
 
 - Fat Controllers containing business logic
+- Controllers calling Queries directly
 - Controllers calling Operations directly
 - Actions calling other Actions
 - Actions calling Queries (the UseCase or Operation passes in the data)
